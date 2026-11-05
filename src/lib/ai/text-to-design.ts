@@ -417,6 +417,7 @@ export function interpretInstruction(
   let fabricColorSet = false;
   let lastAddedType: "text" | "graphic" | null = null;
   const pendingTextColor: string[] = [];
+  const pendingTextClause: string[] = [];
   const textLayersToAdd: { text: string; preset: PlacementPreset; style: Record<string, unknown> }[] = [];
 
   for (const clause of clauses) {
@@ -462,6 +463,7 @@ export function interpretInstruction(
           break;
         case "text":
           pendingTextColor.push(c.hex);
+          pendingTextClause.push(clause);
           break;
         case "graphic":
           if (current?.layers.some((l) => l.type === "graphic")) {
@@ -525,7 +527,9 @@ export function interpretInstruction(
 
     // Text layers
     const quoteRef = /__q(\d+)__/.exec(clause);
-    const saysM = /\b(?:says?|saying|reads?|reading|with the (?:words?|text|name|slogan|quote)|text|name|slogan|quote|initials|lettering|words?)\s+(?:of\s+)?(?:__q(\d+)__|([a-z0-9][a-z0-9 !?&'-]{0,40}?))(?=\s+(?:on|at|in|across|to|along|onto)\b|$)/.exec(clause);
+    // Unquoted wording is only captured after an explicit cue ("saying X", "that reads X", "with the words X");
+    // bare "red text on the front" carries no wording.
+    const saysM = /\b(?:says?|saying|reads?|reading|with the (?:words?|text|name|slogan|quote)|(?:text|name|slogan|quote|initials|lettering|words?)(?=\s+__q))\s+(?:of\s+)?(?:__q(\d+)__|(?!(?:on|at|in|across|to|along|onto|the)\b)([a-z0-9][a-z0-9 !?&'-]{0,40}?))(?=\s+(?:on|at|in|across|to|along|onto)\b|$)/.exec(clause);
     const wantsText = /\b(text|lettering|name|slogan|quote|words?|initials|typography|says|saying|number)\b/.test(clause);
     if ((quoteRef || (saysM && (saysM[1] || saysM[2]))) && (addVerb || wantsText)) {
       const content = quoteRef ? quotes[+quoteRef[1]] : saysM?.[1] ? quotes[+saysM[1]] : restoreQuotes(saysM?.[2] ?? "").trim();
@@ -698,8 +702,8 @@ export function interpretInstruction(
       ops.push({ op: "updateLayer", target: { by: "all", type: "text" }, changes: { set: { color: pendingTextColor[0] } } });
       understood.push(`Text colour → ${pendingTextColor[0]}`);
     } else {
-      const preset = placementFrom(text, "text") ?? "center-chest";
-      ops.push({ op: "addText", text: "YOUR TEXT", preset, style: { color: pendingTextColor[0], ...(method ? { method } : {}), ...(pickFont(text) ? { fontFamily: pickFont(text)! } : {}) } });
+      const preset = placementFrom(pendingTextClause[0] ?? text, "text") ?? "center-chest";
+      ops.push({ op: "addText", text: "YOUR TEXT", preset, style: { color: pendingTextColor[0], ...(method ? { method } : {}), ...(pickFont(pendingTextClause[0] ?? text) ? { fontFamily: pickFont(pendingTextClause[0] ?? text)! } : {}) } });
       understood.push(`Text in ${pendingTextColor[0]} → ${preset}`);
       unsupported.push('No wording was given, so "YOUR TEXT" was added — edit it in the typography panel.');
     }

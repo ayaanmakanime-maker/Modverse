@@ -10,13 +10,14 @@ import { extractSvgColors, parseSvgDimensions, sanitizeSvg, SvgSanitizeError } f
 
 export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 
-type Detected = { mime: "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml"; ext: string };
+type Detected = { mime: "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml" | "application/pdf"; ext: string };
 
 /** Detect file type from magic bytes — the client-declared type is never trusted. */
 export function detectType(buf: Buffer): Detected | null {
   if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { mime: "image/png", ext: "png" };
   if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { mime: "image/jpeg", ext: "jpg" };
   if (buf.length >= 12 && buf.subarray(0, 4).toString("ascii") === "RIFF" && buf.subarray(8, 12).toString("ascii") === "WEBP") return { mime: "image/webp", ext: "webp" };
+  if (buf.length >= 5 && buf.subarray(0, 5).toString("ascii") === "%PDF-") return { mime: "application/pdf", ext: "pdf" };
   const head = buf.subarray(0, 2048).toString("utf8").trimStart().toLowerCase();
   if (head.startsWith("<svg") || (head.startsWith("<?xml") && head.includes("<svg"))) return { mime: "image/svg+xml", ext: "svg" };
   return null;
@@ -52,7 +53,7 @@ export async function storeUpload(user: SessionUser, file: { name: string; bytes
   if (file.bytes.length === 0) throw new ApiError(400, "empty_file", "The file is empty");
   if (file.bytes.length > MAX_UPLOAD_BYTES) throw new ApiError(413, "too_large", "Files must be 12 MB or smaller");
   const type = detectType(file.bytes);
-  if (!type) throw new ApiError(415, "unsupported_type", "Upload PNG, JPEG, WebP or SVG artwork");
+  if (!type || (type.mime === "application/pdf" && kind !== "export")) throw new ApiError(415, "unsupported_type", "Upload PNG, JPEG, WebP or SVG artwork");
   let bytes = file.bytes;
   let width: number | null = null;
   let height: number | null = null;
@@ -68,7 +69,7 @@ export async function storeUpload(user: SessionUser, file: { name: string; bytes
     } catch (e) {
       throw new ApiError(400, "invalid_svg", e instanceof SvgSanitizeError ? e.message : "The SVG could not be processed");
     }
-  } else {
+  } else if (type.mime !== "application/pdf") {
     const d = rasterSize(bytes, type.mime);
     if (!d || d.width < 1 || d.height < 1 || d.width > 20000 || d.height > 20000) throw new ApiError(400, "invalid_image", "Could not read image dimensions");
     width = d.width;

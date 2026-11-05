@@ -51,6 +51,8 @@ export interface TorsoShape {
   neckline: Pt[];
   /** Raglan seam (right side) from underarm to neckline, when raglan. */
   raglanSeam: Pt[] | null;
+  /** Right-side armhole curve from shoulder point to underarm. */
+  armhole: Pt[];
 }
 
 /** Flat outline of the front or back torso panel. */
@@ -84,7 +86,8 @@ export function torsoShape(m: GarmentMeasurements, side: "front" | "back", c: Co
   right.push([shoulderX, slope]);
   // armhole: shoulder point → underarm
   const armCtrl: Pt = [chestX - (chestX - shoulderX) * 0.15 - 0.5, m.armholeDepth * 0.82];
-  right.push(...quad([shoulderX, slope], armCtrl, [chestX, m.armholeDepth], 12));
+  const armhole: Pt[] = [[shoulderX, slope], ...quad([shoulderX, slope], armCtrl, [chestX, m.armholeDepth], 12)];
+  right.push(...armhole.slice(1));
   // side seam
   right.push(...quad([chestX, m.armholeDepth], [waistX + (chestX - waistX) * 0.25, (m.armholeDepth + waistY) / 2], [waistX, waistY], 6));
   right.push(...quad([waistX, waistY], [(waistX + hemX) / 2, (waistY + sideHemY) / 2], [hemX, sideHemY], 6));
@@ -114,6 +117,7 @@ export function torsoShape(m: GarmentMeasurements, side: "front" | "back", c: Co
     waistY,
     neckline,
     raglanSeam,
+    armhole,
   };
 }
 

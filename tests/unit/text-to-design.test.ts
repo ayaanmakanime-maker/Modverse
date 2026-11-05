@@ -100,3 +100,16 @@ describe("text-to-design (more)", () => {
     expect(lib.get(applied.config.panels.sleeveLeft.patternId!)!.collection).toBe("Space_Astronomy");
   });
 });
+
+describe("text wording extraction", () => {
+  it("does not treat placement phrases as wording", () => {
+    const { r } = run("Create a white tee with blue text on the back");
+    const add = r.ops.find((o) => o.op === "addText") as { text: string } | undefined;
+    expect(add?.text).toBe("YOUR TEXT");
+  });
+  it("captures explicit unquoted wording", () => {
+    const { r } = run("Create a black tee with text saying chai lover on the front");
+    const add = r.ops.find((o) => o.op === "addText") as { text: string } | undefined;
+    expect(add?.text).toBe("chai lover");
+  });
+});
