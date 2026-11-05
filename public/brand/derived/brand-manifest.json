@@ -1,0 +1,53 @@
+{
+  "master": "public/brand/modverse-logo-original.png",
+  "master_sha256": "ba8167c48c035c6b729c9fe24e53e8cadd692f5793a5721ca71df62d5249baac",
+  "master_size": [
+    1774,
+    887
+  ],
+  "note": "Derived variants are crops / luminance-alpha masks of the original pixels. The master file is never modified.",
+  "regions": {
+    "monogram": [
+      662,
+      142,
+      1092,
+      442
+    ],
+    "wordmark": [
+      381,
+      488,
+      1394,
+      649
+    ],
+    "tagline": [
+      476,
+      694,
+      1297,
+      720
+    ],
+    "lockup": [
+      381,
+      142,
+      1394,
+      720
+    ]
+  },
+  "files": [
+    "public/brand/derived/modverse-app-icon-192.png",
+    "public/brand/derived/modverse-app-icon-512.png",
+    "public/brand/derived/modverse-lockup-dark.png",
+    "public/brand/derived/modverse-lockup-light.png",
+    "public/brand/derived/modverse-lockup-on-black.png",
+    "public/brand/derived/modverse-logo-transparent-dark.png",
+    "public/brand/derived/modverse-logo-transparent-light.png",
+    "public/brand/derived/modverse-monogram-dark.png",
+    "public/brand/derived/modverse-monogram-light.png",
+    "public/brand/derived/modverse-monogram-on-black.png",
+    "public/brand/derived/modverse-tagline-dark.png",
+    "public/brand/derived/modverse-tagline-light.png",
+    "public/brand/derived/modverse-tagline-on-black.png",
+    "public/brand/derived/modverse-wordmark-dark.png",
+    "public/brand/derived/modverse-wordmark-light.png",
+    "public/brand/derived/modverse-wordmark-on-black.png"
+  ]
+}
