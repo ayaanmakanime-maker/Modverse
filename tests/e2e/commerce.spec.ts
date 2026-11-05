@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { ADMIN, login, logout, openEditor, register, saveDesign } from "./helpers";
 
 test("cart → simulated checkout → order snapshot → admin production approval", async ({ page }) => {
-  await register(page, "Buyer");
+  const buyer = await register(page, "Buyer");
   await openEditor(page, "tee-classic-crew", "men", "studio");
   await page.getByTestId("tab-text").click();
   await page.locator("#new-text").fill("CHAI");
@@ -36,4 +36,19 @@ test("cart → simulated checkout → order snapshot → admin production approv
   await page.getByLabel("New status").selectOption("manufacturing");
   await page.getByTestId("update-status").click();
   await expect(page.getByText("manufacturing").first()).toBeVisible();
+  await page.getByLabel("New status").selectOption("shipped");
+  await page.getByTestId("update-status").click();
+  await expect(page.getByText("shipped").first()).toBeVisible();
+
+  // Verified fit: only the buyer, after shipping/delivery, can record how it actually fitted.
+  await logout(page);
+  await login(page, buyer);
+  await page.goto(orderUrl);
+  const fb = page.getByTestId("fit-feedback").first();
+  await expect(fb).toBeVisible();
+  await fb.getByTestId("fit-overall").selectOption("slightly-loose");
+  await fb.getByTestId("fit-submit").click();
+  await expect(fb.getByText("verified fit saved")).toBeVisible();
+  const list = await (await page.request.get("/api/account/fit-feedback")).json();
+  expect(list.feedback[0].overall).toBe("slightly-loose");
 });

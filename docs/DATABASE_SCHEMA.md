@@ -12,6 +12,13 @@ PostgreSQL via Drizzle ORM (`src/lib/db/schema.ts`), **43 tables**, versioned SQ
 | Commerce | `wishlist_items`, `carts`, `cart_items`, `orders`, `order_items` (immutable design + spec snapshots), `order_events`, `payments`, `shipments` |
 | Platform | `integration_providers`, `integration_configs` (AES-GCM encrypted credentials), `audit_logs`, `platform_settings` |
 
+## V2 migrations (additive — no existing data or migrations removed)
+| Migration | Change |
+|---|---|
+| `0001_v2_upload_meta` | `uploaded_assets.meta` (jsonb) — e.g. customer-font family + rights confirmation; `kind` gains `font` |
+| `0002_v2_fit_intelligence` | `measurement_profiles.provenance` (jsonb, default `{}`) — per-field source user/camera/derived, confidence, ± tolerance; new `fit_feedback` table (user, order item [unique], model, size, fit, overall, per-area ratings, notes) for **verified fit** |
+Design documents inside `design_versions.config` are versioned by `schemaVersion` (V2 = 2) and upgraded on read.
+
 ## Ownership rules
 * Private rows carry `user_id` (or `guardian_user_id`) with `ON DELETE CASCADE`; services always filter by the session user. Staff may read designs/orders for review but cannot modify customer designs.
 * `orders.user_id` is `RESTRICT` — orders survive account deletion (identity is anonymised).

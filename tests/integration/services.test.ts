@@ -15,7 +15,7 @@ import type { SessionUser } from "@/lib/auth/session";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createProject, saveProject, listVersions, revertProject, duplicateProject, getProjectWithVersion, deleteProject, listProjects } from "@/lib/services/designs";
 import { addToCart, checkout, confirmSimulatedPayment, getCart, getOrder, staffUpdateOrder, reviewOrderItem, cancelOrder } from "@/lib/services/commerce";
-import { createChild, upsertMeasurementProfile, deleteChild, listMeasurementProfiles, deleteAccount } from "@/lib/services/account";
+import { createChild, upsertMeasurementProfile, deleteChild, listMeasurementProfiles, deleteAccount, submitFitFeedback, listFitFeedback } from "@/lib/services/account";
 import { saveCredentials, setEnabled, getActiveIntegration, listIntegrations, recordTest } from "@/lib/integrations/config";
 import { createDesign, createTextLayer } from "@/lib/garment/design";
 import { detectType, rasterSize, storeFont, listFonts, readUpload, deleteFont } from "@/lib/services/uploads";
@@ -141,8 +141,17 @@ describe("commerce: cart → simulated checkout → production approval", () => 
     expect(m.order.status).toBe("manufacturing");
     await expect(staffUpdateOrder(staff, order.id, { status: "payment_confirmed" })).rejects.toMatchObject({ code: "invalid_transition" });
     await expect(cancelOrder(alice, order.id)).rejects.toMatchObject({ code: "cannot_cancel" });
+    // Fit can only be verified once delivered/shipped, and only by the customer who ordered.
+    await expect(submitFitFeedback(alice, { orderItemId: paid.items[0].id, overall: "true", areas: {} })).rejects.toMatchObject({ status: 400 });
     const shipped = await staffUpdateOrder(staff, order.id, { status: "shipped", tracking: { courier: "Delhivery", awb: "TEST123" } });
     expect(shipped.shipments).toHaveLength(1);
+    await expect(submitFitFeedback(bob, { orderItemId: paid.items[0].id, overall: "true", areas: {} })).rejects.toMatchObject({ status: 404 });
+    const fb = await submitFitFeedback(alice, { orderItemId: paid.items[0].id, overall: "slightly-loose", areas: { length: "true" } });
+    expect(fb).toMatchObject({ modelId: "tee-classic-crew", size: "L", overall: "slightly-loose" });
+    const again = await submitFitFeedback(alice, { orderItemId: paid.items[0].id, overall: "true", areas: {} });
+    expect(again.id).toBe(fb.id);
+    expect((await listFitFeedback(alice, "tee-classic-crew")).map((f) => f.overall)).toEqual(["true"]);
+    expect(await listFitFeedback(bob)).toHaveLength(0);
   });
 
   it("blocks adding designs with validation errors to the cart", async () => {
@@ -183,6 +192,15 @@ describe("uploads", () => {
     expect(detectType(Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"))?.mime).toBe("image/svg+xml");
     expect(detectType(Buffer.from("<html><script>1</script></html>"))).toBeNull();
     expect(detectType(Buffer.from("MZ\x90\x00"))).toBeNull();
+  });
+});
+
+describe("measurement provenance", () => {
+  it("stores per-field provenance and never lets camera estimates claim high confidence", async () => {
+    const p = await upsertMeasurementProfile(alice, { name: "Cam", audience: "men", measurements: { chest: 98, shoulder: 45 }, provenance: { shoulder: { source: "camera", confidence: "high", toleranceCm: 3 } } });
+    expect((p.provenance as Record<string, { confidence: string }>).shoulder.confidence).toBe("medium");
+    const plain = await upsertMeasurementProfile(alice, { name: "Tape", audience: "men", measurements: { chest: 98 } });
+    expect(plain.provenance).toEqual({});
   });
 });
 

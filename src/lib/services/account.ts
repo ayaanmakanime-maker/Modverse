@@ -41,10 +41,17 @@ export const bodySchema = z.object({
   torsoLength: z.number().positive().optional(),
 });
 
+const provenanceSchema = z.object({ source: z.enum(["user", "camera", "derived"]), confidence: z.enum(["high", "medium", "low"]), toleranceCm: z.number().min(0).max(30).optional(), at: z.string().max(40).optional() });
+
 export const measurementProfileSchema = z.object({
   name: z.string().trim().min(1).max(60),
   audience: z.enum(["men", "women", "kids"]),
   measurements: bodySchema,
+  /** Per-field provenance; fields without an entry are user-provided. Camera estimates can never claim "high". */
+  provenance: z.partialRecord(z.enum(["height", "chest", "waist", "hip", "shoulder", "armLength", "neck", "bicep", "wrist", "torsoLength"]), provenanceSchema).default({}).transform((p) => {
+    for (const v of Object.values(p)) if (v && v.source !== "user" && v.confidence === "high") v.confidence = "medium";
+    return p;
+  }),
   fitPreference: z.enum(["closer", "true", "looser"]).default("true"),
   childProfileId: z.string().uuid().nullable().optional(),
 });
@@ -177,7 +184,8 @@ export async function listMeasurementProfiles(user: SessionUser) {
   return db.select().from(s.measurementProfiles).where(eq(s.measurementProfiles.userId, user.id)).orderBy(desc(s.measurementProfiles.updatedAt));
 }
 
-export async function upsertMeasurementProfile(user: SessionUser, input: z.infer<typeof measurementProfileSchema>, id?: string) {
+export async function upsertMeasurementProfile(user: SessionUser, raw: z.input<typeof measurementProfileSchema>, id?: string) {
+  const input = measurementProfileSchema.parse(raw);
   const errors = validateBody(input.audience, input.measurements);
   if (errors.length) throw badRequest(`Measurements look implausible: ${errors.join("; ")}`);
   const child = await ownedChild(user.id, input.childProfileId);
@@ -267,4 +275,29 @@ export async function listSessions(user: SessionUser) {
   const db = await getDb();
   const rows = await db.select().from(s.sessions).where(and(eq(s.sessions.userId, user.id), gt(s.sessions.expiresAt, new Date()))).orderBy(desc(s.sessions.lastSeenAt));
   return rows.map((r) => ({ id: r.id.slice(0, 12), current: r.id === user.sessionId, userAgent: r.userAgent, createdAt: r.createdAt, lastSeenAt: r.lastSeenAt }));
+}
+
+// ── Verified fit (feedback after wearing a delivered garment) ──────────
+export const fitFeedbackSchema = z.object({
+  orderItemId: z.string().uuid(),
+  overall: z.enum(["too-tight", "slightly-tight", "true", "slightly-loose", "too-loose"]),
+  areas: z.partialRecord(z.enum(["chest", "waist", "shoulders", "sleeves", "length"]), z.enum(["too-tight", "slightly-tight", "true", "slightly-loose", "too-loose"])).default({}),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export async function submitFitFeedback(user: SessionUser, input: z.infer<typeof fitFeedbackSchema>) {
+  const db = await getDb();
+  const [row] = await db.select({ item: s.orderItems, order: s.orders }).from(s.orderItems).innerJoin(s.orders, eq(s.orders.id, s.orderItems.orderId)).where(eq(s.orderItems.id, input.orderItemId));
+  if (!row || row.order.userId !== user.id) throw notFound("Order item");
+  if (!["shipped", "delivered"].includes(row.order.status)) throw badRequest("Fit can be verified once the garment has been delivered");
+  const snap = row.item.designSnapshot as { modelId: string; fit: string };
+  const values = { userId: user.id, orderItemId: input.orderItemId, modelId: snap.modelId, size: row.item.size, fit: snap.fit, overall: input.overall, areas: input.areas, notes: input.notes ?? null };
+  const [saved] = await db.insert(s.fitFeedback).values(values).onConflictDoUpdate({ target: s.fitFeedback.orderItemId, set: { overall: values.overall, areas: values.areas, notes: values.notes } }).returning();
+  return saved;
+}
+
+export async function listFitFeedback(user: SessionUser, modelId?: string) {
+  const db = await getDb();
+  const rows = await db.select().from(s.fitFeedback).where(eq(s.fitFeedback.userId, user.id)).orderBy(desc(s.fitFeedback.createdAt));
+  return modelId ? rows.filter((r) => r.modelId === modelId) : rows;
 }

@@ -27,3 +27,13 @@ front, back, left/right sleeve, collar, cuffs, pocket, placket, yoke, shoulder p
 
 ## Geometry completeness (3D)
 All 32 models render with full parametric geometry: torso panels, set-in/raglan/drop-shoulder sleeves, rib/mock necklines, shirt stand + shaped collar leaf per collar type, placket strip, buttons/snaps, patch/flap/western pockets, rib and shirt cuffs, curved hems. Raglan seams, yokes, pleats, darts, side/shoulder panels and stitching are rendered as textures on the panels. Not modelled: cloth simulation, wrinkles from physics, collar roll under tension, real seam allowances.
+
+## Fit intelligence (V2, `src/lib/garment/fit.ts`)
+Six things are kept apart in code and UI:
+1. **User-provided measurements** (source `user`).
+2. **Camera-estimated measurements** (source `camera`, from the trial room; ± tolerance, confidence ≤ medium).
+3. **Recommended size** (`recommendSize`, an estimate from body vs real garment dimensions).
+4. **Estimated fit** (`analyseFit`): per zone — chest, waist, hip (hem), sleeve (bicep), shoulder (seam minus intended drop), length (vs typical for height) — ease in cm and a category tight / fitted / regular / relaxed / oversized, plus overall fit and confidence.
+5. **Visually simulated appearance** (3D avatar, live try-on) — explicitly not a fit check.
+6. **Verified fit** — only from the customer's feedback after a shipped/delivered order (`fit_feedback`, "How did it fit?" on the order page); shown back in the editor for that model.
+Height and weight alone only produce **rough, labelled estimates** (`estimateFromHeightWeight`, ±8 cm, low confidence) and the UI asks for tape measurements.

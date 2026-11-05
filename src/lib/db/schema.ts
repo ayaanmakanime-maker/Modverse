@@ -122,6 +122,8 @@ export const measurementProfiles = pgTable(
     name: text("name").notNull(),
     audience: text("audience", { enum: ["men", "women", "kids"] }).notNull(),
     measurements: jsonb("measurements").notNull(),
+    /** V2: per-field source (user / camera / derived), confidence and tolerance. */
+    provenance: jsonb("provenance").notNull().default({}),
     fitPreference: text("fit_preference", { enum: ["closer", "true", "looser"] }).notNull().default("true"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -492,6 +494,24 @@ export const orderItems = pgTable(
     productionStatus: text("production_status").notNull().default("not_started"),
   },
   (t) => [index("order_items_order_idx").on(t.orderId)],
+);
+
+/** V2 "verified fit": the customer's feedback after wearing a delivered garment. */
+export const fitFeedback = pgTable(
+  "fit_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    orderItemId: uuid("order_item_id").notNull().references(() => orderItems.id, { onDelete: "cascade" }),
+    modelId: text("model_id").notNull(),
+    size: text("size").notNull(),
+    fit: text("fit").notNull(),
+    overall: text("overall", { enum: ["too-tight", "slightly-tight", "true", "slightly-loose", "too-loose"] }).notNull(),
+    areas: jsonb("areas").notNull().default({}),
+    notes: text("notes"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("fit_feedback_user_idx").on(t.userId), uniqueIndex("fit_feedback_item_uq").on(t.orderItemId)],
 );
 
 export const orderEvents = pgTable(

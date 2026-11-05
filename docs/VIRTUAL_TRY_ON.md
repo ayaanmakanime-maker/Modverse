@@ -1,5 +1,7 @@
 # Virtual trial room
 
+> V2 additions (tracking-loss recovery, rotation-aware scaling, raised/crossed arms, lighting match, live customisation, full screen, privacy auto-stop, camera measurement estimates) are documented in **[LIVE_TRY_ON.md](LIVE_TRY_ON.md)**.
+
 `/try-on` — `src/components/tryon/TrialRoom.tsx`. Runs **MediaPipe Tasks Vision 0.10.35** entirely in the browser (WASM + GPU delegate). Camera frames are never uploaded or recorded.
 
 ## Pipeline

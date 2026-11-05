@@ -14,6 +14,8 @@ import { api } from "@/lib/client/api";
 import { useSession } from "@/components/session";
 import { colorName } from "@/lib/color";
 import type { EditorMode } from "@/lib/editor/store";
+import { FitAnalysisView, type VerifiedFit } from "@/components/fit/FitAnalysisView";
+import { estimateFromHeightWeight, type ProvenanceMap } from "@/lib/garment/fit";
 
 function Group({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -288,19 +290,32 @@ export function MeasurementsPanel({ mode }: { mode: EditorMode }) {
   );
 }
 
-interface MeasurementProfile { id: string; name: string; audience: string; measurements: Record<string, number>; fitPreference: "closer" | "true" | "looser" }
+interface MeasurementProfile { id: string; name: string; audience: string; measurements: Record<string, number>; provenance?: ProvenanceMap; fitPreference: "closer" | "true" | "looser" }
 
 export function FitPanel({ onAvatar, avatarOn }: { onAvatar: (on: boolean, body?: Record<string, number>) => void; avatarOn: boolean }) {
   const config = useEditor((s) => s.config);
   const commit = useEditor((s) => s.commit);
   const { user } = useSession();
   const [profiles, setProfiles] = useState<MeasurementProfile[]>([]);
-  const [manual, setManual] = useState<{ chest: string; waist: string; shoulder: string; height: string }>({ chest: "", waist: "", shoulder: "", height: "" });
+  const [verified, setVerified] = useState<VerifiedFit[]>([]);
+  const [manual, setManual] = useState<{ chest: string; waist: string; shoulder: string; height: string; weight: string }>({ chest: "", waist: "", shoulder: "", height: "", weight: "" });
   useEffect(() => {
-    if (user) api<{ profiles: MeasurementProfile[] }>("/api/account/measurements").then((r) => setProfiles(r.profiles)).catch(() => undefined);
+    if (!user) return;
+    api<{ profiles: MeasurementProfile[] }>("/api/account/measurements").then((r) => setProfiles(r.profiles)).catch(() => undefined);
+    api<{ feedback: VerifiedFit[] }>("/api/account/fit-feedback").then((r) => setVerified(r.feedback)).catch(() => undefined);
   }, [user]);
   const active = profiles.find((p) => p.id === config.measurementProfileId);
-  const body = active?.measurements ?? (manual.chest ? Object.fromEntries(Object.entries(manual).filter(([, v]) => v).map(([k, v]) => [k, Number(v)])) : null);
+  // Quick entry: real measurements are "user"; height + weight alone only yields a labelled rough estimate.
+  const quick = useMemo(() => {
+    const vals = Object.fromEntries(Object.entries(manual).filter(([k, v]) => v && k !== "weight").map(([k, v]) => [k, Number(v)])) as Record<string, number>;
+    if (!vals.chest && vals.height && manual.weight) {
+      const est = estimateFromHeightWeight(config.audience, vals.height, Number(manual.weight));
+      return { body: { ...est.values, ...vals, chest: est.values.chest! }, provenance: est.provenance, rough: true };
+    }
+    return vals.chest ? { body: vals, provenance: {} as ProvenanceMap, rough: false } : null;
+  }, [manual, config.audience]);
+  const body = active?.measurements ?? quick?.body ?? null;
+  const provenance = active?.provenance ?? quick?.provenance ?? {};
   const rec = body?.chest ? recommendSize(body as { chest: number }, config, active?.fitPreference ?? "true") : null;
   return (
     <div className="space-y-4" data-testid="fit-panel">
@@ -315,8 +330,8 @@ export function FitPanel({ onAvatar, avatarOn }: { onAvatar: (on: boolean, body?
         ) : <p className="text-xs text-mute">Sign in to save measurement profiles. You can still enter quick measurements:</p>}
         {!active && (
           <div className="grid grid-cols-2 gap-2">
-            {(["chest", "waist", "shoulder", "height"] as const).map((k) => (
-              <label key={k} className="block"><span className="mv-label !text-[0.62rem]">{k} (cm)</span><input className="mv-input !py-1 !text-xs" inputMode="decimal" value={manual[k]} onChange={(e) => setManual({ ...manual, [k]: e.target.value.replace(/[^\d.]/g, "") })} /></label>
+            {(["chest", "waist", "shoulder", "height", "weight"] as const).map((k) => (
+              <label key={k} className="block"><span className="mv-label !text-[0.62rem]">{k} ({k === "weight" ? "kg" : "cm"})</span><input className="mv-input !py-1 !text-xs" inputMode="decimal" value={manual[k]} onChange={(e) => setManual({ ...manual, [k]: e.target.value.replace(/[^\d.]/g, "") })} data-testid={`fit-${k}`} /></label>
             ))}
           </div>
         )}
@@ -326,7 +341,13 @@ export function FitPanel({ onAvatar, avatarOn }: { onAvatar: (on: boolean, body?
           <div className="flex items-center gap-2"><span className="mv-display text-3xl">{rec.size}</span><Badge tone={rec.confidence === "high" ? "ok" : rec.confidence === "medium" ? "warn" : "neutral"}>{rec.confidence} confidence</Badge><Badge tone="info">estimate</Badge></div>
           <ul className="list-disc space-y-0.5 pl-4 text-[0.7rem] text-bone-2">{rec.notes.map((n) => <li key={n}>{n}</li>)}</ul>
           {rec.size !== config.size && <button className="mv-chip" onClick={() => commit(`Size ${rec.size}`, (d) => void (d.size = rec.size))}>Use size {rec.size}</button>}
+          {quick?.rough && !active && <Notice tone="warn">Only height and weight were given, so chest and waist are rough estimates (±8 cm). Measure with a tape for a reliable recommendation.</Notice>}
           <p className="text-[0.65rem] text-mute">Recommended size ≠ verified fit. The avatar is a visual representation, not an exact body scan.</p>
+        </Group>
+      )}
+      {body?.chest && (
+        <Group title="Fit analysis">
+          <FitAnalysisView config={config} body={body} provenance={provenance} verified={verified} />
         </Group>
       )}
       <Group title="Avatar preview">

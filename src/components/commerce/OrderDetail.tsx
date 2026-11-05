@@ -1,13 +1,51 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
 import clsx from "clsx";
 import { api, errorMessage } from "@/lib/client/api";
 import { formatINR } from "@/lib/garment/pricing";
 import { Logo } from "@/components/brand/Logo";
-import { Badge, Button, Notice, toast } from "@/components/ui";
+import { Badge, Button, Notice, Select, toast } from "@/components/ui";
+import { FIT_FEEDBACK_LABEL, FIT_FEEDBACK_SCALE, type FitFeedbackValue } from "@/lib/garment/fit";
+
+/** "Verified fit": only the customer, after wearing the delivered garment, can verify fit. */
+function FitFeedbackForm({ itemId, existing }: { itemId: string; existing?: { overall: FitFeedbackValue; areas: Record<string, FitFeedbackValue> } }) {
+  const [overall, setOverall] = useState<FitFeedbackValue>(existing?.overall ?? "true");
+  const [areas, setAreas] = useState<Record<string, FitFeedbackValue>>(existing?.areas ?? {});
+  const [saved, setSaved] = useState(!!existing);
+  const [busy, setBusy] = useState(false);
+  async function submit() {
+    setBusy(true);
+    try {
+      await api("/api/account/fit-feedback", { body: { orderItemId: itemId, overall, areas } });
+      setSaved(true);
+      toast("Thanks — your verified fit is saved and improves future size recommendations");
+    } catch (e) {
+      toast(errorMessage(e), "bad");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-2 space-y-2 rounded-lg border border-line p-2" data-testid="fit-feedback">
+      <p className="text-[0.68rem] text-bone-2">How did it fit? {saved && <Badge tone="ok">verified fit saved</Badge>}</p>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <Select aria-label="Overall fit" value={overall} onChange={(e) => setOverall(e.target.value as FitFeedbackValue)} className="!w-auto !py-1 !text-xs" data-testid="fit-overall">
+          {FIT_FEEDBACK_SCALE.map((v) => <option key={v} value={v}>{FIT_FEEDBACK_LABEL[v]}</option>)}
+        </Select>
+        {(["chest", "length", "sleeves", "shoulders"] as const).map((a) => (
+          <Select key={a} aria-label={`${a} fit`} value={areas[a] ?? ""} onChange={(e) => setAreas({ ...areas, [a]: e.target.value as FitFeedbackValue })} className="!w-auto !py-1 !text-[0.65rem]">
+            <option value="">{a}: —</option>
+            {FIT_FEEDBACK_SCALE.map((v) => <option key={v} value={v}>{a}: {FIT_FEEDBACK_LABEL[v]}</option>)}
+          </Select>
+        ))}
+        <Button size="sm" loading={busy} onClick={submit} data-testid="fit-submit">{saved ? "Update" : "Save"}</Button>
+      </div>
+    </div>
+  );
+}
 
 const FLOW = ["pending_payment", "payment_confirmed", "design_validation", "awaiting_production_approval", "manufacturing", "quality_inspection", "packed", "shipped", "delivered"];
 
@@ -24,6 +62,12 @@ export function OrderDetail({ data, confirmation }: { data: Data; confirmation?:
   const [busy, setBusy] = useState(false);
   const o = data.order;
   const step = FLOW.indexOf(o.status);
+  const canVerify = o.status === "shipped" || o.status === "delivered";
+  const [feedback, setFeedback] = useState<Record<string, { overall: FitFeedbackValue; areas: Record<string, FitFeedbackValue> }>>({});
+  useEffect(() => {
+    if (!canVerify) return;
+    api<{ feedback: { orderItemId: string; overall: FitFeedbackValue; areas: Record<string, FitFeedbackValue> }[] }>("/api/account/fit-feedback").then((r) => setFeedback(Object.fromEntries(r.feedback.map((f) => [f.orderItemId, f])))).catch(() => undefined);
+  }, [canVerify]);
   async function pay() {
     setBusy(true);
     try {
@@ -59,9 +103,12 @@ export function OrderDetail({ data, confirmation }: { data: Data; confirmation?:
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="mv-card divide-y divide-line">
           {data.items.map((it) => (
-            <div key={it.id} className="flex items-center justify-between gap-3 p-3 text-sm">
-              <div><p>{it.designName} <span className="text-mute">· v{it.version} snapshot</span></p><p className="text-xs text-mute">Size {it.size} · qty {it.quantity} · review {it.reviewStatus.replace("_", " ")} · checks {it.specSnapshot.validation?.status ?? "-"}</p></div>
-              <span className="tabular-nums">{formatINR(it.unitPrice * it.quantity)}</span>
+            <div key={it.id} className="p-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div><p>{it.designName} <span className="text-mute">· v{it.version} snapshot</span></p><p className="text-xs text-mute">Size {it.size} · qty {it.quantity} · review {it.reviewStatus.replace("_", " ")} · checks {it.specSnapshot.validation?.status ?? "-"}</p></div>
+                <span className="tabular-nums">{formatINR(it.unitPrice * it.quantity)}</span>
+              </div>
+              {canVerify && <FitFeedbackForm key={feedback[it.id] ? "has" : "new"} itemId={it.id} existing={feedback[it.id]} />}
             </div>
           ))}
           <div className="space-y-1 p-3 text-sm">
