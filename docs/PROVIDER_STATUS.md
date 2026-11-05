@@ -1,0 +1,22 @@
+# Provider status
+
+_As shipped — every provider below is **NOT CONFIGURED** until an admin adds credentials, passes a connection test and enables it._
+
+| Provider | Status | Notes |
+|---|---|---|
+| Local rule-based Muse / text-to-design | **Active (built in)** | Deterministic, labelled "local rules" |
+| MediaPipe (in-browser) | **Active (built in)** | Local models via `npm run models:fetch`, CDN fallback |
+| Embedded PostgreSQL (PGlite) | **Active (default)** | `DATABASE_URL` switches to PostgreSQL (tested on v16) |
+| Local storage | **Active (default)** | `.data/uploads`, private |
+| Simulated mailbox | **Active (fallback)** | Account → Mailbox |
+| Simulated checkout | **Active (fallback)** | Clearly labelled; admin can disable |
+| Ollama | Not configured — adapter + test implemented | |
+| OpenAI (chat + images) | Not configured — adapter + test implemented | Billable |
+| ComfyUI | Not configured — adapter + test implemented | |
+| Razorpay | Not configured — orders, checkout, signature verification, webhook implemented | Test keys first |
+| Google OAuth | Not configured — full flow implemented | |
+| Resend | Not configured — sender + test implemented | |
+| Shiprocket | Not configured — credential test only | Rates/labels pending |
+| Meilisearch | Not configured — health test only | Search adapter pending |
+| Apple Sign In, Cloudinary, S3, MSG91, Google Maps, PostHog, Sentry, Turnstile, Redis | Not configured — registry/config only | Cannot be enabled until an adapter + test exist |
+| CLO 3D, Gerber AccuMark, manufacturer API | Not implemented beyond data contracts | Requires licences/partners |

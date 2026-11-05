@@ -362,11 +362,11 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
     collars.push(ringBand(standH, 0.12, 0.3, roundFront));
     if (!isBand) {
       const styles: Record<string, { fall: number; tip: number; spread: number; maxK: number; round?: boolean }> = {
-        point: { fall: 4.2, tip: 3.2, spread: 0.25, maxK: 0.965 },
-        spread: { fall: 4.2, tip: 2.4, spread: 0.75, maxK: 0.955 },
-        cutaway: { fall: 4.0, tip: 1.8, spread: 1.15, maxK: 0.94 },
-        "button-down": { fall: 4.4, tip: 3.0, spread: 0.35, maxK: 0.965 },
-        club: { fall: 4.0, tip: 1.6, spread: 0.55, maxK: 0.955, round: true },
+        point: { fall: 4.6, tip: 4.6, spread: 0.25, maxK: 0.97 },
+        spread: { fall: 4.6, tip: 3.6, spread: 0.75, maxK: 0.96 },
+        cutaway: { fall: 4.4, tip: 2.8, spread: 1.15, maxK: 0.95 },
+        "button-down": { fall: 4.8, tip: 4.2, spread: 0.35, maxK: 0.97 },
+        club: { fall: 4.4, tip: 2.4, spread: 0.55, maxK: 0.96, round: true },
         camp: { fall: 6.0, tip: 4.2, spread: 0.9, maxK: 0.8 },
       };
       const st = styles[c.collar] ?? styles.point;

@@ -1,0 +1,19 @@
+# Security
+
+| Control | Implementation |
+|---|---|
+| Passwords | Argon2id (`@node-rs/argon2`, m=19 MiB, t=2, p=1); policy ≥10 chars, common-password and email-name checks, strength meter; timing-safe dummy hash for unknown accounts. Plaintext is never stored or logged. |
+| Sessions | 256-bit random token in an **HTTP-only, SameSite=Lax** cookie (`Secure` on HTTPS / non-localhost production); only `sha256(token)` stored; 30-day sliding expiry; revoke other sessions; all sessions revoked on password change/reset. |
+| CSRF | `src/middleware.ts` rejects state-changing `/api` requests whose Origin/Referer host differs from the request host (plus SameSite cookies). Webhooks are exempt and verified by HMAC. |
+| Authorisation | `route({ auth })` enforces public / user / staff / admin. Services enforce **ownership** (other customers get 404, not 403); staff can read but not modify customer designs; admin-only for users, integrations, settings, audit. Protected pages guard themselves (layouts and pages render concurrently in Next). |
+| Input validation | Zod on every body/query; DesignConfig schema bounds every numeric/colour value; DesignOps allowlist mutable paths (prototype-pollution safe). |
+| Rate limiting | Sliding window per IP/user for login (also per email), register, reset, Muse, uploads, checkout, writes, tech packs, integration tests. In-process; use Redis for multi-instance. |
+| Uploads | 12 MB cap, **magic-byte** type detection (client MIME ignored), PNG/JPEG/WebP/SVG only (PDF only for server exports), SVG allowlist sanitiser (no scripts, foreignObject, handlers, external refs, entities), private storage outside `public/`, served only to owner/staff with `nosniff` and a locked-down CSP. |
+| Secrets | Integration credentials AES-256-GCM encrypted (`MODVERSE_SECRET_KEY` or auto-generated `.data/secret.key`, mode 0600); never returned to the browser (masked); env vars only pre-fill. `.env*`, `.data/`, keys and credentials are git-ignored. |
+| Payments | Simulated payments are flagged on orders/payments and blocked when a real provider is active; Razorpay payments are marked paid only after HMAC signature verification; webhooks verified with the webhook secret; prices recomputed server-side. |
+| Headers | CSP (self + WASM for MediaPipe + optional CDNs/Razorpay), `X-Frame-Options: DENY`, `nosniff`, strict referrer, `Permissions-Policy: camera=(self)`; restrictive CSP for library SVG files. |
+| Privacy | IPs stored only as salted hashes; camera frames processed on-device, never uploaded; child profiles minimal (nickname + birth year) with guardian consent, no independent purchases, private by default, cascade deletion; account deletion anonymises the user and deletes personal data. |
+| Audit | Logins (success/failure), registration, password changes, order creation/payment, admin actions, integration changes, child-profile changes, webhook events. |
+
+## Production checklist
+Set `MODVERSE_SECRET_KEY`, `MODVERSE_IP_SALT`, `ADMIN_EMAIL/ADMIN_PASSWORD`, `MODVERSE_DEMO_ACCOUNTS=false`, `TRUST_PROXY` behind a proxy; run behind HTTPS; use managed PostgreSQL with backups; configure Redis rate limiting for multiple instances; review DPDP Act 2023 obligations (especially children's data) and payment/GST compliance with professionals.
