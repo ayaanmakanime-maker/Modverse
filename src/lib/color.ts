@@ -116,3 +116,30 @@ export function harmonies(hex: string): { complementary: string; analogous: stri
 export function readableInk(bg: string): string {
   return contrastRatio(bg, "#0B0B0B") >= contrastRatio(bg, "#F5F3EE") ? "#0B0B0B" : "#F5F3EE";
 }
+
+/** Linear mix of two hex colours (t = 0 → a, 1 → b). */
+export function mixHex(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  const k = Math.min(1, Math.max(0, t));
+  return rgbToHex(Math.round(r1 + (r2 - r1) * k), Math.round(g1 + (g2 - g1) * k), Math.round(b1 + (b2 - b1) * k));
+}
+
+const toLin = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const toSrgb = (c: number) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+
+/**
+ * Physically plausible diffuse albedo for rendering (≈2.5 %–86 % reflectance).
+ * Real "black" cotton still reflects a few percent of light and "white" fabric
+ * never reflects 100 %; clamping keeps form, folds and texture visible in 3D.
+ * Used only by the 3D renderer — the design colour itself is unchanged.
+ */
+export function pbrAlbedo(hex: string): string {
+  const [r, g, b] = hexToRgb(hex);
+  const f = (v: number) => {
+    const lin = toLin(v / 255);
+    const out = Math.min(0.86, 0.025 + lin * (1 - 0.025));
+    return Math.round(Math.min(1, Math.max(0, toSrgb(out))) * 255);
+  };
+  return rgbToHex(f(r), f(g), f(b));
+}

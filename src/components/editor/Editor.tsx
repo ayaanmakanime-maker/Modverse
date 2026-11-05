@@ -304,7 +304,7 @@ function EditorLayout(p: {
       case "muse": return <MusePanel />;
       case "fit": return <FitPanel avatarOn={p.avatar.on} onAvatar={(on, body) => { p.setAvatar({ on, body }); if (on && p.view === "2d") p.setView("split"); }} />;
       case "versions": return <VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} />;
-      case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} />;
+      case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} exportGlb={() => p.viewer.current?.exportGlb() ?? Promise.resolve(null)} />;
       case "check": return (
         <div className="space-y-4">
           <div className="mv-card p-3 text-xs">
@@ -392,7 +392,7 @@ function EditorLayout(p: {
             {p.view !== "3d" && <div className="min-h-0 border-line md:border-r"><Canvas2D /></div>}
             {p.view !== "2d" && (
               <div className="relative min-h-0">
-                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body }} />
+                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body }} controls="details" />
                 <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
               </div>
             )}

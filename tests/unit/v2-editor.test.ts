@@ -33,7 +33,7 @@ describe("design schema v2", () => {
     expect(ut.type === "text" && ut.effects).toEqual([]);
     expect(ut.type === "text" && ut.fontAssetId).toBeNull();
     expect(ug.type === "graphic" && ug.crop).toEqual({ x: 0, y: 0, w: 1, h: 1 });
-    expect(ut.text).toBe("HELLO");
+    expect(ut.type === "text" && ut.text).toBe("HELLO");
     // unknown future versions are rejected rather than silently accepted
     expect(designConfigSchema.safeParse({ ...d, schemaVersion: 3 }).success).toBe(false);
   });
@@ -109,7 +109,12 @@ describe("cuff surface", () => {
     expect(area.y1).toBeLessThanOrEqual(canvas.y1);
     const geo = buildGarmentGeometry(shirt, { resolution: 16 });
     expect(geo.cuffs).toHaveLength(2);
-    for (const c of geo.cuffs) for (const v of c.uvs) expect(v).toBeGreaterThanOrEqual(-0.0001), expect(v).toBeLessThanOrEqual(1.0001);
+    for (const c of geo.cuffs) {
+      for (const v of c.uvs) {
+        expect(v).toBeGreaterThanOrEqual(-0.0001);
+        expect(v).toBeLessThanOrEqual(1.0001);
+      }
+    }
     const svg = zoneTextureSvg(shirt, "cuffs", m, NO_ASSETS);
     expect(svg.widthPx).toBeGreaterThan(100);
   });

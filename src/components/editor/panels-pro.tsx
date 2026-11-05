@@ -176,7 +176,7 @@ async function svgToPng(svg: string, w: number, h: number): Promise<Blob> {
   }
 }
 
-export function TechPackPanel({ capture3d }: { capture3d: () => string | null }) {
+export function TechPackPanel({ capture3d, exportGlb }: { capture3d: () => string | null; exportGlb?: () => Promise<Blob | null> }) {
   const config = useEditor((s) => s.config);
   const name = useEditor((s) => s.name);
   const version = useEditor((s) => s.version);
@@ -239,6 +239,7 @@ export function TechPackPanel({ capture3d }: { capture3d: () => string | null })
         ) : <Button size="sm" variant="ghost" disabled title="Save the design first"><FileText className="size-3.5" /> PDF (save first)</Button>}
         <Button size="sm" variant="ghost" onClick={cadExchange}><Box className="size-3.5" /> CAD exchange</Button>
         <Button size="sm" variant="ghost" onClick={() => { const d = capture3d(); if (d) fetch(d).then((r) => r.blob()).then((b) => download(`${slug}-3d-mockup.png`, b)); else toast("Open the 3D view first", "info"); }}><ImageIcon className="size-3.5" /> 3D mockup PNG</Button>
+        {exportGlb && <Button size="sm" variant="ghost" onClick={async () => { const b = await exportGlb(); if (b) download(`${slug}-3d.glb`, b); else toast("Open the 3D view first", "info"); }} title="Parametric visual model (glTF binary) for AR viewers — not a production pattern"><Box className="size-3.5" /> 3D model GLB</Button>}
       </div>
       {zones.length > 0 && (
         <div className="space-y-1">
