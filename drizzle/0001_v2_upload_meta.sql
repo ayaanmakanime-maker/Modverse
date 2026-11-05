@@ -1,0 +1,1 @@
+ALTER TABLE "uploaded_assets" ADD COLUMN "meta" jsonb;

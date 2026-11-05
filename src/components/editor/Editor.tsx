@@ -15,6 +15,7 @@ import { useSession } from "@/components/session";
 import { Logo, BrandLoader } from "@/components/brand/Logo";
 import { Badge, Button, Notice, Segmented, Select, toast } from "@/components/ui";
 import { Canvas2D } from "./Canvas2D";
+import { ACCEPTED_ARTWORK, copySelection, pasteClipboard, uploadAndInsert, ZONE_DEFAULT_PRESET } from "@/lib/editor/insert";
 import { SelectedProperties } from "./properties";
 import { ConstructionPanel, FabricPanel, FitPanel, GarmentPanel, MeasurementsPanel, PanelsPanel } from "./panels-garment";
 import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from "./panels-artwork";
@@ -55,6 +56,9 @@ const DRAFT_KEY = "mv-draft";
 export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial; childProfiles?: { id: string; nickname: string }[] }) {
   const router = useRouter();
   const { user, setCartCount } = useSession();
+  const userRef = useRef(user);
+  userRef.current = user;
+  const pendingPaste = useRef<number | null>(null);
   const init = useEditor((s) => s.init);
   const config = useEditor((s) => s.config);
   const mode = useEditor((s) => s.mode);
@@ -176,6 +180,19 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
       } else if (mod && e.key.toLowerCase() === "y") {
         e.preventDefault();
         st.redo();
+      } else if (mod && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "x") && st.multi.length) {
+        // Let the browser keep any selected page text; copy layers only when nothing else is selected.
+        if (window.getSelection()?.toString()) return;
+        e.preventDefault();
+        const n = copySelection(e.key.toLowerCase() === "x");
+        if (n) toast(`${e.key.toLowerCase() === "x" ? "Cut" : "Copied"} ${n} layer${n > 1 ? "s" : ""}`, "info");
+      } else if (mod && e.key.toLowerCase() === "v") {
+        // Defer: a 'paste' event carrying image files (screenshots, copied images) takes precedence.
+        const inPlace = e.shiftKey;
+        pendingPaste.current = window.setTimeout(() => {
+          pendingPaste.current = null;
+          pasteClipboard(inPlace);
+        }, 80);
       } else if (mod && e.key.toLowerCase() === "d") {
         e.preventDefault();
         st.duplicateSelected();
@@ -199,8 +216,33 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
         });
       }
     };
+    const onPaste = async (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const files = Array.from(e.clipboardData?.files ?? []).filter((f) => ACCEPTED_ARTWORK.includes(f.type));
+      if (!files.length) return;
+      e.preventDefault();
+      if (pendingPaste.current) {
+        window.clearTimeout(pendingPaste.current);
+        pendingPaste.current = null;
+      }
+      if (!userRef.current) return void toast("Sign in to paste images — uploads are stored privately in your account.", "info");
+      const zone = useEditor.getState().zone;
+      for (const f of files.slice(0, 3)) {
+        try {
+          await uploadAndInsert(f, { preset: ZONE_DEFAULT_PRESET[zone] });
+          toast("Pasted image uploaded and placed");
+        } catch (err) {
+          toast(errorMessage(err), "bad");
+        }
+      }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("paste", onPaste);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("paste", onPaste);
+    };
   }, [save]);
 
   useEffect(() => {

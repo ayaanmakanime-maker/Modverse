@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { api } from "@/lib/client/api";
 import { Modal, Spinner } from "@/components/ui";
+import { searchTypography, TYPOGRAPHY_CATEGORIES } from "@/lib/typography/presets";
 
 interface Asset { id: string; kind: string; name: string; collectionSlug: string; url: string | null; width: number; height: number; colors: string[]; tags: string[]; license: string | null; sourceFile: string | null }
 
@@ -16,6 +17,11 @@ export function LibraryBrowser({ collections, initialCollection, initialKind }: 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState<Asset | null>(null);
   useEffect(() => {
+    if (kind === "typography") {
+      setItems([]);
+      setTotal(searchTypography(q).length);
+      return;
+    }
     setLoading(true);
     const t = setTimeout(() => {
       api<{ total: number; items: Asset[] }>(`/api/library?kind=${kind}&limit=120${collection ? `&collection=${collection}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`).then((r) => { setItems(r.items); setTotal(r.total); }).finally(() => setLoading(false));
@@ -33,11 +39,32 @@ export function LibraryBrowser({ collections, initialCollection, initialKind }: 
         ))}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {[["graphic", "Graphics"], ["element", "Stickers & elements"], ["template", "Templates"], ["pattern", "Patterns"], ["palette", "Palettes"]].map(([k, l]) => <button key={k} onClick={() => setKind(k)} data-active={kind === k} className="mv-chip">{l}</button>)}
+        {[["graphic", "Graphics"], ["element", "Stickers & elements"], ["template", "Templates"], ["typography", "Typography"], ["pattern", "Patterns"], ["palette", "Palettes"]].map(([k, l]) => <button key={k} onClick={() => setKind(k)} data-active={kind === k} className="mv-chip">{l}</button>)}
         <input className="mv-input ml-auto !w-64 !py-1.5" placeholder="Search name, style, tag…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search library" />
       </div>
-      <p className="mt-3 text-xs text-mute">{loading ? "Loading…" : `${total} assets`}</p>
+      <p className="mt-3 text-xs text-mute">{loading ? "Loading…" : kind === "typography" ? `${total} typography styles · built from the bundled OFL fonts, fully editable after placement` : `${total} assets`}</p>
       {loading && <Spinner />}
+      {kind === "typography" && (
+        <div className="mt-3 space-y-6" data-testid="typography-browser">
+          {TYPOGRAPHY_CATEGORIES.map((c) => {
+            const list = searchTypography(q, c.id);
+            if (!list.length) return null;
+            return (
+              <section key={c.id}>
+                <h3 className="mv-eyebrow">{c.label}</h3>
+                <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                  {list.map((p) => (
+                    <Link key={p.id} href={`/design/new?typography=${p.id}`} className="mv-card flex min-h-28 flex-col justify-between p-3 hover:border-line-2">
+                      <span className="text-2xl leading-tight" style={{ fontFamily: `'${p.style.fontFamily}'`, fontWeight: p.style.fontWeight, fontStyle: p.style.italic ? "italic" : undefined, color: p.style.color && p.style.color !== "#0B0B0B" ? p.style.color : undefined, textShadow: p.style.effects?.length ? p.style.effects.map((fx) => `${fx.offsetX * 6}px ${fx.offsetY * 6}px 0 ${fx.color}`).join(",") : undefined, whiteSpace: "pre-line" }}>{p.text}</span>
+                      <span className="mt-2 text-[0.68rem] text-mute">{p.name} · {p.style.fontFamily}</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
       <div className={clsx("mt-3 grid gap-3", kind === "palette" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6")}>
         {items.map((a) => kind === "palette" ? (
           <div key={a.id} className="mv-card p-3"><div className="flex h-12 overflow-hidden rounded-lg">{a.colors.map((c) => <span key={c} className="flex-1" style={{ background: c }} title={c} />)}</div><p className="mt-2 text-xs">{a.name}</p><p className="font-mono text-[0.6rem] text-mute">{a.colors.join(" ")}</p></div>

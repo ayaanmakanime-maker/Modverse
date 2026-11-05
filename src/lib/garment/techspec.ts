@@ -94,11 +94,11 @@ export function buildTechSpec(config: DesignConfig, meta: { name: string; versio
     let detail = "";
     if (l.type === "text") {
       const f = FONT_BY_FAMILY.get(l.fontFamily);
-      detail = `"${l.text}" · ${l.fontFamily} ${l.fontWeight}${l.italic ? " italic" : ""} · ${(l.fontSize * 10).toFixed(1)} mm · ${l.color}${l.curve.mode !== "none" ? ` · ${l.curve.mode} ${l.curve.amount}` : ""}${f ? ` · ${f.license}` : ""}`;
+      detail = `"${l.text}" · ${l.fontFamily} ${l.fontWeight}${l.italic ? " italic" : ""} · ${(l.fontSize * 10).toFixed(1)} mm · ${l.color}${l.curve.mode !== "none" ? ` · ${l.curve.mode} ${l.curve.amount}` : ""}${f ? ` · ${f.license}` : l.fontAssetId ? " · customer-uploaded font (rights confirmed by uploader)" : ""}${l.effects.length ? ` · ${l.effects.length} layered effect(s)` : ""}`;
     } else if (l.type === "graphic") {
       detail = `${l.source} asset ${l.assetId}${Object.keys(l.colorMap).length ? ` · recoloured ${Object.entries(l.colorMap).map(([a, b]) => `${a}→${b}`).join(", ")}` : ""}`;
     } else {
-      detail = `raster ${l.pixelWidth}×${l.pixelHeight}px · ${Math.round(l.pixelWidth / (l.width / 2.54))} DPI at print size`;
+      detail = `raster ${l.pixelWidth}×${l.pixelHeight}px${l.crop.w < 1 || l.crop.h < 1 ? ` (cropped to ${Math.round(l.pixelWidth * l.crop.w)}×${Math.round(l.pixelHeight * l.crop.h)}px)` : ""} · ${Math.round((l.pixelWidth * l.crop.w) / (l.width / 2.54))} DPI at print size`;
     }
     return {
       id: l.id, type: l.type, name: l.name, zone: l.zone, method: PRINT_METHOD_INFO[method].name,

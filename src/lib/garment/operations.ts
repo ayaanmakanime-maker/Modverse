@@ -16,7 +16,7 @@ import type { FixPatch } from "./validation";
 
 const PRESETS = [
   "center-chest", "full-front", "left-chest", "right-chest", "upper-back", "full-back", "nape",
-  "left-sleeve", "right-sleeve", "pocket", "hem", "collar", "yoke",
+  "left-sleeve", "right-sleeve", "pocket", "hem", "collar", "cuff", "yoke",
 ] as const satisfies readonly PlacementPreset[];
 
 const layerTarget = z.union([
@@ -59,7 +59,7 @@ export type DesignOp = z.infer<typeof designOpSchema>;
 const LAYER_SETTABLE = new Set([
   "name", "x", "y", "width", "height", "rotation", "opacity", "visible", "locked", "method", "flipX", "flipY", "text", "fontFamily", "fontWeight",
   "italic", "underline", "textTransform", "fontSize", "color", "letterSpacing", "lineHeight", "align", "verticalAlign", "curve", "outline",
-  "shadow", "background", "skewX", "colorMap", "groupId",
+  "shadow", "background", "skewX", "colorMap", "groupId", "effects", "crop",
 ]);
 
 export interface ResolvedAsset {

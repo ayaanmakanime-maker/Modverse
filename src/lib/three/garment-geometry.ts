@@ -403,7 +403,13 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
   // ── Cuffs (rings at sleeve ends) ─────────────────────────────
   const cuffs: MeshData[] = [];
   if (!["hem", "none"].includes(c.cuff)) {
-    for (const s of [left, right]) {
+    // UVs follow the unrolled cuff canvas (x along circumference, 0 = outer face; y from top edge),
+    // so the "cuffs" artwork zone maps 1:1 from the 2D editor.
+    const cuffCanvas = zoneCanvas(m, "cuffs");
+    const CWc = cuffCanvas.x1 - cuffCanvas.x0;
+    const CHc = cuffCanvas.y1 - cuffCanvas.y0;
+    const circ = cuffCanvas.x1 - cuffCanvas.x0;
+    for (const [s, side] of [[left, 1], [right, -1]] as const) {
       const h = m.cuffHeight;
       const rows: V3[][] = [];
       for (let j = 0; j <= 2; j++) {
@@ -411,7 +417,12 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const ctr = sub(s.endCenter, mul(s.dir, back));
         rows.push(s.endRing.map((p) => add(ctr, mul(sub(p, s.endCenter), 1.06))));
       }
-      cuffs.push(gridMesh(rows, (i, j) => [i / N, j / 2]));
+      cuffs.push(gridMesh(rows, (i, j) => {
+        const cc = -0.5 + i / N;
+        const xf = (side === 1 ? -cc : cc) * circ;
+        const yf = (j / 2) * h;
+        return [(xf - cuffCanvas.x0) / CWc, 1 - (yf - cuffCanvas.y0) / CHc];
+      }));
     }
   }
 

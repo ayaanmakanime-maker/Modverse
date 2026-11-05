@@ -185,6 +185,7 @@ function placementFrom(clause: string, kind: "graphic" | "text"): PlacementPrese
   if (/\bon (the )?pocket\b/.test(clause)) return "pocket";
   if (/\b(hem|bottom corner)\b/.test(clause)) return "hem";
   if (/\bon (the )?collar\b/.test(clause)) return "collar";
+  if (/\b(on|onto) (the )?(left |right )?cuffs?\b|\bcuff monogram\b/.test(clause)) return "cuff";
   if (/\bon (the )?yoke\b/.test(clause)) return "yoke";
   if (/\b(on|onto|to|across|at) (the )?back\b|\bback (print|graphic|design)\b/.test(clause)) return /\b(small|tiny|little)\b/.test(clause) ? "upper-back" : kind === "text" ? "upper-back" : "full-back";
   if (/\b(on|onto|to|across|at) (the )?(front|chest)\b|\bfront (print|graphic)\b|\bchest\b/.test(clause)) return /\b(large|big|huge|full|oversized)\b/.test(clause) ? "full-front" : "center-chest";

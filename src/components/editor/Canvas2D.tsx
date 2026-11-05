@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import clsx from "clsx";
-import { ZoomIn, ZoomOut, Grid3x3, Square, Maximize } from "lucide-react";
+import { ZoomIn, ZoomOut, Grid3x3, Square, Maximize, Hand } from "lucide-react";
 import { useEditor } from "@/lib/editor/store";
 import { GarmentFlat, flatViewBox } from "@/components/garment/GarmentFlat";
 import { computeMeasurements } from "@/lib/garment/sizing";
@@ -12,12 +12,21 @@ import { availableZones, panelColor } from "@/lib/garment/design";
 import type { Layer } from "@/lib/garment/schema";
 import type { Zone } from "@/lib/garment/types";
 import { isDark } from "@/lib/color";
+import { ACCEPTED_ARTWORK, DRAG_MIME, insertPayload, parsePayload, uploadAndInsert } from "@/lib/editor/insert";
+import { useSession } from "@/components/session";
+import { toast } from "@/components/ui";
+import { errorMessage } from "@/lib/client/api";
 
 const resolver: AssetResolver = { svg: getSvg, dataUrl: getDataUrl, patternUrl: getPatternUrl };
 
-export const ZONE_LABELS: Record<Zone, string> = { front: "Front", back: "Back", sleeveLeft: "Left sleeve", sleeveRight: "Right sleeve", collar: "Collar", pocket: "Pocket", yoke: "Yoke" };
+export const ZONE_LABELS: Record<Zone, string> = { front: "Front", back: "Back", sleeveLeft: "Left sleeve", sleeveRight: "Right sleeve", collar: "Collar", cuffs: "Cuff", pocket: "Pocket", yoke: "Yoke" };
+
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 8;
+const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +z.toFixed(3)));
 
 type Gesture =
+  | { kind: "pan"; client: { x: number; y: number }; pan: { x: number; y: number }; cmPerPx: number }
   | { kind: "move"; start: { x: number; y: number }; origs: Layer[] }
   | { kind: "scale"; start: { x: number; y: number }; origs: Layer[]; center: { x: number; y: number } }
   | { kind: "rotate"; start: { x: number; y: number }; origs: Layer[]; center: { x: number; y: number } };
@@ -37,7 +46,15 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
   const transient = useEditor((s) => s.transient);
   const setMeasured = useEditor((s) => s.setMeasured);
   const tick = useAssetsTick();
+  const { user } = useSession();
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [hand, setHand] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const [dropping, setDropping] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; zoom: number } | null>(null);
   const [grid, setGrid] = useState(false);
   const [bounds, setBounds] = useState(true);
   const [guides, setGuides] = useState<{ v: number | null; h: number | null }>({ v: null, h: null });
@@ -52,13 +69,27 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
   useEffect(() => {
     if (!zones.includes(zone)) setZone("front");
   }, [zones, zone, setZone]);
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [zone]);
 
   const layers = config.layers.filter((l) => l.zone === zone);
   const area = printableArea(m, zone, config.garmentType, config.construction);
   const canvas = zoneCanvas(m, zone);
   const isTorso = zone === "front" || zone === "back";
   const baseVb: [number, number, number, number] = isTorso ? flatViewBox(m, true, config.construction, config.audience === "kids") : [canvas.x0 - 2, canvas.y0 - 2, canvas.x1 - canvas.x0 + 4, canvas.y1 - canvas.y0 + 4];
-  const vb = baseVb;
+  // Zoom & pan operate on the SVG viewBox (vector-sharp at any zoom level).
+  const vb: [number, number, number, number] = [
+    baseVb[0] + (baseVb[2] - baseVb[2] / zoom) / 2 + pan.x,
+    baseVb[1] + (baseVb[3] - baseVb[3] / zoom) / 2 + pan.y,
+    baseVb[2] / zoom,
+    baseVb[3] / zoom,
+  ];
+  const vbRef = useRef(vb);
+  vbRef.current = vb;
+  const baseRef = useRef(baseVb);
+  baseRef.current = baseVb;
 
   // Measure real text bounding boxes after render (fonts must be loaded).
   useLayoutEffect(() => {
@@ -98,9 +129,141 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
     const ctm = svg.getScreenCTM();
     return ctm ? 1 / ctm.a : 0.1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoom, vb[2], vb[3], tick, config]);
+  }, [zoom, pan.x, pan.y, vb[2], vb[3], tick, config]);
+
+  /** Zoom by a factor keeping the point under (clientX, clientY) fixed on screen. */
+  const zoomAt = useCallback((factor: number, client?: { clientX: number; clientY: number }) => {
+    const svg = svgRef.current;
+    setZoom((z0) => {
+      const z1 = clampZoom(z0 * factor);
+      if (z1 === z0) return z0;
+      const cur = vbRef.current;
+      const base = baseRef.current;
+      const p = svg && client ? (() => {
+        const pt = svg.createSVGPoint();
+        pt.x = client.clientX;
+        pt.y = client.clientY;
+        const ctm = svg.getScreenCTM();
+        return ctm ? pt.matrixTransform(ctm.inverse()) : { x: cur[0] + cur[2] / 2, y: cur[1] + cur[3] / 2 };
+      })() : { x: cur[0] + cur[2] / 2, y: cur[1] + cur[3] / 2 };
+      const w1 = base[2] / z1;
+      const h1 = base[3] / z1;
+      const nx0 = p.x - ((p.x - cur[0]) / cur[2]) * w1;
+      const ny0 = p.y - ((p.y - cur[1]) / cur[3]) * h1;
+      setPan({ x: nx0 - (base[0] + (base[2] - w1) / 2), y: ny0 - (base[1] + (base[3] - h1) / 2) });
+      return z1;
+    });
+  }, []);
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  // Wheel: Ctrl/⌘ + wheel or trackpad pinch zooms at the cursor; plain wheel pans when zoomed in.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        zoomAt(Math.exp(-e.deltaY * 0.0025), e);
+      } else if (zoomRef.current > 1.001) {
+        e.preventDefault();
+        const svg = svgRef.current;
+        const k = svg?.getScreenCTM() ? 1 / svg.getScreenCTM()!.a : 0.1;
+        setPan((p) => ({ x: p.x + e.deltaX * k, y: p.y + e.deltaY * k }));
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [zoomAt]);
+
+  // Keyboard: Space (hold) = hand tool, H = toggle hand, ⌘/Ctrl +/−/0 = zoom.
+  useEffect(() => {
+    const typing = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+    };
+    const down = (e: KeyboardEvent) => {
+      if (typing(e.target)) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (e.code === "Space" && !mod) {
+        e.preventDefault();
+        setSpaceHeld(true);
+      } else if (!mod && e.key.toLowerCase() === "h") setHand((h) => !h);
+      else if (mod && (e.key === "=" || e.key === "+")) {
+        e.preventDefault();
+        zoomAt(1.25);
+      } else if (mod && e.key === "-") {
+        e.preventDefault();
+        zoomAt(0.8);
+      } else if (mod && e.key === "0") {
+        e.preventDefault();
+        resetView();
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === "Space") setSpaceHeld(false);
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, [zoomAt, resetView]);
+
+  // Drag & drop: library items, typography assets, uploads and image files.
+  function onDragOver(e: React.DragEvent) {
+    const types = Array.from(e.dataTransfer.types);
+    if (types.includes(DRAG_MIME) || types.includes("Files")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      if (!dropping) setDropping(true);
+    }
+  }
+  async function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDropping(false);
+    const at = { zone, ...toCm(e) };
+    const raw = e.dataTransfer.getData(DRAG_MIME);
+    const payload = raw ? parsePayload(raw) : null;
+    if (payload) {
+      const notes = insertPayload(payload, { at }, !!user);
+      for (const n of notes) toast(n, n.startsWith("Change rejected") ? "bad" : "info");
+      return;
+    }
+    const files = Array.from(e.dataTransfer.files).filter((f) => ACCEPTED_ARTWORK.includes(f.type) || /\.svg$/i.test(f.name));
+    if (!files.length) return void (e.dataTransfer.files.length && toast("Drop PNG, JPG, WebP or SVG artwork", "bad"));
+    if (!user) return void toast("Sign in to upload artwork — uploads are stored privately in your account.", "info");
+    for (const f of files.slice(0, 5)) {
+      try {
+        await uploadAndInsert(f, { at });
+        toast(`Uploaded ${f.name}`);
+      } catch (err) {
+        toast(errorMessage(err), "bad");
+      }
+    }
+  }
 
   function onPointerDown(e: React.PointerEvent<SVGSVGElement>) {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) {
+      // Two-finger pinch: cancel any layer gesture and zoom instead.
+      const [a, b] = [...pointers.current.values()];
+      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom };
+      if (gesture.current && gesture.current.kind !== "pan") useEditor.getState().undo();
+      gesture.current = null;
+      return;
+    }
+    if (e.button === 1 || ((hand || spaceHeld) && e.button === 0)) {
+      e.preventDefault();
+      gesture.current = { kind: "pan", client: { x: e.clientX, y: e.clientY }, pan, cmPerPx };
+      (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;
     const target = e.target as Element;
     const handle = target.closest("[data-handle]")?.getAttribute("data-handle");
@@ -131,8 +294,20 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
   }
 
   function onPointerMove(e: React.PointerEvent<SVGSVGElement>) {
+    if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch.current && pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      const target = clampZoom(pinch.current.zoom * (d / pinch.current.dist));
+      zoomAt(target / zoom, { clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 });
+      return;
+    }
     const g = gesture.current;
     if (!g) return;
+    if (g.kind === "pan") {
+      setPan({ x: g.pan.x - (e.clientX - g.client.x) * g.cmPerPx, y: g.pan.y - (e.clientY - g.client.y) * g.cmPerPx });
+      return;
+    }
     const p = toCm(e);
     const ids = g.origs.map((o) => o.id);
     if (g.kind === "move") {
@@ -141,19 +316,32 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
       let gv: number | null = null;
       let gh: number | null = null;
       if (g.origs.length === 1 && !e.altKey) {
+        // Smart guides: snap centre/edges to the garment centre line, print-area edges and other layers.
         const o = g.origs[0];
         const tol = Math.max(0.4, cmPerPx * 8);
-        if (Math.abs(o.x + dx) < tol) {
-          dx = -o.x;
-          gv = 0;
-        }
+        const others = layers.filter((l) => l.id !== o.id && l.visible);
         const b = rotatedBounds(o.x + dx, o.y + dy, o.width, o.height, o.rotation);
-        if (Math.abs(b.y0 - area.y0) < tol) {
-          dy += area.y0 - b.y0;
-          gh = area.y0;
-        } else if (Math.abs((o.y + dy) - (area.y0 + area.y1) / 2) < tol) {
-          dy = (area.y0 + area.y1) / 2 - o.y;
-          gh = (area.y0 + area.y1) / 2;
+        const hw = (b.x1 - b.x0) / 2;
+        const hh = (b.y1 - b.y0) / 2;
+        const cx = o.x + dx;
+        const cy = o.y + dy;
+        const vCands: { line: number; centre: number }[] = [
+          { line: 0, centre: 0 }, { line: area.x0, centre: area.x0 + hw }, { line: area.x1, centre: area.x1 - hw },
+          ...others.map((l) => ({ line: l.x, centre: l.x })),
+        ];
+        const hCands: { line: number; centre: number }[] = [
+          { line: area.y0, centre: area.y0 + hh }, { line: area.y1, centre: area.y1 - hh }, { line: (area.y0 + area.y1) / 2, centre: (area.y0 + area.y1) / 2 },
+          ...others.map((l) => ({ line: l.y, centre: l.y })),
+        ];
+        const bestV = vCands.map((c) => ({ ...c, d: Math.abs(c.centre - cx) })).sort((p1, p2) => p1.d - p2.d)[0];
+        const bestH = hCands.map((c) => ({ ...c, d: Math.abs(c.centre - cy) })).sort((p1, p2) => p1.d - p2.d)[0];
+        if (bestV && bestV.d < tol) {
+          dx = bestV.centre - o.x;
+          gv = bestV.line;
+        }
+        if (bestH && bestH.d < tol) {
+          dy = bestH.centre - o.y;
+          gh = bestH.line;
         }
       }
       setGuides({ v: gv, h: gh });
@@ -196,6 +384,8 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
   }
 
   function onPointerUp(e: React.PointerEvent<SVGSVGElement>) {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinch.current = null;
     if (gesture.current) {
       gesture.current = null;
       setGuides({ v: null, h: null });
@@ -264,7 +454,7 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
     onPointerMove,
     onPointerUp,
     onPointerCancel: onPointerUp,
-    style: { touchAction: "none", width: `${100 * zoom}%`, height: `${100 * zoom}%`, maxWidth: "none" } as React.CSSProperties,
+    style: { touchAction: "none", width: "100%", height: "100%", cursor: hand || spaceHeld ? (gesture.current?.kind === "pan" ? "grabbing" : "grab") : undefined } as React.CSSProperties,
     "data-testid": "canvas-2d",
   };
 
@@ -289,7 +479,14 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
       shape = (
         <>
           <defs dangerouslySetInnerHTML={{ __html: defs }} />
-          <rect x={canvas.x0} y={canvas.y0} width={canvas.x1 - canvas.x0} height={canvas.y1 - canvas.y0} rx={zone === "pocket" ? 0.4 : 0.8} fill={fill ?? bg} stroke={guideColor} strokeOpacity={0.4} strokeWidth={0.1} />
+          <rect x={canvas.x0} y={canvas.y0} width={canvas.x1 - canvas.x0} height={canvas.y1 - canvas.y0} rx={zone === "pocket" ? 0.4 : zone === "cuffs" ? 0.3 : 0.8} fill={fill ?? bg} stroke={guideColor} strokeOpacity={0.4} strokeWidth={0.1} />
+          {zone === "cuffs" && (
+            <>
+              <circle cx={canvas.x1 - 1.4} cy={(canvas.y0 + canvas.y1) / 2} r={0.55} fill="none" stroke={guideColor} strokeOpacity={0.45} strokeWidth={0.08} />
+              <line x1={canvas.x0 + 0.9} x2={canvas.x0 + 2.2} y1={(canvas.y0 + canvas.y1) / 2} y2={(canvas.y0 + canvas.y1) / 2} stroke={guideColor} strokeOpacity={0.45} strokeWidth={0.12} />
+              <text x={0} y={canvas.y1 + 1.2} fontSize={0.7} fill={guideColor} opacity={0.5} textAnchor="middle" fontFamily="Inter">cuff band unrolled · outer face centred · wearer&apos;s left cuff</text>
+            </>
+          )}
         </>
       );
     }
@@ -314,20 +511,29 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
         </div>
         {!compact && (
           <div className="ml-auto flex items-center gap-0.5">
-            <button className="rounded p-1.5 text-mute hover:text-bone" title="Zoom out" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(1, +(z - 0.5).toFixed(1)))}><ZoomOut className="size-4" /></button>
-            <span className="w-10 text-center text-[0.68rem] tabular-nums text-mute">{Math.round(zoom * 100)}%</span>
-            <button className="rounded p-1.5 text-mute hover:text-bone" title="Zoom in" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(4, z + 0.5))}><ZoomIn className="size-4" /></button>
-            <button className="rounded p-1.5 text-mute hover:text-bone" title="Fit" aria-label="Fit to view" onClick={() => setZoom(1)}><Maximize className="size-4" /></button>
+            <button className={clsx("rounded p-1.5", hand ? "text-bone" : "text-mute hover:text-bone")} title="Hand tool — pan (H, or hold Space)" aria-label="Hand tool" aria-pressed={hand} onClick={() => setHand((h) => !h)} data-testid="hand-tool"><Hand className="size-4" /></button>
+            <button className="rounded p-1.5 text-mute hover:text-bone" title="Zoom out (⌘−)" aria-label="Zoom out" onClick={() => zoomAt(0.8)}><ZoomOut className="size-4" /></button>
+            <span className="w-10 text-center text-[0.68rem] tabular-nums text-mute" data-testid="zoom-level">{Math.round(zoom * 100)}%</span>
+            <button className="rounded p-1.5 text-mute hover:text-bone" title="Zoom in (⌘+)" aria-label="Zoom in" onClick={() => zoomAt(1.25)}><ZoomIn className="size-4" /></button>
+            <button className="rounded p-1.5 text-mute hover:text-bone" title="Fit (⌘0)" aria-label="Fit to view" onClick={resetView}><Maximize className="size-4" /></button>
             <button className={clsx("rounded p-1.5", grid ? "text-bone" : "text-mute")} title="Grid (1 cm)" aria-pressed={grid} aria-label="Toggle grid" onClick={() => setGrid((g) => !g)}><Grid3x3 className="size-4" /></button>
             <button className={clsx("rounded p-1.5", bounds ? "text-bone" : "text-mute")} title="Print boundaries & guides" aria-pressed={bounds} aria-label="Toggle print boundaries" onClick={() => setBounds((b) => !b)}><Square className="size-4" /></button>
           </div>
         )}
       </div>
-      <div className="relative min-h-0 flex-1 overflow-auto mv-scroll bg-[radial-gradient(ellipse_at_center,#1a1a1c_0%,#0a0a0b_70%)]">
-        <div className="flex h-full w-full items-center justify-center p-3" style={{ minWidth: `${100 * zoom}%`, minHeight: `${100 * zoom}%` }}>
+      <div
+        ref={containerRef}
+        className={clsx("relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_center,#1a1a1c_0%,#0a0a0b_70%)]", dropping && "outline outline-2 -outline-offset-4 outline-champagne/70")}
+        onDragOver={onDragOver}
+        onDragLeave={(e) => { if (e.currentTarget === e.target) setDropping(false); }}
+        onDrop={onDrop}
+        data-testid="canvas-drop"
+      >
+        <div className="flex h-full w-full items-center justify-center p-3">
           {content}
         </div>
-        {layers.length === 0 && <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-ink/70 px-3 py-1 text-[0.7rem] text-mute">Add text or graphics from the panel — drag to move, corners to resize, ● to rotate</p>}
+        {dropping && <p className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-ink/80 px-3 py-1 text-[0.7rem] text-champagne">Drop onto the {ZONE_LABELS[zone].toLowerCase()}</p>}
+        {layers.length === 0 && !dropping && <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-ink/70 px-3 py-1 text-[0.7rem] text-mute">Add or drag text, graphics and files here — drag to move, corners to resize, ● to rotate</p>}
       </div>
     </div>
   );

@@ -158,6 +158,11 @@ export function zoneCanvas(m: GarmentMeasurements, zone: Zone): Rect {
     }
     case "collar":
       return { x0: -m.collarSize / 2, y0: 0, x1: m.collarSize / 2, y1: Math.max(m.collarHeight, 2) };
+    case "cuffs": {
+      // Cuff band unrolled: x along the circumference (0 = outer face), y from top edge.
+      const half = cuffCircumference(m) / 2;
+      return { x0: -half, y0: 0, x1: half, y1: Math.max(m.cuffHeight, 2) };
+    }
     case "pocket":
       return { x0: -m.pocketWidth / 2, y0: 0, x1: m.pocketWidth / 2, y1: m.pocketHeight };
     case "yoke": {
@@ -186,11 +191,21 @@ export function printableArea(m: GarmentMeasurements, zone: Zone, garmentType: G
     }
     case "collar":
       return { x0: -m.collarSize / 2 + 3, y0: 0.5, x1: m.collarSize / 2 - 3, y1: Math.max(1, m.collarHeight - 0.5) };
+    case "cuffs": {
+      // Only the outer face is decorated (monograms / small embroidery).
+      const half = Math.min(cuffCircumference(m) / 2 - 2, 6);
+      return { x0: -half, y0: 0.6, x1: half, y1: Math.max(1.2, m.cuffHeight - 0.6) };
+    }
     case "pocket":
       return { x0: -m.pocketWidth / 2 + 1, y0: c.pocketStyle === "flap" || c.pocketStyle === "western-flap" ? 4.5 : 1.5, x1: m.pocketWidth / 2 - 1, y1: m.pocketHeight - 1 };
     case "yoke":
       return { x0: -m.shoulderWidth / 2 + 3, y0: 1, x1: m.shoulderWidth / 2 - 3, y1: Math.max(1.5, m.yokeDepth - 1) };
   }
+}
+
+/** Finished cuff circumference (cm) — the sleeve opening plus overlap ease for shirt cuffs. */
+export function cuffCircumference(m: GarmentMeasurements): number {
+  return Math.max(12, m.sleeveOpening * 1.06);
 }
 
 export function methodMaxArea(method: PrintMethod): { w: number; h: number } {
@@ -206,7 +221,7 @@ export function pocketPlacement(m: GarmentMeasurements, which: 0 | 1): { x: numb
 
 export type PlacementPreset =
   | "center-chest" | "full-front" | "left-chest" | "right-chest" | "upper-back" | "full-back" | "nape"
-  | "left-sleeve" | "right-sleeve" | "pocket" | "hem" | "collar" | "yoke";
+  | "left-sleeve" | "right-sleeve" | "pocket" | "hem" | "collar" | "cuff" | "yoke";
 
 export const PLACEMENT_LABELS: Record<PlacementPreset, string> = {
   "center-chest": "Centre chest",
@@ -221,6 +236,7 @@ export const PLACEMENT_LABELS: Record<PlacementPreset, string> = {
   pocket: "Pocket",
   hem: "Hem",
   collar: "Collar",
+  cuff: "Cuff (monogram)",
   yoke: "Back yoke",
 };
 
@@ -261,6 +277,8 @@ export function placementPreset(m: GarmentMeasurements, preset: PlacementPreset,
       return { zone: "front", x: -(m.hem / 4) * 0.55, top: m.bodyLength - m.hemCurve - 12 * k, maxWidth: 6 * k, maxHeight: 6 * k };
     case "collar":
       return { zone: "collar", x: 0, top: 0.6, maxWidth: 8, maxHeight: Math.max(1, m.collarHeight - 1.2) };
+    case "cuff":
+      return { zone: "cuffs", x: 0, top: 0.8, maxWidth: 6, maxHeight: Math.max(1, m.cuffHeight - 1.6) };
     case "yoke":
       return { zone: "yoke", x: 0, top: 1.2, maxWidth: m.shoulderWidth - 8, maxHeight: Math.max(1.5, m.yokeDepth - 2.4) };
   }

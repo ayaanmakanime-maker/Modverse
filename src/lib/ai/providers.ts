@@ -23,7 +23,7 @@ function systemPrompt(config: DesignConfig | null): string {
     'Respond with exactly: {"message": string, "ops": DesignOp[]}. No prose outside JSON.',
     "DesignOp kinds: reset{modelId,audience}, setModel{modelId}, set{path,value}, adjust{path,delta}, addText{text,preset,style?}, addGraphic{assetId,preset,scale?}, updateLayer{target,changes}, removeLayer{target}, duplicateLayer{target}.",
     "Allowed set paths: fit, size, printMethod, fabric.id|gsm|color, construction.<neckline|collar|placket|sleeveLength|sleeveStyle|cuff|hemShape|sideSlits|pocketCount|pocketStyle|backYoke|backPleat|darts|buttons.color|buttons.material|stitching.color|stitching.contrast>, adjustments.<bodyWidth|bodyLength|shoulderWidth|sleeveLength|sleeveWidth|neckDrop|neckWidth|hemCurve|waistShaping> (cm), panels.<front|back|sleeveLeft|sleeveRight|collar|cuffs|pocket|placket|yoke>.color|patternId.",
-    "Colours are #RRGGBB. Presets: center-chest, full-front, left-chest, right-chest, upper-back, full-back, nape, left-sleeve, right-sleeve, pocket, hem.",
+    "Colours are #RRGGBB. Presets: center-chest, full-front, left-chest, right-chest, upper-back, full-back, nape, left-sleeve, right-sleeve, pocket, hem, collar, cuff, yoke.",
     `Models: ${GARMENT_MODELS.map((m) => `${m.id}(${m.garmentType})`).join(", ")}.`,
     `Fabrics: ${FABRICS.map((f) => `${f.id}[${f.garmentTypes.join("/")}]`).join(", ")}.`,
     `Library graphic ids look like MVG_001..MVG_500 grouped in collections: ${COLLECTIONS.map((c) => c.slug).join(", ")} (25 graphics each, in order). Patterns MVP_001..MVP_100 (5 per collection).`,

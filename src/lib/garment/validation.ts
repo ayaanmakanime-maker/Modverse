@@ -215,8 +215,11 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
       add({ code: "SCREEN_OPACITY", severity: "warning", category: "print", layerId: l.id, message: "Transparency in screen printing is reproduced with halftones.", suggestion: "Consider full opacity or DTG/DTF." });
 
     if (l.type === "image") {
-      const dpi = l.pixelWidth / (l.width / 2.54);
-      if (dpi < 120) add({ code: "IMAGE_LOW_RES", severity: "error", category: "artwork", layerId: l.id, message: `"${l.name}" is only ~${Math.round(dpi)} DPI at this size — it will print blurry.`, suggestion: `Upload a higher-resolution file or reduce the print width to ≤ ${((l.pixelWidth / 150) * 2.54).toFixed(1)} cm.`, fix: { label: "Shrink to 150 DPI", patch: { kind: "layer", layerId: l.id, changes: { width: +((l.pixelWidth / 150) * 2.54).toFixed(2), height: +((l.pixelHeight / 150) * 2.54).toFixed(2) } } } });
+      // Effective pixels after cropping.
+      const pw = l.pixelWidth * l.crop.w;
+      const ph = l.pixelHeight * l.crop.h;
+      const dpi = pw / (l.width / 2.54);
+      if (dpi < 120) add({ code: "IMAGE_LOW_RES", severity: "error", category: "artwork", layerId: l.id, message: `"${l.name}" is only ~${Math.round(dpi)} DPI at this size — it will print blurry.`, suggestion: `Upload a higher-resolution file or reduce the print width to ≤ ${((pw / 150) * 2.54).toFixed(1)} cm.`, fix: { label: "Shrink to 150 DPI", patch: { kind: "layer", layerId: l.id, changes: { width: +((pw / 150) * 2.54).toFixed(2), height: +((ph / 150) * 2.54).toFixed(2) } } } });
       else if (dpi < 200) add({ code: "IMAGE_MEDIUM_RES", severity: "warning", category: "artwork", layerId: l.id, message: `"${l.name}" prints at ~${Math.round(dpi)} DPI.`, suggestion: "200–300 DPI is recommended for sharp prints." });
       if (method === "embroidery") add({ code: "EMBROIDERY_PHOTO", severity: "error", category: "print", layerId: l.id, message: "Photographic raster images cannot be embroidered directly.", suggestion: "Use a vector graphic, or switch this layer to DTF/DTG." });
     }
@@ -298,9 +301,14 @@ function bestMethodFix(p: Record<PrintMethod, string>, layerId: string): Validat
 /** Typography print checks (also used live by the typography panel). */
 export function validateTextLayer(config: DesignConfig, l: TextLayer, background: string, method: PrintMethod): ValidationIssue[] {
   const out: ValidationIssue[] = [];
-  const font = FONT_BY_FAMILY.get(l.fontFamily);
+  const font = l.fontAssetId ? null : FONT_BY_FAMILY.get(l.fontFamily);
   if (!l.text.trim()) out.push({ code: "TEXT_EMPTY", severity: "warning", category: "typography", layerId: l.id, message: "A text layer is empty.", suggestion: "Type some text or delete the layer.", fix: { label: "Delete layer", patch: { kind: "removeLayer", layerId: l.id } } });
-  if (!font) {
+  if (l.fontAssetId) {
+    out.push({ code: "CUSTOM_FONT", severity: "info", category: "typography", layerId: l.id, message: `"${l.fontFamily}" is a customer-uploaded font.`, suggestion: "The uploader confirmed print rights. Glyph coverage is not verified automatically — check the 2D preview for missing characters; the font file is embedded in the print export." });
+    const cap = textCapHeightMm(l);
+    const min = method === "embroidery" ? 5 : 3.5;
+    if (cap < min) out.push({ code: "TEXT_TOO_SMALL", severity: method === "embroidery" ? "error" : "warning", category: "typography", layerId: l.id, message: `"${l.text.slice(0, 20)}" has a ~${cap.toFixed(1)} mm cap height — below the ${min} mm minimum.`, suggestion: "Increase the font size for legibility." });
+  } else if (!font) {
     out.push({ code: "FONT_UNSUPPORTED", severity: "error", category: "typography", layerId: l.id, message: `Font "${l.fontFamily}" is not in the licensed ModVerse font library.`, suggestion: "Choose a font from the library.", fix: { label: "Use Inter", patch: { kind: "layer", layerId: l.id, changes: { fontFamily: "Inter" } } } });
   } else {
     const missing = missingScripts(l.fontFamily, l.text);
@@ -320,6 +328,13 @@ export function validateTextLayer(config: DesignConfig, l: TextLayer, background
     out.push({ code: "OUTLINE_TOO_THIN", severity: "warning", category: "typography", layerId: l.id, message: `Outline (${(l.outline.width * 10).toFixed(1)} mm) is thinner than ${PRINT_METHOD_INFO[method].minLineMm} mm.`, suggestion: "Thicken the outline so it survives printing." });
   if (l.shadow.enabled && l.shadow.blur > 0 && (method === "screen" || method === "embroidery"))
     out.push({ code: "SHADOW_BLUR_METHOD", severity: method === "embroidery" ? "error" : "warning", category: "typography", layerId: l.id, message: "Soft (blurred) shadows can't be reproduced by this decoration method.", suggestion: "Set shadow blur to 0 for a hard shadow." });
+  for (const fx of l.effects) {
+    if ((fx.blur > 0 || fx.kind === "glow") && (method === "screen" || method === "embroidery"))
+      out.push({ code: "EFFECT_BLUR_METHOD", severity: method === "embroidery" ? "error" : "warning", category: "typography", layerId: l.id, message: `A soft ${fx.kind} effect can't be reproduced by ${PRINT_METHOD_INFO[method].name}.`, suggestion: "Use hard-edged effects (blur 0) or switch to DTG/DTF." });
+    if (fx.kind === "stroke" && fx.width > 0 && fx.width * 10 < PRINT_METHOD_INFO[method].minLineMm)
+      out.push({ code: "EFFECT_STROKE_THIN", severity: "warning", category: "typography", layerId: l.id, message: `A layered stroke (${(fx.width * 10).toFixed(1)} mm) is thinner than ${PRINT_METHOD_INFO[method].minLineMm} mm.`, suggestion: "Thicken the stroke so it survives printing." });
+  }
+  if (l.effects.length && method === "screen") out.push({ code: "EFFECT_SCREENS", severity: "info", category: "print", layerId: l.id, message: `Layered effects add up to ${l.effects.length} extra screen colour(s).`, suggestion: "Each distinct effect colour needs its own screen." });
   if (l.curve.mode === "circle" && l.text.length > 40) out.push({ code: "CIRCLE_TEXT_LONG", severity: "info", category: "typography", layerId: l.id, message: "Long text on a circle can become hard to read.", suggestion: "Shorten the text or use an arc." });
   if (l.letterSpacing < -0.05 && method === "embroidery") out.push({ code: "EMBROIDERY_TIGHT_TRACKING", severity: "warning", category: "typography", layerId: l.id, message: "Tight letter spacing makes embroidered letters merge.", suggestion: "Increase letter spacing." });
   return out;

@@ -70,11 +70,12 @@ async function svgToTexture(svg: string, w: number, h: number): Promise<THREE.Ca
   }
 }
 
-const TEXTURE_ZONES: Zone[] = ["front", "back", "sleeveLeft", "sleeveRight", "collar", "pocket"];
+const TEXTURE_ZONES: Zone[] = ["front", "back", "sleeveLeft", "sleeveRight", "collar", "cuffs", "pocket"];
+type TextureKey = Zone | "cuffsPlain";
 
 /** Compose zone textures from the same SVG markup as the 2D editor. Yoke artwork is drawn into the back texture. */
 function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: number) {
-  const [textures, setTextures] = useState<Partial<Record<Zone, THREE.CanvasTexture>>>({});
+  const [textures, setTextures] = useState<Partial<Record<TextureKey, THREE.CanvasTexture>>>({});
   const [assetTick, setAssetTick] = useState(0);
   useEffect(() => subscribeAssets(() => setAssetTick((t) => t + 1)), []);
   useEffect(() => {
@@ -84,12 +85,16 @@ function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: nu
       if (cancelled) return;
       const fontCss = embeddedFontCss(fontNeeds(config));
       const merged: DesignConfig = { ...config, layers: config.layers.map((l) => (l.zone === "yoke" ? { ...l, zone: "back" as const } : l)) };
-      const out: Partial<Record<Zone, THREE.CanvasTexture>> = {};
+      const out: Partial<Record<TextureKey, THREE.CanvasTexture>> = {};
+      const hasCuffs = geo.cuffs.length > 0;
+      const jobs: [TextureKey, Zone, boolean][] = TEXTURE_ZONES.filter((z) => z !== "cuffs" || hasCuffs).map((z) => [z, z, true]);
+      // The right cuff shares the cuff colour/pattern but not the (left-cuff) monogram artwork.
+      if (hasCuffs) jobs.push(["cuffsPlain", "cuffs", false]);
       await Promise.all(
-        TEXTURE_ZONES.map(async (z) => {
+        jobs.map(async ([key, z, includeLayers]) => {
           try {
-            const { svg, widthPx, heightPx } = zoneTextureSvg(merged, z, geo.measurements, resolver, { pxPerCm: z === "collar" || z === "pocket" ? 24 : pxPerCm, fontCss });
-            out[z] = await svgToTexture(svg, widthPx, heightPx);
+            const { svg, widthPx, heightPx } = zoneTextureSvg(merged, z, geo.measurements, resolver, { pxPerCm: z === "collar" || z === "pocket" || z === "cuffs" ? 24 : pxPerCm, fontCss, includeLayers });
+            out[key] = await svgToTexture(svg, widthPx, heightPx);
           } catch {
             /* keep previous texture */
           }
@@ -168,7 +173,7 @@ export function Garment({ config, centered = true }: { config: DesignConfig; cen
       {g.collar.map((cg, i) => (
         <mesh key={`collar${i}`} geometry={cg} castShadow name="panel-collar"><FabricMaterial config={config} panel="collar" map={i === 0 ? textures.collar : undefined} repeat={[m.collarSize, 6]} /></mesh>
       ))}
-      {g.cuffs.map((cg, i) => <mesh key={`cuff${i}`} geometry={cg} castShadow name="panel-cuffs"><FabricMaterial config={config} panel="cuffs" repeat={[m.sleeveOpening, 6]} /></mesh>)}
+      {g.cuffs.map((cg, i) => <mesh key={`cuff${i}`} geometry={cg} castShadow name="panel-cuffs"><FabricMaterial config={config} panel="cuffs" map={i === 0 ? textures.cuffs : textures.cuffsPlain} repeat={[m.sleeveOpening, 6]} /></mesh>)}
       {g.placket && <mesh geometry={g.placket} name="panel-placket"><FabricMaterial config={config} panel="placket" color={panelColor(config, c.placket === "contrast" || config.panels.placket.color ? "placket" : "front")} repeat={[3, m.bodyLength]} /></mesh>}
       {g.pockets.map((pg, i) => <mesh key={`pocket${i}`} geometry={pg} castShadow name="panel-pocket"><FabricMaterial config={config} panel="pocket" map={i === 0 || (i === 2 && c.pocketCount === 2 && c.pocketStyle === "patch") ? textures.pocket : undefined} repeat={[m.pocketWidth, m.pocketHeight]} /></mesh>)}
       {geo.buttons.map((b, i) => {

@@ -283,7 +283,7 @@ export const uploadedAssets = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    kind: text("kind", { enum: ["svg", "image", "generated", "export", "thumbnail"] }).notNull(),
+    kind: text("kind", { enum: ["svg", "image", "generated", "export", "thumbnail", "font"] }).notNull(),
     storageProvider: text("storage_provider").notNull().default("local"),
     storageKey: text("storage_key").notNull(),
     originalName: text("original_name"),
@@ -293,6 +293,8 @@ export const uploadedAssets = pgTable(
     height: integer("height"),
     colors: jsonb("colors"),
     sha256: text("sha256").notNull(),
+    /** Kind-specific metadata (v2), e.g. custom font family + rights confirmation. */
+    meta: jsonb("meta"),
     createdAt: createdAt(),
   },
   (t) => [index("uploads_user_idx").on(t.userId)],

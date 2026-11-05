@@ -18,7 +18,9 @@ import { addToCart, checkout, confirmSimulatedPayment, getCart, getOrder, staffU
 import { createChild, upsertMeasurementProfile, deleteChild, listMeasurementProfiles, deleteAccount } from "@/lib/services/account";
 import { saveCredentials, setEnabled, getActiveIntegration, listIntegrations, recordTest } from "@/lib/integrations/config";
 import { createDesign, createTextLayer } from "@/lib/garment/design";
-import { detectType, rasterSize } from "@/lib/services/uploads";
+import { detectType, rasterSize, storeFont, listFonts, readUpload, deleteFont } from "@/lib/services/uploads";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 
 let alice: SessionUser;
 let bob: SessionUser;
@@ -181,6 +183,24 @@ describe("uploads", () => {
     expect(detectType(Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"))?.mime).toBe("image/svg+xml");
     expect(detectType(Buffer.from("<html><script>1</script></html>"))).toBeNull();
     expect(detectType(Buffer.from("MZ\x90\x00"))).toBeNull();
+  });
+});
+
+describe("custom fonts", () => {
+  it("stores fonts privately with rights metadata and enforces ownership", async () => {
+    const dir = path.join(process.cwd(), "public/fonts/inter");
+    const bytes = readFileSync(path.join(dir, readdirSync(dir).find((f) => f.endsWith(".woff2"))!));
+    const font = await storeFont(alice, { name: "brand.woff2", bytes }, "Alice Brand");
+    expect(font.family).toMatch(/^Alice Brand MV[0-9a-f]{6}$/);
+    expect(font.mime).toBe("font/woff2");
+    expect((await listFonts(alice)).map((f) => f.id)).toContain(font.id);
+    expect(await listFonts(bob)).toHaveLength(0);
+    await expect(readUpload(bob, font.id)).rejects.toBeTruthy();
+    expect((await readUpload(staff, font.id)).bytes.length).toBe(bytes.length);
+    await expect(storeFont(alice, { name: "x.ttf", bytes: Buffer.from("<svg onload=alert(1)>") }, "Bad")).rejects.toMatchObject({ status: 415 });
+    await expect(deleteFont(bob, font.id)).rejects.toBeTruthy();
+    await deleteFont(alice, font.id);
+    expect(await listFonts(alice)).toHaveLength(0);
   });
 });
 

@@ -28,11 +28,37 @@ export function shade(hex: string, dl: number): string {
   return hslToHex(h, s, Math.max(0, Math.min(1, l + dl)));
 }
 
-export function transformText(l: TextLayer): string {
+const MINOR_WORDS = new Set(["a", "an", "and", "as", "at", "but", "by", "for", "in", "nor", "of", "on", "or", "per", "the", "to", "via", "vs"]);
+
+/** True title case: words capitalised, minor words lower-case except first/last of each line. */
+export function titleCase(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const words = line.split(/(\s+)/);
+      const idx = words.map((w, i) => (/\S/.test(w) ? i : -1)).filter((i) => i >= 0);
+      const first = idx[0];
+      const last = idx[idx.length - 1];
+      return words
+        .map((w, i) => {
+          if (!/\S/.test(w)) return w;
+          // Keep deliberate all-caps acronyms (e.g. "NYC") and words with digits as typed.
+          if (w.length > 1 && w === w.toUpperCase() && /\p{L}/u.test(w)) return w;
+          const lower = w.toLocaleLowerCase();
+          if (i !== first && i !== last && MINOR_WORDS.has(lower.replace(/[^\p{L}]/gu, ""))) return lower;
+          return lower.replace(/\p{L}/u, (c) => c.toLocaleUpperCase());
+        })
+        .join("");
+    })
+    .join("\n");
+}
+
+export function transformText(l: Pick<TextLayer, "text" | "textTransform">): string {
   switch (l.textTransform) {
     case "uppercase": return l.text.toUpperCase();
     case "lowercase": return l.text.toLowerCase();
-    case "capitalize": return l.text.replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+    case "capitalize": return l.text.replace(/(^|[^\p{L}\p{N}'’])(\p{L})/gu, (_m, pre: string, c: string) => pre + c.toUpperCase());
+    case "title": return titleCase(l.text);
     default: return l.text;
   }
 }
@@ -109,6 +135,28 @@ function textContent(l: TextLayer): string {
     const p = l.background.padding;
     parts.push(`<rect x="${n(-l.width / 2 - p)}" y="${n(-l.height / 2 - p)}" width="${n(l.width + 2 * p)}" height="${n(l.height + 2 * p)}" rx="${n(l.background.radius)}" fill="${l.background.color}"/>`);
   }
+  // Layered effects (v2): drawn back-to-front, so effects[0] sits directly behind the main text.
+  for (let ei = l.effects.length - 1; ei >= 0; ei--) {
+    const fx = l.effects[ei];
+    const fid = `${id}-fx${ei}`;
+    const outlineW = l.outline.enabled ? l.outline.width * 2 : 0;
+    let filter: string | undefined;
+    if (fx.blur > 0 || fx.kind === "glow") {
+      filter = `blur-${fid}`;
+      defs.push(`<filter id="${filter}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${n(fx.kind === "glow" ? Math.max(fx.blur, fx.width) : fx.blur)}"/></filter>`);
+    }
+    const body = (pathId: string) =>
+      textBody(l, { fill: fx.color, pathId, filter, strokeColor: fx.color, strokeWidth: fx.kind === "stroke" || fx.kind === "glow" ? outlineW + fx.width * 2 : outlineW || undefined });
+    const op = fx.opacity < 1 ? ` opacity="${n(fx.opacity)}"` : "";
+    if (fx.kind === "extrude") {
+      const steps = Math.max(2, Math.min(14, Math.round(Math.hypot(fx.offsetX, fx.offsetY) / 0.08)));
+      const copies: string[] = [];
+      for (let k = steps; k >= 1; k--) copies.push(`<g transform="translate(${n((fx.offsetX * k) / steps)} ${n((fx.offsetY * k) / steps)})">${body(`tpx-${fid}-${k}`)}</g>`);
+      parts.push(`<g${op}>${copies.join("")}</g>`);
+    } else {
+      parts.push(`<g transform="translate(${n(fx.offsetX)} ${n(fx.offsetY)})"${op}>${body(`tpx-${fid}`)}</g>`);
+    }
+  }
   if (l.shadow.enabled) {
     let filter: string | undefined;
     if (l.shadow.blur > 0) {
@@ -128,13 +176,24 @@ function graphicContent(l: Extract<Layer, { type: "graphic" }>, assets: AssetRes
   const dims = parseSvgDimensions(raw);
   let inner = svgInner(namespaceSvgIds(raw, `g${safeId(l.id)}`));
   if (Object.keys(l.colorMap).length) inner = recolorSvg(inner, l.colorMap);
-  return `<svg x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" viewBox="${dims.viewBox.join(" ")}" preserveAspectRatio="xMidYMid meet" overflow="visible">${inner}</svg>`;
+  const [vx, vy, vw, vh] = dims.viewBox;
+  const cropped = isCropped(l.crop);
+  const vb = cropped ? [vx + l.crop.x * vw, vy + l.crop.y * vh, l.crop.w * vw, l.crop.h * vh] : dims.viewBox;
+  return `<svg x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" viewBox="${vb.map(n).join(" ")}" preserveAspectRatio="xMidYMid meet" overflow="${cropped ? "hidden" : "visible"}">${inner}</svg>`;
 }
 
 function imageContent(l: Extract<Layer, { type: "image" }>, assets: AssetResolver, forTexture: boolean): string {
   const href = forTexture ? assets.dataUrl(l.url) : (assets.dataUrl(l.url) ?? l.url);
   if (!href) return `<rect x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" fill="#8883"/>`;
-  return `<image href="${esc(href)}" x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" preserveAspectRatio="none"/>`;
+  if (!isCropped(l.crop)) return `<image href="${esc(href)}" x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" preserveAspectRatio="none"/>`;
+  // Crop: show only the crop window of the source pixels, stretched to the layer box.
+  const pw = l.pixelWidth;
+  const ph = l.pixelHeight;
+  return `<svg x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" viewBox="${n(l.crop.x * pw)} ${n(l.crop.y * ph)} ${n(l.crop.w * pw)} ${n(l.crop.h * ph)}" preserveAspectRatio="none" overflow="hidden"><image href="${esc(href)}" x="0" y="0" width="${pw}" height="${ph}" preserveAspectRatio="none"/></svg>`;
+}
+
+export function isCropped(c: { x: number; y: number; w: number; h: number } | undefined): boolean {
+  return !!c && (c.x > 0.0005 || c.y > 0.0005 || c.w < 0.9995 || c.h < 0.9995);
 }
 
 /** Markup of a single layer, positioned in zone coordinates (cm). */
