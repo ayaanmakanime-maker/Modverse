@@ -144,7 +144,7 @@ function FabricMaterial({ config, panel, map, color, repeat }: { config: DesignC
   );
 }
 
-function Garment({ config }: { config: DesignConfig }) {
+export function Garment({ config, centered = true }: { config: DesignConfig; centered?: boolean }) {
   const geo = useMemo(() => buildGarmentGeometry(config), [config]);
   const m = geo.measurements;
   const textures = useZoneTextures(config, geo, 14);
@@ -160,7 +160,7 @@ function Garment({ config }: { config: DesignConfig }) {
   const c = config.construction;
   const buttonMat = c.buttons.material;
   return (
-    <group position={[0, m.bodyLength / 2 - 4, 0]}>
+    <group position={centered ? [0, m.bodyLength / 2 - 4, 0] : [0, 0, 0]}>
       <mesh geometry={g.front} castShadow receiveShadow name="panel-front"><FabricMaterial config={config} panel="front" map={textures.front} repeat={torsoRepeat} /></mesh>
       <mesh geometry={g.back} castShadow receiveShadow name="panel-back"><FabricMaterial config={config} panel="back" map={textures.back} repeat={torsoRepeat} /></mesh>
       <mesh geometry={g.sleeveLeft} castShadow name="panel-sleeve-left"><FabricMaterial config={config} panel="sleeveLeft" map={textures.sleeveLeft} repeat={sleeveRepeat} /></mesh>

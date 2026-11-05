@@ -270,3 +270,29 @@ export function zoneArtworkSvg(config: DesignConfig, zone: Zone, m: GarmentMeasu
   const layers = config.layers.filter((l) => l.zone === zone).map((l) => layerMarkup(l, assets, { forTexture: true })).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${n(W)}cm" height="${n(H)}cm" viewBox="${n(canvas.x0)} ${n(canvas.y0)} ${n(W)} ${n(H)}">${fontCss ? `<style>${fontCss}</style>` : ""}<title>ModVerse artwork — ${zone} (1 unit = 1 cm)</title>${layers}</svg>`;
 }
+
+/** Front torso overlay (garment outline clipped, with construction + artwork) for the 2D virtual trial room. */
+export function torsoOverlaySvg(config: DesignConfig, m: GarmentMeasurements, assets: AssetResolver, fontCss = ""): { svg: string; canvas: Rect; widthPx: number; heightPx: number } {
+  const z = zoneTextureSvg(config, "front", m, assets, { pxPerCm: 10, fontCss });
+  const t = torsoShape(m, "front", config.construction, config.audience === "kids");
+  const inner = z.svg.slice(z.svg.indexOf(">") + 1, z.svg.lastIndexOf("</svg>"));
+  const c = z.canvas;
+  const W = c.x1 - c.x0;
+  const H = c.y1 - c.y0;
+  const outline = polygonToPath(t.outline);
+  const rib = config.garmentType === "tshirt" ? `<path d="${polygonToPath(t.neckline, false)}" fill="none" stroke="${panelColor(config, "collar")}" stroke-width="${n(m.collarHeight * 0.9)}" stroke-linecap="round"/>` : `<path d="${polygonToPath(t.neckline, false)}" fill="none" stroke="${panelColor(config, "collar")}" stroke-width="3" stroke-linecap="round"/>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${z.widthPx}" height="${z.heightPx}" viewBox="${n(c.x0)} ${n(c.y0)} ${n(W)} ${n(H)}"><defs><clipPath id="to-clip"><path d="${outline}"/></clipPath></defs><g clip-path="url(#to-clip)">${inner}</g><path d="${outline}" fill="none" stroke="#000" stroke-opacity="0.25" stroke-width="0.25"/>${rib}</svg>`;
+  return { svg, canvas: c, widthPx: z.widthPx, heightPx: z.heightPx };
+}
+
+/** Flat sleeve overlay (folded flat: half circumference), cap top at (0,0). */
+export function sleeveOverlaySvg(config: DesignConfig, m: GarmentMeasurements, side: "sleeveLeft" | "sleeveRight"): { svg: string; box: Rect } {
+  const sl = sleeveShape(m, config.construction);
+  const pts = sl.outline.map(([x, y]) => [x * 0.5, y] as Pt);
+  const half = Math.max(sl.halfBicep, sl.halfOpening) * 0.5 + 0.5;
+  const box: Rect = { x0: -half, y0: -0.5, x1: half, y1: sl.length + 0.5 };
+  const color = panelColor(config, side);
+  const cuff = !["hem", "none"].includes(config.construction.cuff) ? `<rect x="${n(-sl.halfOpening * 0.5)}" y="${n(sl.length - m.cuffHeight)}" width="${n(sl.halfOpening)}" height="${n(m.cuffHeight)}" fill="${panelColor(config, "cuffs")}"/>` : "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round((box.x1 - box.x0) * 10)}" height="${Math.round((box.y1 - box.y0) * 10)}" viewBox="${n(box.x0)} ${n(box.y0)} ${n(box.x1 - box.x0)} ${n(box.y1 - box.y0)}"><path d="${polygonToPath(pts)}" fill="${color}" stroke="#000" stroke-opacity="0.25" stroke-width="0.25"/>${cuff}</svg>`;
+  return { svg, box };
+}

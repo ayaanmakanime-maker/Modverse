@@ -1,6 +1,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { and, eq, gt } from "drizzle-orm";
 import { cache } from "react";
 import { getDb } from "../db/client";
@@ -89,4 +90,14 @@ export async function revokeOtherSessions(userId: string, keepSessionId: string 
 
 export function hasRole(user: SessionUser | null, ...roles: Role[]): boolean {
   return !!user && roles.includes(user.role);
+}
+
+/**
+ * Page-level guard. Next renders layouts and pages concurrently, so every
+ * protected page must check the session itself (not rely on its layout).
+ */
+export async function requirePageUser(next: string): Promise<SessionUser> {
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
+  return user;
 }

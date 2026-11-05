@@ -7,11 +7,12 @@ const isDev = process.env.NODE_ENV !== "production";
 // optional public MediaPipe model CDN used only when local models are absent.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""} https://cdn.jsdelivr.net`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""} https://cdn.jsdelivr.net https://checkout.razorpay.com`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self' blob: data: https://storage.googleapis.com https://cdn.jsdelivr.net${isDev ? " ws:" : ""}`,
+  `connect-src 'self' blob: data: https://storage.googleapis.com https://cdn.jsdelivr.net https://api.razorpay.com https://lumberjack.razorpay.com${isDev ? " ws:" : ""}`,
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com",
   "media-src 'self' blob: mediastream:",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
@@ -39,7 +40,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/library/:path*",
+        // Sanitised library SVG files only (two+ segments) — must not match the /library page itself.
+        source: "/library/:dir/:file+",
         headers: [
           { key: "Content-Security-Policy", value: "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:" },
           { key: "Cache-Control", value: "public, max-age=86400" },

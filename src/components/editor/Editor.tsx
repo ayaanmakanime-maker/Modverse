@@ -219,6 +219,18 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
   );
 }
 
+function useIsXL(): boolean {
+  const [xl, setXl] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const on = () => setXl(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return xl;
+}
+
 function EditorLayout(p: {
   tab: Tab; setTab: (t: Tab) => void; mode: EditorMode; setMode: (m: EditorMode) => void; name: string; setName: (n: string) => void; dirty: boolean; projectId: string | null; version: number;
   view: "2d" | "3d" | "split"; setView: (v: "2d" | "3d" | "split") => void; undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean; saving: boolean;
@@ -233,6 +245,7 @@ function EditorLayout(p: {
   const price = useMemo(() => priceDesign(config), [config]);
   const model = getModel(config.modelId);
   const tabs = MODE_TABS[p.mode];
+  const isXL = useIsXL(); // properties render once: sidebar on xl, bottom drawer below
 
   const panel = (() => {
     switch (p.tab) {
@@ -345,7 +358,7 @@ function EditorLayout(p: {
         </main>
 
         {/* Properties */}
-        <aside className={clsx("order-3 hidden min-h-0 w-80 shrink-0 overflow-y-auto border-l border-line p-3 mv-scroll xl:block")} aria-label="Properties">
+        {isXL && <aside className="order-3 min-h-0 w-80 shrink-0 overflow-y-auto border-l border-line p-3 mv-scroll" aria-label="Properties">
           {p.selectedId ? <SelectedProperties /> : (
             <div className="space-y-3 text-xs">
               <p className="mv-display text-xl">{model.name}</p>
@@ -363,11 +376,11 @@ function EditorLayout(p: {
               </div>
             </div>
           )}
-        </aside>
+        </aside>}
       </div>
       {/* Properties drawer on smaller screens */}
-      {p.selectedId && (
-        <div className="fixed inset-x-0 bottom-0 z-30 max-h-[52dvh] overflow-y-auto rounded-t-2xl border-t border-line bg-surface p-3 shadow-2xl mv-scroll xl:hidden" aria-label="Layer properties">
+      {!isXL && p.selectedId && (
+        <div className="fixed inset-x-0 bottom-0 z-30 max-h-[52dvh] overflow-y-auto rounded-t-2xl border-t border-line bg-surface p-3 shadow-2xl mv-scroll" aria-label="Layer properties">
           <div className="mb-2 flex items-center justify-between"><p className="mv-eyebrow !text-[0.6rem]"><PenTool className="mr-1 inline size-3" />Layer properties</p><button className="text-xs text-mute" onClick={() => useEditor.getState().select(null)}>Done</button></div>
           <SelectedProperties />
         </div>

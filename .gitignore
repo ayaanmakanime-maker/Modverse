@@ -28,3 +28,7 @@ blob-report/
 .DS_Store
 npm-debug.log*
 .vercel
+
+# local computer-vision runtime & models (npm run models:fetch)
+public/mediapipe/
+public/models/
