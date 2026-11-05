@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createDesign, createGraphicLayer, createTextLayer, duplicateLayer, normalizeDesign, switchModel } from "./design";
+import { createDesign, createGraphicLayer, createImageLayer, createTextLayer, duplicateLayer, normalizeDesign, switchModel } from "./design";
 import { computeMeasurements } from "./sizing";
 import { fitToPlacement, placementPreset, type PlacementPreset } from "./panels";
 import { designConfigSchema, type DesignConfig, type Layer, type TextLayer } from "./schema";
@@ -37,6 +37,8 @@ export const designOpSchema = z.discriminatedUnion("op", [
   z.object({ op: z.literal("adjust"), path: z.string().regex(/^adjustments\.\w+$|^fabric\.gsm$/), delta: z.number().min(-60).max(60) }),
   z.object({ op: z.literal("addText"), text: z.string().min(1).max(200), preset: z.enum(PRESETS).default("center-chest"), style: z.record(z.string(), z.unknown()).optional() }),
   z.object({ op: z.literal("addGraphic"), assetId: z.string().max(64), preset: z.enum(PRESETS).default("center-chest"), scale: z.number().min(0.1).max(3).default(1), colorMap: z.record(z.string(), z.string()).optional() }),
+  /** Raster artwork (uploaded or generated image) resolved by id — never an arbitrary URL. */
+  z.object({ op: z.literal("addImage"), assetId: z.string().max(64), preset: z.enum(PRESETS).default("center-chest"), scale: z.number().min(0.1).max(3).default(1) }),
   z.object({
     op: z.literal("updateLayer"),
     target: layerTarget,
@@ -56,7 +58,7 @@ export const designOpSchema = z.discriminatedUnion("op", [
 ]);
 export type DesignOp = z.infer<typeof designOpSchema>;
 
-const LAYER_SETTABLE = new Set([
+export const LAYER_SETTABLE = new Set([
   "name", "x", "y", "width", "height", "rotation", "opacity", "visible", "locked", "method", "flipX", "flipY", "text", "fontFamily", "fontWeight",
   "italic", "underline", "textTransform", "fontSize", "color", "letterSpacing", "lineHeight", "align", "verticalAlign", "curve", "outline",
   "shadow", "background", "skewX", "colorMap", "groupId", "effects", "crop",
@@ -68,6 +70,8 @@ export interface ResolvedAsset {
   url: string;
   width: number;
   height: number;
+  /** Where the asset came from (defaults to the Creative Library). */
+  source?: "library" | "upload" | "generated";
 }
 
 export interface ApplyContext {
@@ -78,7 +82,7 @@ export interface ApplyContext {
 export interface ApplyResult {
   config: DesignConfig;
   applied: string[];
-  rejected: { op: unknown; reason: string }[];
+  rejected: { op: unknown; reason: string; index: number }[];
   corrections: string[];
   touchedLayerIds: string[];
 }
@@ -125,6 +129,7 @@ function describeOp(op: DesignOp): string {
     case "adjust": return `${op.path} ${op.delta >= 0 ? "+" : ""}${op.delta} cm`;
     case "addText": return `Added text "${op.text}" (${op.preset})`;
     case "addGraphic": return `Added graphic ${op.assetId} (${op.preset})`;
+    case "addImage": return `Added image ${op.assetId} (${op.preset})`;
     case "updateLayer": return `Updated layer (${Object.keys(op.changes).join(", ")})`;
     case "removeLayer": return "Removed layer";
     case "duplicateLayer": return "Duplicated layer";
@@ -146,10 +151,10 @@ export function applyOperations(input: DesignConfig, rawOps: unknown[], ctx: App
   const corrections: string[] = [];
   const touched = new Set<string>();
 
-  for (const raw of rawOps) {
+  for (const [index, raw] of rawOps.entries()) {
     const parsed = designOpSchema.safeParse(raw);
     if (!parsed.success) {
-      rejected.push({ op: raw, reason: parsed.error.issues.map((i) => i.message).join("; ") });
+      rejected.push({ op: raw, reason: parsed.error.issues.map((i) => i.message).join("; "), index });
       continue;
     }
     const op = parsed.data;
@@ -200,8 +205,20 @@ export function applyOperations(input: DesignConfig, rawOps: unknown[], ctx: App
         case "addGraphic": {
           const asset = ctx.resolveAsset?.(op.assetId);
           if (!asset) throw new Error(`Asset ${op.assetId} not found in the Creative Library`);
-          const layer = createGraphicLayer(draft, asset, op.preset, "library", op.scale);
+          const layer = createGraphicLayer(draft, asset, op.preset, asset.source ?? "library", op.scale);
           if (op.colorMap) layer.colorMap = op.colorMap;
+          draft.layers.push(layer);
+          touched.add(layer.id);
+          break;
+        }
+        case "addImage": {
+          const asset = ctx.resolveAsset?.(op.assetId);
+          if (!asset || asset.source === "library") throw new Error(`Image ${op.assetId} not found`);
+          const layer = createImageLayer(draft, { id: asset.id, name: asset.name, url: asset.url, pixelWidth: asset.width, pixelHeight: asset.height }, op.preset, asset.source === "generated" ? "generated" : "upload");
+          if (op.scale !== 1) {
+            layer.width = +(layer.width * Math.min(1, op.scale)).toFixed(2);
+            layer.height = +(layer.height * Math.min(1, op.scale)).toFixed(2);
+          }
           draft.layers.push(layer);
           touched.add(layer.id);
           break;
@@ -276,7 +293,7 @@ export function applyOperations(input: DesignConfig, rawOps: unknown[], ctx: App
       corrections.push(...norm.corrections);
       applied.push(describeOp(op));
     } catch (e) {
-      rejected.push({ op, reason: e instanceof Error ? e.message : String(e) });
+      rejected.push({ op, reason: e instanceof Error ? e.message : String(e), index });
     }
   }
   return { config, applied, rejected, corrections: [...new Set(corrections)], touchedLayerIds: [...touched] };

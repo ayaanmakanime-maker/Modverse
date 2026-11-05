@@ -32,7 +32,7 @@ export interface MuseSuggestion {
 }
 
 export interface MuseReply {
-  source: "local-rules" | "ollama" | "openai";
+  source: "local-rules" | "ollama" | "openai" | "gemini";
   message: string;
   applied?: { ops: DesignOp[]; understood: string[]; unsupported: string[]; assets: Record<string, ResolvedAsset>; mode: "create" | "edit" };
   suggestions: MuseSuggestion[];
@@ -178,11 +178,16 @@ const QUESTION_ROUTES: [RegExp, SuggestionKind[], string][] = [
   [/\b(summary|summari[sz]e|spec|technical)\b/, ["summary", "manufacturing"], "Technical summary:"],
 ];
 
+/** True when the message asks for advice (suggestions) rather than giving a design instruction. */
+export function isMuseQuestion(message: string): boolean {
+  const text = message.trim();
+  return /\?$/.test(text) || /^(what|which|how|should|can you suggest|any (ideas|suggestions)|suggest|recommend|give me (ideas|suggestions)|critique|review)\b/i.test(text);
+}
+
 /** Chat entry point: answers questions with suggestions or applies instructions via text-to-design. */
 export function museRespond(message: string, config: DesignConfig | null, lib: LibraryLookup, opts: { body?: Partial<BodyMeasurements>; selectedLayerId?: string | null; defaultAudience?: DesignConfig["audience"]; assetColors?: Record<string, string[]> } = {}): MuseReply {
   const text = message.trim();
-  const isQuestion = /\?$/.test(text) || /^(what|which|how|should|can you suggest|any (ideas|suggestions)|suggest|recommend|give me (ideas|suggestions)|critique|review)\b/i.test(text);
-  if (config && isQuestion) {
+  if (config && isMuseQuestion(text)) {
     const all = museSuggestions(config, lib, opts);
     for (const [re, kinds, intro] of QUESTION_ROUTES) {
       if (re.test(text.toLowerCase())) {

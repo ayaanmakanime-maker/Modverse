@@ -1,17 +1,51 @@
-# AI system — The Muse & text-to-design
+# AI system — The Muse
 
-## Safety model
-All AI output (local rules or language models) is expressed as **DesignOps** (`src/lib/garment/operations.ts`): `reset`, `setModel`, `setAudience`, `set` (regex-allowlisted paths only), `adjust`, `addText`, `addGraphic` (real library asset ids only), `updateLayer`, `removeLayer`, `duplicateLayer`, `clearPanels`. Each op is Zod-validated, applied to a clone, normalised for compatibility and re-validated against the full `DesignConfig` schema; failures are rejected with reasons. No model output can run code or touch arbitrary state (prototype-pollution paths are rejected — see tests).
+V2 separates **creativity** from **implementation**: the AI decides *what* the customer wants; a deterministic compiler decides *how* that becomes garment operations; the garment engine *executes* them. No model ever runs code, edits meshes, invents coordinates or prices, or touches application state directly.
 
-## Local text-to-design (`src/lib/ai/text-to-design.ts`) — deterministic, offline
-Recognises garment type, audience, model keywords, fit, size, sleeve length/style, neckline, collar, placket, cuffs, hem, slits, pockets, yoke, pleats, darts, buttons (count/material/colour), stitching, fabric (per garment type), GSM, print method, ~90 colour names + hex with target resolution (garment, panels, buttons, stitching, text, graphic recolour), library graphics/stickers/templates/patterns by collection style words, placement (front/back/left chest/sleeves/nape/hem…), quoted or explicit text with font/curve/outline/shadow hints, and conversational edits (wider/longer/shorter by N cm or inches, move/resize/rotate/duplicate/delete/flip/opacity, font changes). Unsupported requests (hoodies, zips, puff print…) are explained instead of faked. The four example prompts from the specification are unit-tested.
+```
+customer message
+   │
+   ▼  Layer 1 — Fashion Director (The Muse)          src/lib/ai/{pipeline,providers,on-device}.ts
+   │    local rules (offline, always) · Ollama · Gemini · OpenAI · Gemini Nano (on-device, opt-in)
+   │    → DesignProposal  (typed, versioned "modverse.proposal/1", src/lib/ai/proposal.ts)
+   ▼  Layer 2 — Artwork                               src/lib/ai/artwork.ts
+   │    Creative Library retrieval, or generation via ComfyUI/OpenAI Images when configured
+   │    → assets with id, dimensions, format, transparency, licence, printability
+   ▼  Layer 3 — Design compiler                       src/lib/ai/compiler.ts
+   │    validate · resolve compatibility & conflicts · reject unsupported · fit artwork to print
+   │    areas · preview (before → after) · validation delta · price delta
+   │    → CompileResult ("modverse.compile/1") = an undoable transaction
+   ▼  Layer 4 — Deterministic garment engine          src/lib/garment/operations.ts + editor store
+        customer clicks Apply → ops applied as ONE undo step → 2D, 3D, validation, pricing update
+```
 
-## The Muse (`src/lib/ai/muse.ts`)
-Questions → labelled suggestions; instructions → applied ops. Suggestion kinds: critique (validation + aesthetics: palette size, near-centre alignment, placement near neckline), colour (complementary/tonal, nearest library palettes), fabric (summer-friendly, heavyweight for oversized), typography per collection mood, graphics from the library, placement (left-chest balance), outfit coordination, fit (measurement-based estimate), manufacturing feasibility and technical summary. Every suggestion with changes carries ops that the UI applies through the same engine.
+## Layer 1 — Fashion Director
+* **Proposal schema** (`proposal.ts`, Zod + exported JSON Schema): intent (create/edit), summary, garment (audience, model, fit, size, base colour, print method), fabric (id, GSM), construction (by construction path), proportion adjustments in cm (set/delta), panel colours/patterns, artwork requests (description, placement as preset *or* panel+position, scale, source preference library/generate/any, optional library id, colours, method), typography requests (text, placement, colour, font, weight, case, curve, method, extra style), edits to existing layers (allowlisted ops), rationale, unsupported items and clarifying questions.
+* **Local rules** (`text-to-design.ts` → `proposalFromOps`) — deterministic, offline, always available; also the fallback whenever a model fails or returns off-schema output (the fallback reason is shown).
+* **Model providers** (`providers.ts`, HTTP clients in `model-clients.ts`): **Ollama** (structured outputs via JSON schema), **Gemini** (`generateContent`, JSON mime type), **OpenAI** (JSON mode). All share one system prompt (`prompt.ts`) containing the catalogue, construction vocabulary, placements and the proposal schema. Credentials live only on the server (Integration Manager, AES-256-GCM); a provider is used only after a passing connection test and enablement.
+* **Gemini Nano (on-device, experimental)** — `on-device.ts` uses Chrome's built-in Prompt API (`LanguageModel`) with a JSON `responseConstraint`. It is feature-detected, opt-in in the Muse panel, needs no key and keeps the prompt on the device; its proposal is then compiled by `/api/muse/compile` exactly like any other Director's. Not suitable for every complex creative brief (small context, limited reasoning).
 
-## Optional providers (`src/lib/ai/providers.ts`, `src/lib/ai/image.ts`)
-* **Ollama** (local LLM) or **OpenAI** — used only if enabled in the Integration Manager after a passing test. The model receives a system prompt describing ops, models, fabrics and library id ranges, must answer `{message, ops}` JSON; invalid output falls back to local rules. Replies are labelled with their source.
-* **ComfyUI** (local) or **OpenAI Images** for artwork generation; results are stored as private uploads and placed like any artwork. With no provider, the UI says so and nothing is generated.
+## Layer 2 — Artwork
+`resolveArtwork()` turns each request into a **usable asset**: a Creative Library graphic/sticker/template matched by asset id, collection and style words (vector, transparent, licence "ModVerse Original Creative Library v0.1"), or — only when `source: "generate"`, an image provider is active and the customer is signed in — a newly generated image stored as a private upload (raster, max print width at 150 DPI, licence note to check the model's commercial terms). When generation is unavailable the result says *"nothing was generated"* and falls back to library artwork or stays unresolved. A placeholder is never presented as generated.
+
+## Layer 3 — Design compiler
+`compileProposal(base, proposal, artwork)`:
+1. validates the proposal (schema) and the catalogue references (models, fabrics); unknown items are **rejected with reasons**;
+2. builds allowlisted DesignOps (garment → fabric → construction → proportions → panels → artwork → typography → edits); typography style keys are filtered to supported text properties;
+3. resolves **conflicts** (e.g. two items at the same placement → alternative placement; model vs requested fit → kept construction, applied fit; audience not offered → nearest valid);
+4. executes on a **copy** through the engine (compatibility rules report **corrections**, e.g. "collars are a shirt construction");
+5. **fits new artwork** that crosses print boundaries or method limits using the validation engine's fixes;
+6. returns a grouped **preview** (before → after), conflicts, rejections, corrections, **new validation issues**, **price before → after**, artwork provenance and a base hash for stale-preview detection.
+Unaffected settings and existing layers are preserved.
+
+## Layer 4 — Engine & transaction UI
+The Muse panel shows the proposal as a transaction card: grouped changes, artwork sources/licences, conflicts, rejections, corrections, validation and price impact. **Apply** commits all operations as **one undo step** (Undo/Redo or the card's Undo revert it); **Discard** changes nothing. "Preview before applying" can be turned off for instant edits. Questions ("which fabric for summer?", "critique my design") return labelled suggestions whose changes use the same engine.
+
+## Security
+Operations are Zod-validated, `set` paths are regex-allowlisted (prototype-pollution paths rejected), layer edits use an allowlist of properties, assets are resolved by id only (never arbitrary URLs), and the complete result is re-validated against the `DesignConfig` schema. `/api/muse` and `/api/muse/compile` are rate-limited and CSRF-protected; malformed proposals return 400. E2E tests send hostile proposals.
+
+## Evaluation
+`npm run ai:eval` runs a 12-prompt suite (26 expectations) through every Director it can reach and writes `docs/evaluation/ai-eval-results.json`. Model providers run only when their `EVAL_*` variables are set (never billable by default). Results and the provider comparison are in `QUALITY_AND_PROVIDER_EVALUATION.md`.
 
 ## Labelling
-UI badges show `local rules`, `ollama` or `openai`. Generated artwork is marked as AI-generated; commercial licensing must be checked before production.
+Replies show their Director (local rules, Ollama, Gemini, OpenAI, Gemini Nano) and any fallback reason. Generated artwork is labelled with its provider and licence note.

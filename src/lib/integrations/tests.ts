@@ -43,6 +43,15 @@ export async function testIntegration(id: string, creds: Record<string, string>)
         const has = data.data?.some((m) => m.id === creds.model);
         return { ok: true, message: has ? `Key valid; model ${creds.model} available. Usage is billable.` : `Key valid, but model "${creds.model}" was not listed for this key.`, partial: !has };
       }
+      case "gemini": {
+        // Lists models — free, read-only, no tokens consumed.
+        const res = await withRetry(() => fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=100`, { headers: { "x-goog-api-key": creds.apiKey }, signal: timeout() }));
+        if (res.status === 400 || res.status === 401 || res.status === 403) return { ok: false, message: `Invalid or unauthorised API key (${res.status}).` };
+        if (!res.ok) return { ok: false, message: `Gemini API responded ${res.status}` };
+        const data = (await res.json()) as { models?: { name: string }[] };
+        const has = data.models?.some((m) => m.name === `models/${creds.model}`);
+        return { ok: true, message: has ? `Key valid; ${creds.model} available. Check quotas and billing for your project.` : `Key valid, but model "${creds.model}" was not listed.`, partial: !has };
+      }
       case "comfyui": {
         const res = await withRetry(() => fetch(`${creds.baseUrl.replace(/\/$/, "")}/system_stats`, { signal: timeout() }));
         if (!res.ok) return { ok: false, message: `ComfyUI responded ${res.status}` };

@@ -7,8 +7,10 @@ All external services are **planned integration targets**, not active connection
 
 | Category | Provider | Adapter in code | Automated test | Local fallback |
 |---|---|---|---|---|
-| AI | Ollama | Muse LLM adapter (`lib/ai/providers.ts`) | `/api/tags` + model present | Local rules |
-| AI | OpenAI | Muse LLM + image generation | `/v1/models` | Local rules; no generation |
+| AI | Ollama | Fashion Director (structured proposals, `lib/ai/providers.ts`) | `/api/tags` + model present | Local rules |
+| AI | OpenAI | Fashion Director (proposals) + image generation | `/v1/models` | Local rules; no generation |
+| AI | Google Gemini | Fashion Director (proposals) | `GET /v1beta/models` (read-only) | Local rules |
+| AI | Gemini Nano (on-device) | Fashion Director in the customer's Chrome (no key) | Browser feature detection | Server Director |
 | AI | ComfyUI | Image generation (workflow JSON) | `/system_stats` | No generation |
 | Vision | MediaPipe | Trial room (in-browser) | n/a (built in) | Public CDN for models |
 | Auth | Google OAuth | `/api/auth/oauth/google` (+ callback) | OpenID config reachability (secret verified at sign-in) | Email + password |

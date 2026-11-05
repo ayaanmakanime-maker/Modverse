@@ -4,7 +4,7 @@ _As shipped — every provider below is **NOT CONFIGURED** until an admin adds c
 
 | Provider | Status | Notes |
 |---|---|---|
-| Local rule-based Muse / text-to-design | **Active (built in)** | Deterministic, labelled "local rules" |
+| Local rule-based Muse / text-to-design | **Active (built in)** | Deterministic Fashion Director, labelled "local rules"; output goes through the V2 design compiler |
 | MediaPipe (in-browser) | **Active (built in)** | Local models via `npm run models:fetch`, CDN fallback |
 | Embedded PostgreSQL (PGlite) | **Active (default)** | `DATABASE_URL` switches to PostgreSQL (tested on v16) |
 | Local storage | **Active (default)** | `.data/uploads`, private |
@@ -12,6 +12,8 @@ _As shipped — every provider below is **NOT CONFIGURED** until an admin adds c
 | Simulated checkout | **Active (fallback)** | Clearly labelled; admin can disable |
 | Ollama | Not configured — adapter + test implemented | |
 | OpenAI (chat + images) | Not configured — adapter + test implemented | Billable |
+| Google Gemini (Fashion Director) | Not configured — adapter + test implemented (V2) | Free tier / billable |
+| Gemini Nano (Chrome built-in, on-device) | Locally implemented, experimental — opt-in, feature-detected | No key; supporting Chrome only |
 | ComfyUI | Not configured — adapter + test implemented | |
 | Razorpay | Not configured — orders, checkout, signature verification, webhook implemented | Test keys first |
 | Google OAuth | Not configured — full flow implemented | |

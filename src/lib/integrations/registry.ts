@@ -55,6 +55,16 @@ export const INTEGRATIONS: IntegrationDef[] = [
     localFallback: "Local rule-based Muse; artwork generation unavailable (clearly indicated).",
   },
   {
+    id: "gemini", category: "ai", name: "Google Gemini API", envPrefix: "GEMINI",
+    description: "Optional hosted Gemini models as The Muse's Fashion Director (structured JSON design proposals). Free and paid tiers exist — check quotas, pricing and data-use terms before enabling. Gemini Nano (on-device, Chrome built-in AI) needs no key and is offered separately in the editor where the browser supports it.",
+    docsUrl: "https://ai.google.dev/gemini-api/docs", billable: true, testable: true,
+    fields: [
+      { key: "apiKey", label: "API key", secret: true, required: true, placeholder: "AIza…", pattern: "^AIza" },
+      { key: "model", label: "Model", secret: false, required: true, placeholder: "gemini-2.5-flash" },
+    ],
+    localFallback: "Local rule-based Fashion Director (deterministic, offline).",
+  },
+  {
     id: "comfyui", category: "ai", name: "ComfyUI (local image generation)", envPrefix: "COMFYUI",
     description: "Local Stable-Diffusion-family workflows for artwork generation where hardware and model licences permit.",
     docsUrl: "https://github.com/comfyanonymous/ComfyUI", billable: false, testable: true,

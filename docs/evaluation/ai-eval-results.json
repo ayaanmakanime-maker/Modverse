@@ -1,0 +1,364 @@
+{
+  "suite": [
+    {
+      "id": "v2-spec",
+      "prompt": "Create a black oversized T-shirt with Japanese cyberpunk artwork on the back, red typography on the front and wider sleeves.",
+      "expectations": [
+        "oversized",
+        "black",
+        "back artwork",
+        "red front text",
+        "wider sleeves"
+      ]
+    },
+    {
+      "id": "v1-linen",
+      "prompt": "Design a beige linen shirt with a mandarin collar, hidden placket and brown buttons.",
+      "expectations": [
+        "shirt",
+        "linen",
+        "mandarin",
+        "hidden placket"
+      ]
+    },
+    {
+      "id": "edit-colours",
+      "prompt": "Make the sleeves navy and the buttons brown",
+      "expectations": [
+        "navy sleeves",
+        "brown buttons"
+      ]
+    },
+    {
+      "id": "pocket-collar",
+      "prompt": "Change the collar to button-down and add a chest pocket",
+      "expectations": [
+        "button-down",
+        "pocket"
+      ]
+    },
+    {
+      "id": "name-back",
+      "prompt": "Add the name 'ARJUN' across the back in Bebas Neue",
+      "expectations": [
+        "text on back",
+        "font"
+      ]
+    },
+    {
+      "id": "monogram",
+      "prompt": "Embroider the initials 'AK' on the left chest",
+      "expectations": [
+        "AK",
+        "embroidery"
+      ]
+    },
+    {
+      "id": "length",
+      "prompt": "Make it 5 cm longer",
+      "expectations": [
+        "+5 cm"
+      ]
+    },
+    {
+      "id": "kids",
+      "prompt": "A yellow kids T-shirt with a space rocket graphic on the front",
+      "expectations": [
+        "kids",
+        "yellow",
+        "graphic"
+      ]
+    },
+    {
+      "id": "gsm",
+      "prompt": "Use heavyweight 240 GSM cotton",
+      "expectations": [
+        "240"
+      ]
+    },
+    {
+      "id": "unsupported",
+      "prompt": "Add a metal zipper down the front",
+      "expectations": [
+        "no zipper invented"
+      ]
+    },
+    {
+      "id": "bigger-text",
+      "prompt": "Make the text bigger",
+      "expectations": [
+        "larger"
+      ]
+    },
+    {
+      "id": "preserve",
+      "prompt": "Change the colour to olive green",
+      "expectations": [
+        "olive",
+        "text kept"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "provider": "local-rules",
+      "label": "Local rules (offline)",
+      "schemaValidPct": 100,
+      "compiledPct": 92,
+      "expectationsPct": 100,
+      "avgOps": 2.3,
+      "rejectedItems": 2,
+      "latencyP50": 2,
+      "latencyP95": 31,
+      "cases": [
+        {
+          "id": "v2-spec",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 31,
+          "ops": 6,
+          "rejected": [
+            {
+              "item": "No wording was given, so \"YOUR TEXT\" was added — edit it in the typography panel.",
+              "reason": "Not supported by ModVerse"
+            }
+          ],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "oversized",
+              "ok": true
+            },
+            {
+              "name": "black",
+              "ok": true
+            },
+            {
+              "name": "back artwork",
+              "ok": true
+            },
+            {
+              "name": "red front text",
+              "ok": true
+            },
+            {
+              "name": "wider sleeves",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "v1-linen",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 8,
+          "ops": 6,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "shirt",
+              "ok": true
+            },
+            {
+              "name": "linen",
+              "ok": true
+            },
+            {
+              "name": "mandarin",
+              "ok": true
+            },
+            {
+              "name": "hidden placket",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "edit-colours",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 6,
+          "ops": 3,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "navy sleeves",
+              "ok": true
+            },
+            {
+              "name": "brown buttons",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "pocket-collar",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 1,
+          "ops": 2,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "button-down",
+              "ok": true
+            },
+            {
+              "name": "pocket",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "name-back",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 3,
+          "ops": 1,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "text on back",
+              "ok": true
+            },
+            {
+              "name": "font",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "monogram",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 2,
+          "ops": 1,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "AK",
+              "ok": true
+            },
+            {
+              "name": "embroidery",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "length",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 1,
+          "ops": 1,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "+5 cm",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "kids",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 2,
+          "ops": 3,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "kids",
+              "ok": true
+            },
+            {
+              "name": "yellow",
+              "ok": true
+            },
+            {
+              "name": "graphic",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "gsm",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 0,
+          "ops": 2,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "240",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "unsupported",
+          "valid": true,
+          "compiled": false,
+          "latencyMs": 0,
+          "ops": 0,
+          "rejected": [
+            {
+              "item": "Zippers are planned for jackets and hoodies; T-shirts and shirts use buttons or snaps.",
+              "reason": "Not supported by ModVerse"
+            }
+          ],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "no zipper invented",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "bigger-text",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 3,
+          "ops": 1,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "larger",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "id": "preserve",
+          "valid": true,
+          "compiled": true,
+          "latencyMs": 1,
+          "ops": 1,
+          "rejected": [],
+          "conflicts": [],
+          "expectations": [
+            {
+              "name": "olive",
+              "ok": true
+            },
+            {
+              "name": "text kept",
+              "ok": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "note": "Generated by npm run ai:eval. Model providers run only when EVAL_* variables are set."
+}
