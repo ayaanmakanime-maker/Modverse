@@ -4,8 +4,8 @@
 |---|---|
 | `npm run lint` | ESLint (Next core-web-vitals + TypeScript rules) over `src`, `scripts`, `tests` — 0 errors / 0 warnings |
 | `npm run typecheck` | `tsc --noEmit` (strict) |
-| `npm test` | Vitest unit + integration suites — **132 tests in 19 files** |
-| `npm run test:e2e` | Playwright — requires a production build (`npm run build`); starts the server on port 3100 with a fresh `.data/e2e` database, a known admin, rate limits disabled, Chromium fake camera and software WebGL — **24 journeys** |
+| `npm test` | Vitest unit + integration suites — **172 tests in 24 files** |
+| `npm run test:e2e` | Playwright — requires a production build (`npm run build`); starts the server on port 3100 with a fresh `.data/e2e` database, a known admin, rate limits disabled, Chromium fake camera and software WebGL — **31 journeys** |
 | `npm run db:migrate` | Applies all SQL migrations (0000–0006) to the configured database |
 | `npm run build` | Production build |
 | `npm run ai:eval` | Fashion Director / compiler evaluation (docs/evaluation/ai-eval-results.json) |
@@ -19,7 +19,9 @@ SVG sanitiser · Creative Library integrity (supplied 1,000 assets preserved + S
 `partners.test.ts`: partner application/approval/suspension, team members, capability matching and reassignment, **organisation isolation** (cross-org 404, wrong type 403, pending/suspended refused), **data minimisation** (no customer contact data or retail prices for manufacturers; no designs/prices for logistics; no partner names on the customer timeline), artwork/photo/POD file access, accept → quote → approval → stages → issues → QC fail/rework/pass → ready, label → pickup → transit → failed attempt → POD delivery, return shipments, disputes, **notifications** (who receives what — and who doesn't), **settlements** (accrual at pickup/delivery, idempotency, isolation, adjust/pay/cancel, CSV formula neutralisation), no duplicate timeline events.
 `courier.test.ts`: Shiprocket inactive until tested + enabled; quotes; booking refused without billable confirmation; exact order payload; duplicate booking refused; tracking sync (forward-only, idempotent) advances the order and notifies the customer; webhook rejects missing/wrong tokens, ignores unknown AWBs and stale scans — against a **simulated** Shiprocket API.
 
-## End-to-end (`tests/e2e`, Chromium, 22 journeys)
+## End-to-end (`tests/e2e`, Chromium, 31 journeys)
+* `atelier-pro.spec.ts` — blend mode, filter stack, adjustments, marquee → mask, magic wand, brush + eraser on a vector drawing layer, perspective warp handles, folders, editable history jumps, all persisted in the saved design; on-device AI object selection; Fabric Lab (search, profiles, compare 3, recommendations, live apply), apply to regions, safe area, production preview.
+* `body-scan.spec.ts` — scanner consent, live camera guidance, honest review (nothing invented without a view), manual correction, consent-gated saving; avatar studio (Atlas/Aura, Nova limited to kids) and scan-to-fit.
 * **`journey.spec.ts` — the complete V2 customer journey in one session**: register → choose a garment in the shop → Design Studio → Creative Library artwork → typography → switch to Atelier → panel colour → fabric & colour → construction (V-neck) → 3D → save → reopen → AI assistant proposal → apply structured changes → validation finds real problems (V-neck overlaps chest art, black-on-black text) and one-click fixes resolve them → itemised price → live try-on with the saved design → cart → checkout (simulated payment) → order data verified (design, price and placement snapshots).
 * `partners.spec.ts` — customer order → manufacturer & logistics apply → admin approves → assigns → accept/quote → admin approves quote → stages → QC → ready → shipment → label PDF → tracking → POD delivery → customer sees tracking (no partner names) → dispute → admin resolves → admin records the manufacturer payout → manufacturer sees it and its notifications; cross-portal and admin API access refused.
 * Auth & permissions (registration, password policy, admin APIs, other users' designs, CSRF) · catalogue Men/Women/Kids · Creative Library · Studio/Atelier/Pro · text/typography/library/patterns/construction/undo/Muse/versions · uploads, DPI validation + fix, tech pack PDF/JSON, malicious SVG · V2 editor (drag & drop, clipboard, zoom/pan, effects, crop, custom fonts, cuff surface) · 3D viewer (views, details, quality, GLB export, no page errors) · AI pipeline (proposal → preview → one undo step) and compiler rejections · trial room (start, tracking loss, Level C, fullscreen, camera measurement, stop), **camera permission denial**, fit analysis labels · cart → checkout → admin approval → verified fit · dynamic pricing + discount + reorder/redesign · catalogue search/filters · measurements, kids guard, child consent · admin dashboard + Integration Manager (**missing credentials** cannot be enabled) · **mobile** (Pixel 7) layouts.
@@ -33,7 +35,8 @@ SVG sanitiser · Creative Library integrity (supplied 1,000 assets preserved + S
 | Failed uploads / incorrect artwork dimensions | `editor.spec.ts` (type detection, DPI error + fix), `services.test.ts`, journey (print-area overflow + fix) |
 | Mobile rendering | `mobile.spec.ts` |
 | Access control | `auth.spec.ts`, `services.test.ts`, `partners.test.ts`, `partners.spec.ts` |
-| Data persistence | save/reopen in `journey.spec.ts`, versions in `editor.spec.ts`, order snapshots |
+| Data persistence | save/reopen in `journey.spec.ts`, versions in `editor.spec.ts`, order snapshots, schema v3 round-trip in `atelier-pro.spec.ts` |
+| Ultracode upgrade (unit) | `atelier-pro.test.ts` (composer effects, adjustments maths, selections, history), `fabric-lab.test.ts` (profiles, drape, regions, safe area, production preview, flagship geometry), `avatars.test.ts`, `body-scan.test.ts` (synthetic body accuracy, loose clothing, held objects), `ai-capabilities.test.ts` |
 
 ## Notes
 Camera tests use Chromium's fake device and software GL, so they verify the pipeline, not real-world tracking quality. 3D FPS in CI is software-rendered. Latest results: BUILD_STATUS.md.

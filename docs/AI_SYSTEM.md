@@ -41,6 +41,11 @@ Unaffected settings and existing layers are preserved.
 ## Layer 4 — Engine & transaction UI
 AI Muse panel shows the proposal as a transaction card: grouped changes, artwork sources/licences, conflicts, rejections, corrections, validation and price impact. **Apply** commits all operations as **one undo step** (Undo/Redo or the card's Undo revert it); **Discard** changes nothing. "Preview before applying" can be turned off for instant edits. Questions ("which fabric for summer?", "critique my design") return labelled suggestions whose changes use the same engine.
 
+## Capability adapters (`src/lib/ai/capabilities.ts`)
+One adapter interface for every AI capability — fashion director, artwork generation, visual analysis, garment intelligence, fit recommendation, manufacturing validation. Each adapter declares where it runs (server / browser / hosted), its cost and the integration it needs; outputs are zod-validated structured data and approved design changes are applied deterministically by the design engine. Defaults are local and free (local rules Director, MediaPipe on-device vision, Fabric Lab rules, measurement fit check, production validator). Hosted or billable adapters (Gemini, OpenAI, ComfyUI) stay inactive until an admin configures and enables them; with none enabled, artwork generation reports that no image model is connected instead of faking images. `GET /api/ai/capabilities` lists the active adapter per capability.
+
+The visible feature name is **AI Muse** (formerly "The Muse"); internal ids and the `/api/muse` endpoint are unchanged.
+
 ## Security
 Operations are Zod-validated, `set` paths are regex-allowlisted (prototype-pollution paths rejected), layer edits use an allowlist of properties, assets are resolved by id only (never arbitrary URLs), and the complete result is re-validated against the `DesignConfig` schema. `/api/muse` and `/api/muse/compile` are rate-limited and CSRF-protected; malformed proposals return 400. E2E tests send hostile proposals.
 

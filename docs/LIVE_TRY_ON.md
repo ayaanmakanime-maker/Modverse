@@ -48,5 +48,13 @@ The trial room is also a **fit check** (`src/lib/garment/fit-check.ts`, `src/com
 * **On your body:** the overlay is drawn at the chosen size's real centimetre dimensions on your tracked body, and the **Fit map** tints the shoulders, chest, waist, hem and sleeves in the verdict colours (Levels A and C). Switching size re-draws both.
 * **Honest limits:** this is a measurement-based estimate shown on your live image. The camera positions the garment; it cannot feel tension or simulate drape, and camera/height-weight values are approximate. *Verified* fit still comes only from feedback after wearing the physical garment.
 
+## Guided body scanner (`src/lib/tryon/body-scan.ts`, `src/components/tryon/BodyScanner.tsx`)
+Account → Measurements and the editor's Fit tab. Steps: **consent** → **height** (typed; sets the scale) → **front**, **side** and optional **back** views → **review & correct** → use for the fit check and/or save (separate storage consent).
+* On-device MediaPipe pose landmarks (live guidance) and the **selfie multiclass** segmenter (hair / skin / clothes / accessories). Frames are discarded right after analysis, never uploaded or stored; the camera stops after capture.
+* Checks: whole body and feet visible, distance, facing / profile, arms away from the body; **loose clothing** (outline far wider than the joints allow) and **held objects** (accessory pixels at the hands) are detected.
+* Labels: lengths from landmarks are **measured** (±2–3 cm); circumferences from front width × side depth are **estimated** (ellipse model, ±4–6 cm); height is **manually entered**; neck, bicep and wrist are **tape-only**. Anything hidden by clothing or missing a view is left blank — never invented.
+* Every value can be corrected (it becomes manually entered) before it is used. Saved camera values can never claim high confidence.
+* Not benchmarked on real people in this repository (the test camera shows no person); accuracy must be validated on devices.
+
 ## Light mode
 All of ModVerse (store, editor, trial room, admin and partner portals) has a white light theme: header/editor/admin toggle or Account → Settings → Appearance (Dark · Light · System). The preference is stored in a cookie and rendered on the server, so pages never flash the wrong theme; logos switch to the dark-lettering artwork and the 3D studio backdrop turns white.
