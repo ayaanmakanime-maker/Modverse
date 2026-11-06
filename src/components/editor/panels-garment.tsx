@@ -1,4 +1,5 @@
 "use client";
+import { BodyScanner } from "@/components/tryon/BodyScanner";
 import { AvatarStudio, type AvatarState } from "./avatar-panel";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
@@ -316,9 +317,11 @@ export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar
     return vals.chest ? { body: vals, provenance: {} as ProvenanceMap, rough: false } : null;
   }, [manual, config.audience]);
   // Avatar body sliders count as manually entered measurements for the fit check.
+  const [scanning, setScanning] = useState(false);
+  const [scanned, setScanned] = useState<{ body: Record<string, number>; provenance: ProvenanceMap } | null>(null);
   const avatarBody = avatar.body?.chest ? avatar.body : null;
-  const body = active?.measurements ?? quick?.body ?? avatarBody ?? null;
-  const provenance = active?.provenance ?? quick?.provenance ?? (avatarBody ? (Object.fromEntries(Object.keys(avatarBody).map((k) => [k, { source: "user" as const, confidence: "medium" as const }])) as ProvenanceMap) : {});
+  const body = active?.measurements ?? quick?.body ?? scanned?.body ?? avatarBody ?? null;
+  const provenance = active?.provenance ?? quick?.provenance ?? scanned?.provenance ?? (avatarBody ? (Object.fromEntries(Object.keys(avatarBody).map((k) => [k, { source: "user" as const, confidence: "medium" as const }])) as ProvenanceMap) : {});
   const rec = body?.chest ? recommendSize(body as { chest: number }, config, active?.fitPreference ?? "true") : null;
   return (
     <div className="space-y-4" data-testid="fit-panel">
@@ -339,6 +342,16 @@ export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar
           </div>
         )}
       </Group>
+      {config.audience !== "kids" && (
+        <Group title="Camera body scan" hint="Front, side and back views measured on this device; you review every value before it is used.">
+          {scanning ? (
+            <BodyScanner audience={config.audience} signedIn={!!user} onClose={() => setScanning(false)} onApply={(m, prov) => { setScanned({ body: m, provenance: prov as ProvenanceMap }); setAvatar({ ...avatar, body: { ...(avatar.body ?? {}), ...m } }); setScanning(false); }} />
+          ) : (
+            <button className="mv-chip" onClick={() => setScanning(true)} data-testid="fit-scan">{scanned ? "Rescan" : "Scan my body with the camera"}</button>
+          )}
+          {scanned && !scanning && <p className="text-[0.65rem] text-mute">Using your reviewed scan ({Object.keys(scanned.body).length} values) for the fit check and the avatar.</p>}
+        </Group>
+      )}
       {rec && (
         <Group title="Size recommendation">
           <div className="flex items-center gap-2"><span className="mv-display text-3xl">{rec.size}</span><Badge tone={rec.confidence === "high" ? "ok" : rec.confidence === "medium" ? "warn" : "neutral"}>{rec.confidence} confidence</Badge><Badge tone="info">estimate</Badge></div>

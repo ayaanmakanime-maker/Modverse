@@ -23,7 +23,7 @@ import { DEFAULT_APPEARANCE, type AvatarAppearance } from "@/lib/three/avatar";
 import { AVATAR_INFO, buildAvatar, modelForAudience, modelForBodyType, type AvatarBody, type AvatarStyle } from "@/lib/three/flagship-avatar";
 import { FlagshipAvatar } from "./FlagshipAvatar";
 import { bodyForSize } from "@/lib/garment/sizing";
-import type { BodyMeasurements, PanelId, Zone } from "@/lib/garment/types";
+import type { PanelId, Zone } from "@/lib/garment/types";
 import { isDark, mixHex, pbrAlbedo } from "@/lib/color";
 
 export type ViewPreset = "front" | "back" | "left" | "right" | "three-quarter";

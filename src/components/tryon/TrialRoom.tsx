@@ -1,4 +1,5 @@
 "use client";
+import { resolveAsset } from "@/lib/client/cv-assets";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -58,15 +59,6 @@ async function loadImage(svg: string): Promise<HTMLImageElement> {
   return img;
 }
 
-async function resolveAsset(local: string, remote: string): Promise<string> {
-  try {
-    const r = await fetch(local, { method: "HEAD" });
-    if (r.ok) return local;
-  } catch {
-    /* fall through */
-  }
-  return remote;
-}
 
 interface Stats { fps: number; inferMs: number; quality: number; jitterPx: number; level: Level; source: string; recoveries: number; yawDeg: number }
 

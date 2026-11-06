@@ -1,4 +1,5 @@
 "use client";
+import { BodyScanner } from "@/components/tryon/BodyScanner";
 import dynamic from "next/dynamic";
 import { ThemePicker } from "@/components/theme";
 import { useRouter } from "next/navigation";
@@ -50,8 +51,14 @@ export function MeasurementsManager() {
       setBusy(false);
     }
   }
+  const [scan, setScan] = useState<"men" | "women" | "kids" | null>(null);
   return (
     <div className="space-y-4" data-testid="measurements">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-bone-2">Measure with your camera (front, side, back — on this device):</span>
+        {(["men", "women"] as const).map((a) => <Button key={a} size="sm" variant="ghost" onClick={() => setScan(a)} data-testid={`scan-open-${a}`}>Scan · {a === "men" ? "Atlas fit" : "Aura fit"}</Button>)}
+      </div>
+      {scan && <BodyScanner audience={scan} signedIn onClose={() => { setScan(null); reload(); }} />}
       <div className="flex items-center justify-between"><h1 className="mv-display text-3xl">Measurements</h1><Button size="sm" onClick={() => setEdit({ audience: "men", measurements: {}, fitPreference: "true" })} data-testid="add-measurements">Add profile</Button></div>
       <Notice tone="info">Measure your body (not a garment) in centimetres. ModVerse compares your measurements with real garment dimensions to recommend sizes — always labelled as an estimate. Values you entered are shown plainly; camera estimates from the trial room are marked with their ± tolerance. Editing a value makes it yours.</Notice>
       {!items ? <Spinner /> : items.length === 0 ? <EmptyState title="No measurement profiles" /> : items.map((p) => {
