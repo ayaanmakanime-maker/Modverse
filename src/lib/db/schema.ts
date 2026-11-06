@@ -19,6 +19,8 @@ export const users = pgTable(
     role: text("role", { enum: ["customer", "staff", "admin"] }).notNull().default("customer"),
     status: text("status", { enum: ["active", "disabled", "deleted"] }).notNull().default("active"),
     emailVerifiedAt: ts("email_verified_at"),
+    /** Guest account (V2.3): a real account with a throw-away address, until the visitor "saves" it with an email + password. */
+    isGuest: boolean("is_guest").notNull().default(false),
     marketingOptIn: boolean("marketing_opt_in").notNull().default(false),
     lastLoginAt: ts("last_login_at"),
     createdAt: createdAt(),

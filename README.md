@@ -36,7 +36,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | Trial room | MediaPipe on-device pose tracking — Level A (2D), B (3D on landmarks), C (experimental occlusion). |
 | Manufacturing | Validation engine with fixes, tech pack PDF/JSON, BOM, measurement sheet, print-ready SVG / 300 DPI PNG, CAD exchange JSON. |
 | Commerce | Cart, checkout, order snapshots, simulated payments (labelled) or Razorpay test mode with signature verification, order tracking. |
-| Accounts | Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements, avatars, guardian-managed child profiles. |
+| Accounts | **Guest mode** (one-click account with every signed-in feature, savable later), Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements, avatars, guardian-managed child profiles. |
 | Admin | Analytics, orders + production approval, design reviews, production board, shipping, disputes, partner approval, pricing & discounts, users/roles, catalogue, library, Integration Manager, audit log, settings. |
 | **V2: AI pipeline** | Fashion Director (local rules, or Ollama / Gemini / OpenAI / on-device Gemini Nano when enabled) → artwork resolution → design compiler (validated, previewed, priced) → applied as one undoable transaction. |
 | **V2: fit & try-on** | Live trial room that doubles as a **fit check** — every size compared zone by zone with your measurements against the garment's design intent, best size, and a fit map on your live image; fit analysis keeps *estimated*, *simulated* and customer-*verified* fit separate. |

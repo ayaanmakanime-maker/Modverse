@@ -28,7 +28,7 @@ import { PRINT_METHODS, AUDIENCES } from "@/lib/garment/types";
 async function makeUser(email: string, role: "customer" | "staff" | "admin" = "customer"): Promise<SessionUser> {
   const db = await getDb();
   const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
-  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, sessionId: "test" };
+  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, isGuest: false, sessionId: "test" };
 }
 
 const address = { fullName: "Alice Private", phone: "9876500001", line1: "77 Secret Lane", city: "Pune", state: "Maharashtra", pincode: "411001" };

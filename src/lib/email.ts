@@ -9,7 +9,8 @@ import { getActiveIntegration } from "./integrations/config";
  */
 export async function sendEmail(msg: { to: string; subject: string; body: string; userId?: string | null }): Promise<{ provider: string; delivered: boolean }> {
   const db = await getDb();
-  const resend = await getActiveIntegration("resend");
+  // Guest accounts use unroutable throw-away addresses: their messages stay in the in-app mailbox.
+  const resend = msg.to.toLowerCase().endsWith("@guest.modverse.local") ? null : await getActiveIntegration("resend");
   if (resend) {
     try {
       const res = await fetch("https://api.resend.com/emails", {

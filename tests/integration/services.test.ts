@@ -32,7 +32,7 @@ let staff: SessionUser;
 async function makeUser(email: string, role: "customer" | "staff" | "admin" = "customer"): Promise<SessionUser> {
   const db = await getDb();
   const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
-  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, sessionId: "test" };
+  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, isGuest: false, sessionId: "test" };
 }
 
 const address = { fullName: "Alice Example", phone: "9876543210", line1: "12 MG Road", city: "Bengaluru", state: "Karnataka", pincode: "560001" };
@@ -169,7 +169,7 @@ describe("commerce: cart → simulated checkout → production approval", () => 
 describe("dynamic pricing, discounts, reorder", () => {
   it("applies admin rules server-side, validates discounts, refuses stale totals and snapshots prices", async () => {
     const adminRow = (await (await getDb()).select().from(s.users).where(eq(s.users.role, "admin")))[0];
-    const admin: SessionUser = { id: adminRow.id, email: adminRow.email, name: adminRow.name, role: "admin", emailVerified: true, sessionId: "t" };
+    const admin: SessionUser = { id: adminRow.id, email: adminRow.email, name: adminRow.name, role: "admin", emailVerified: true, isGuest: false, sessionId: "t" };
     const dana = await makeUser("dana@example.com");
     const { project } = await createProject(dana, { modelId: "tee-classic-crew", audience: "men" });
     const cfg = createDesign("tee-classic-crew", "men");

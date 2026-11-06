@@ -26,7 +26,7 @@ import { shiprocketSim } from "../stubs/shiprocket-sim";
 async function makeUser(email: string, role: "customer" | "staff" | "admin" = "customer"): Promise<SessionUser> {
   const db = await getDb();
   const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
-  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, sessionId: "test" };
+  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, isGuest: false, sessionId: "test" };
 }
 
 let alice: SessionUser, admin: SessionUser, orderId: string;

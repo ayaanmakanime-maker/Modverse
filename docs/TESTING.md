@@ -4,8 +4,8 @@
 |---|---|
 | `npm run lint` | ESLint (Next core-web-vitals + TypeScript rules) over `src`, `scripts`, `tests` — 0 errors / 0 warnings |
 | `npm run typecheck` | `tsc --noEmit` (strict) |
-| `npm test` | Vitest unit + integration suites — **123 tests in 17 files** |
-| `npm run test:e2e` | Playwright — requires a production build (`npm run build`); starts the server on port 3100 with a fresh `.data/e2e` database, a known admin, rate limits disabled, Chromium fake camera and software WebGL — **23 journeys** |
+| `npm test` | Vitest unit + integration suites — **132 tests in 19 files** |
+| `npm run test:e2e` | Playwright — requires a production build (`npm run build`); starts the server on port 3100 with a fresh `.data/e2e` database, a known admin, rate limits disabled, Chromium fake camera and software WebGL — **24 journeys** |
 | `npm run db:migrate` | Applies all SQL migrations (0000–0006) to the configured database |
 | `npm run build` | Production build |
 | `npm run ai:eval` | Fashion Director / compiler evaluation (docs/evaluation/ai-eval-results.json) |

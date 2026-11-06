@@ -68,6 +68,7 @@ export { getMembership, requirePartner } from "./partner-access";
 
 // ── Onboarding ───────────────────────────────────────────────────
 export async function applyAsPartner(user: SessionUser, raw: unknown) {
+  if (user.isGuest) throw new ApiError(403, "guest_not_allowed", "Save your account (add an email and password) before applying as a partner.");
   const input = partnerApplicationSchema.parse(raw);
   if (await getMembership(user)) throw new ApiError(409, "already_partner", "Your account already belongs to a partner organisation.");
   const db = await getDb();
@@ -97,7 +98,7 @@ export async function addMember(user: SessionUser, email: string) {
   if (!m || m.role !== "owner") throw forbidden("Only the organisation owner can add members");
   const db = await getDb();
   const [u] = await db.select().from(s.users).where(eq(s.users.email, email.trim().toLowerCase()));
-  if (!u || u.status !== "active") throw notFound("Account");
+  if (!u || u.status !== "active" || u.isGuest) throw notFound("Account");
   const [existing] = await db.select().from(s.organizationMembers).where(eq(s.organizationMembers.userId, u.id));
   if (existing) throw new ApiError(409, "already_member", "That account already belongs to a partner organisation");
   await db.insert(s.organizationMembers).values({ organizationId: m.org.id, userId: u.id, role: "member" });

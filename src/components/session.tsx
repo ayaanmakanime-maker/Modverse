@@ -8,6 +8,7 @@ export interface ClientUser {
   name: string;
   role: "customer" | "staff" | "admin";
   emailVerified: boolean;
+  isGuest?: boolean;
 }
 
 interface Ctx {

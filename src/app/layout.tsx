@@ -25,7 +25,7 @@ export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser().catch(() => null);
   const count = user ? await cartCount(user.id).catch(() => 0) : 0;
-  const clientUser = user ? { id: user.id, email: user.email, name: user.name, role: user.role, emailVerified: user.emailVerified } : null;
+  const clientUser = user ? { id: user.id, email: user.email, name: user.name, role: user.role, emailVerified: user.emailVerified, isGuest: user.isGuest } : null;
   const pref = parseThemePref((await cookies()).get(THEME_COOKIE)?.value);
   return (
     <html lang="en-IN" data-theme={pref === "light" ? "light" : "dark"} data-theme-pref={pref} suppressHydrationWarning>

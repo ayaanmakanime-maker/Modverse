@@ -24,6 +24,8 @@ PostgreSQL via Drizzle ORM (`src/lib/db/schema.ts`), **52 tables**, versioned SQ
 | `0005_v21_settlements` | New `settlements` (organisation, order, kind production/shipping, job or shipment [unique each], amount, original amount, status due/paid/void, payment reference, note, paid at/by); `shipments.rate_amount` (agreed shipping rate) |
 | `0006_v21_courier_ref` | `shipments.provider_ref` (jsonb — courier-integration ids and label URL) |
 
+| `0007_v23_guest_mode` | `users.is_guest` (boolean, default false) |
+
 Design documents inside `design_versions.config` are versioned by `schemaVersion` (V2 = 2) and upgraded on read.
 
 ## Ownership rules
