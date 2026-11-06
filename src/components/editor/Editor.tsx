@@ -23,6 +23,7 @@ import { ConstructionPanel, FabricPanel, FitPanel, GarmentPanel, MeasurementsPan
 import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from "./panels-artwork";
 import { MusePanel, TechPackPanel, ValidationPanel, VersionsPanel, useLiveValidation } from "./panels-pro";
 import { HistoryPanel, ProductionToggles } from "./pro-panels";
+import type { AvatarState } from "./avatar-panel";
 import { FabricLabPanel } from "./fabric-lab";
 import type { GarmentViewerHandle, LightingPreset, ViewPreset } from "@/components/three/GarmentViewer";
 import { isSoftwareRenderer } from "@/lib/three/capabilities";
@@ -85,7 +86,7 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
   const [patternTarget, setPatternTarget] = useState<PanelId | null>(null);
   const [view3d, setView3d] = useState<ViewPreset>("three-quarter");
   const [lighting, setLighting] = useState<LightingPreset>("studio");
-  const [avatar, setAvatar] = useState<{ on: boolean; body?: Record<string, number> }>({ on: false });
+  const [avatar, setAvatar] = useState<AvatarState>({ on: false });
   const [saving, setSaving] = useState(false);
   const [childId, setChildId] = useState<string>("");
   const [mobilePanel, setMobilePanel] = useState(true);
@@ -300,7 +301,7 @@ function EditorLayout(p: {
   tab: Tab; setTab: (t: Tab) => void; mode: EditorMode; setMode: (m: EditorMode) => void; name: string; setName: (n: string) => void; dirty: boolean; projectId: string | null; version: number;
   view: "2d" | "3d" | "split"; setView: (v: "2d" | "3d" | "split") => void; undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean; saving: boolean;
   save: (o?: { asNewVersion?: boolean; note?: string }) => Promise<string | null>; addToCart: () => void; view3d: ViewPreset; setView3d: (v: ViewPreset) => void; lighting: LightingPreset; setLighting: (l: LightingPreset) => void;
-  avatar: { on: boolean; body?: Record<string, number> }; setAvatar: (a: { on: boolean; body?: Record<string, number> }) => void; viewer: React.RefObject<GarmentViewerHandle | null>;
+  avatar: AvatarState; setAvatar: (a: AvatarState) => void; viewer: React.RefObject<GarmentViewerHandle | null>;
   patternTarget: PanelId | null; setPatternTarget: (p: PanelId | null) => void; childProfiles: { id: string; nickname: string }[]; childId: string; setChildId: (s: string) => void;
   mobilePanel: boolean; setMobilePanel: (b: boolean) => void; selectedId: string | null;
 }) {
@@ -328,7 +329,7 @@ function EditorLayout(p: {
       case "layers": return <LayersPanel />;
       case "fabriclab": return <FabricLabPanel />;
       case "muse": return <MusePanel />;
-      case "fit": return <FitPanel avatarOn={p.avatar.on} onAvatar={(on, body) => { p.setAvatar({ on, body }); if (on && p.view === "2d") p.setView("split"); }} />;
+      case "fit": return <FitPanel avatar={p.avatar} setAvatar={(a) => { p.setAvatar(a); if (a.on && !p.avatar.on && p.view === "2d") p.setView("split"); }} />;
       case "versions": return <div className="space-y-5"><HistoryPanel /><VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} /></div>;
       case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} exportGlb={() => p.viewer.current?.exportGlb() ?? Promise.resolve(null)} />;
       case "check": return (
@@ -421,7 +422,7 @@ function EditorLayout(p: {
             {p.view !== "3d" && <div className="min-h-0 border-line md:border-r"><Canvas2D /></div>}
             {p.view !== "2d" && (
               <div className="relative min-h-0">
-                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body }} controls="details" production={production} guides={guides3d} />
+                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body, appearance: p.avatar.appearance }} controls="details" production={production} guides={guides3d} />
                 <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
               </div>
             )}

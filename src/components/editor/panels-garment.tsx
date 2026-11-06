@@ -1,4 +1,5 @@
 "use client";
+import { AvatarStudio, type AvatarState } from "./avatar-panel";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { useEditor } from "@/lib/editor/store";
@@ -292,7 +293,7 @@ export function MeasurementsPanel({ mode }: { mode: EditorMode }) {
 
 interface MeasurementProfile { id: string; name: string; audience: string; measurements: Record<string, number>; provenance?: ProvenanceMap; fitPreference: "closer" | "true" | "looser" }
 
-export function FitPanel({ onAvatar, avatarOn }: { onAvatar: (on: boolean, body?: Record<string, number>) => void; avatarOn: boolean }) {
+export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar: (a: AvatarState) => void }) {
   const config = useEditor((s) => s.config);
   const commit = useEditor((s) => s.commit);
   const { user } = useSession();
@@ -314,8 +315,10 @@ export function FitPanel({ onAvatar, avatarOn }: { onAvatar: (on: boolean, body?
     }
     return vals.chest ? { body: vals, provenance: {} as ProvenanceMap, rough: false } : null;
   }, [manual, config.audience]);
-  const body = active?.measurements ?? quick?.body ?? null;
-  const provenance = active?.provenance ?? quick?.provenance ?? {};
+  // Avatar body sliders count as manually entered measurements for the fit check.
+  const avatarBody = avatar.body?.chest ? avatar.body : null;
+  const body = active?.measurements ?? quick?.body ?? avatarBody ?? null;
+  const provenance = active?.provenance ?? quick?.provenance ?? (avatarBody ? (Object.fromEntries(Object.keys(avatarBody).map((k) => [k, { source: "user" as const, confidence: "medium" as const }])) as ProvenanceMap) : {});
   const rec = body?.chest ? recommendSize(body as { chest: number }, config, active?.fitPreference ?? "true") : null;
   return (
     <div className="space-y-4" data-testid="fit-panel">
@@ -350,9 +353,8 @@ export function FitPanel({ onAvatar, avatarOn }: { onAvatar: (on: boolean, body?
           <FitAnalysisView config={config} body={body} provenance={provenance} verified={verified} />
         </Group>
       )}
-      <Group title="Avatar preview">
-        <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={avatarOn} onChange={(e) => onAvatar(e.target.checked, body ?? undefined)} data-testid="avatar-toggle" /> Show garment on a parametric avatar in 3D</label>
-        <Notice tone="info">Avatar proportions come from your measurements or the size chart. It&apos;s an approximate mannequin for context.</Notice>
+      <Group title="Avatar — Atlas · Aura · Nova">
+        <AvatarStudio config={config} avatar={avatar} setAvatar={setAvatar} />
       </Group>
     </div>
   );
