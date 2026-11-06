@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { api, errorMessage } from "@/lib/client/api";
 import { formatINR, type PriceLine } from "@/lib/garment/pricing";
-import { GarmentFlat } from "@/components/garment/GarmentFlat";
+import { DesignFlat } from "@/components/garment/DesignFlat";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { useSession } from "@/components/session";
 import { Badge, Button, EmptyState, Select, toast } from "@/components/ui";
@@ -32,7 +32,7 @@ export function CartView({ initial }: { initial: Cart }) {
         <h1 className="mv-display text-4xl">Cart</h1>
         {cart.lines.map((l) => (
           <div key={l.id} className="mv-card flex gap-4 p-3">
-            <Link href={`/design/${l.projectId}`} className="flex w-24 shrink-0 items-center justify-center rounded-lg bg-surface-2"><GarmentFlat config={l.config} view="front" className="h-24 w-full" /></Link>
+            <Link href={`/design/${l.projectId}`} className="flex w-24 shrink-0 items-center justify-center rounded-lg bg-surface-2"><DesignFlat config={l.config} view="front" className="h-24 w-full" /></Link>
             <div className="min-w-0 flex-1 space-y-1">
               <p className="font-medium">{l.name} <span className="text-xs text-mute">v{l.version}</span></p>
               <p className="text-xs text-mute">{l.summary}</p>

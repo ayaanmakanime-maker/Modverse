@@ -28,7 +28,7 @@ export async function renderShippingLabel(l: LabelInput): Promise<Uint8Array> {
   let y = 410;
   const text = (s: string, size = 9, f = font, x = 14) => { page.drawText(clean(s), { x, y, size, font: f, color: ink }); y -= size + 4; };
   page.drawRectangle({ x: 8, y: 8, width: 272, height: 416, borderColor: ink, borderWidth: 1.2 });
-  text(`${l.courier.toUpperCase()}  ·  ${l.direction === "return" ? "RETURN" : "FORWARD"}${l.cod !== null ? "  ·  COD" : "  ·  PREPAID"}`, 11, bold);
+  text(`${l.courier.toUpperCase()}  |  ${l.direction === "return" ? "RETURN" : "FORWARD"}  |  ${l.cod !== null ? "COD" : "PREPAID"}`, 11, bold);
   text(`AWB ${l.awb}`, 16, bold);
   // Stripe pattern derived from the AWB characters (visual only).
   let x = 14;
@@ -45,7 +45,7 @@ export async function renderShippingLabel(l: LabelInput): Promise<Uint8Array> {
   page.drawLine({ start: { x: 8, y }, end: { x: 280, y }, thickness: 1, color: ink });
   y -= 14;
   text("DELIVER TO", 8, bold);
-  text(l.to.name ?? "", 12, bold);
+  text(l.to.fullName ?? l.to.name ?? "", 12, bold);
   for (const line of [l.to.line1, l.to.line2, `${l.to.city ?? ""}, ${l.to.state ?? ""}`, `PIN ${l.to.pincode ?? ""}`, `Phone ${l.to.phone ?? ""}`]) if (line && line.trim() && line.trim() !== ",") text(line, 10);
   y -= 4;
   page.drawLine({ start: { x: 8, y }, end: { x: 280, y }, thickness: 1, color: ink });
@@ -56,7 +56,7 @@ export async function renderShippingLabel(l: LabelInput): Promise<Uint8Array> {
   y -= 4;
   page.drawLine({ start: { x: 8, y }, end: { x: 280, y }, thickness: 1, color: ink });
   y -= 14;
-  text(`Order ${l.orderNumber}   ·   ${l.units} unit(s)   ·   ${(l.weightGrams / 1000).toFixed(2)} kg`, 9);
+  text(`Order ${l.orderNumber}  |  ${l.units} unit(s)  |  ${(l.weightGrams / 1000).toFixed(2)} kg`, 9);
   if (l.cod !== null) text(`COLLECT ON DELIVERY: INR ${l.cod}`, 12, bold);
   text(`Handled by ${l.partner}`, 8);
   y = 22;

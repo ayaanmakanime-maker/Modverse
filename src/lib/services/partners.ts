@@ -13,7 +13,11 @@ import { getFabric } from "../garment/fabrics";
 import { AUDIENCES, PRINT_METHODS } from "../garment/types";
 import { progressOrder } from "./commerce";
 import { storeUpload } from "./uploads";
+import { getMembership, requirePartner } from "./partner-access";
+import { accrueProductionSettlement, accrueShippingSettlement } from "./settlements";
+import { link, notifyCustomer, notifyOrg, notifyTeam, notifyUser } from "./notify";
 import { SHIPMENT_NEXT, SHIPMENT_STATUSES, STAGES, type ShipmentStatus } from "../partners/constants";
+import { GSTIN_MESSAGE, validateGstin } from "../partners/gstin";
 
 export { STAGES, SHIPMENT_STATUSES };
 
@@ -47,7 +51,10 @@ export const logisticsCapabilitiesSchema = z.object({
   maxWeightKg: z.number().min(0.1).max(1000).default(30),
 });
 
-const gstin = z.string().trim().toUpperCase().regex(/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/, "Enter a valid 15-character GSTIN");
+const gstin = z.string().trim().toUpperCase().superRefine((v, ctx) => {
+  const r = validateGstin(v);
+  if (!r.ok) ctx.addIssue({ code: "custom", message: GSTIN_MESSAGE[r.problem] });
+});
 export const partnerApplicationSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("manufacturer"), name: z.string().trim().min(2).max(80), legalName: z.string().trim().max(120).optional(), gstin: gstin.optional(), contactEmail: z.string().email(), phone: z.string().trim().max(20).optional(), city: z.string().trim().max(60).optional(), state: z.string().trim().max(60).optional(), capabilities: manufacturerCapabilitiesSchema }),
   z.object({ type: z.literal("logistics"), name: z.string().trim().min(2).max(80), legalName: z.string().trim().max(120).optional(), gstin: gstin.optional(), contactEmail: z.string().email(), phone: z.string().trim().max(20).optional(), city: z.string().trim().max(60).optional(), state: z.string().trim().max(60).optional(), capabilities: logisticsCapabilitiesSchema }),
@@ -56,21 +63,8 @@ export const partnerApplicationSchema = z.discriminatedUnion("type", [
 export type ManufacturerCaps = z.infer<typeof manufacturerCapabilitiesSchema>;
 export type LogisticsCaps = z.infer<typeof logisticsCapabilitiesSchema>;
 
-// ── Membership & access ───────────────────────────────────────────
-export async function getMembership(user: SessionUser) {
-  const db = await getDb();
-  const [row] = await db.select({ org: s.organizations, role: s.organizationMembers.role }).from(s.organizationMembers).innerJoin(s.organizations, eq(s.organizations.id, s.organizationMembers.organizationId)).where(eq(s.organizationMembers.userId, user.id)).limit(1);
-  return row ?? null;
-}
-
-/** The caller's APPROVED organisation of the given type (or a clear refusal). */
-export async function requirePartner(user: SessionUser, type: "manufacturer" | "logistics") {
-  const m = await getMembership(user);
-  if (!m || m.org.type !== type) throw forbidden(`This area is for approved ${type} partners`);
-  if (m.org.status === "pending") throw new ApiError(403, "partner_pending", "Your partner application is awaiting approval by ModVerse.");
-  if (m.org.status !== "approved") throw new ApiError(403, "partner_inactive", `Your organisation is ${m.org.status}. Contact ModVerse.`);
-  return m;
-}
+// ── Membership & access (partner-access.ts) ───────────────────────
+export { getMembership, requirePartner } from "./partner-access";
 
 // ── Onboarding ───────────────────────────────────────────────────
 export async function applyAsPartner(user: SessionUser, raw: unknown) {
@@ -83,6 +77,8 @@ export async function applyAsPartner(user: SessionUser, raw: unknown) {
     return o;
   });
   await audit({ actorUserId: user.id, action: "partner.apply", entityType: "organization", entityId: org.id, details: { type: org.type, name: org.name } });
+  await notifyOrg(org.id, { subject: "We received your ModVerse partner application", body: `Thank you for applying as a ${org.type} partner (${org.name}). ModVerse reviews every application; you'll hear from us when it has been reviewed.\n\nPartner portal: ${link("/partner")}` });
+  await notifyTeam({ subject: `New ${org.type} partner application: ${org.name}`, body: `${org.name} (${org.contactEmail}${org.city ? `, ${org.city}` : ""}) applied to become a ${org.type} partner.\n\nReview: ${link("/admin/partners")}` }, "admins");
   return org;
 }
 
@@ -129,6 +125,8 @@ export async function reviewOrganization(admin: SessionUser, orgId: string, deci
   const status = decision === "approve" || decision === "reinstate" ? "approved" : decision === "reject" ? "rejected" : "suspended";
   const [row] = await db.update(s.organizations).set({ status, adminNotes: note ?? o.adminNotes, reviewedBy: admin.id, reviewedAt: new Date(), updatedAt: new Date() }).where(eq(s.organizations.id, orgId)).returning();
   await audit({ actorUserId: admin.id, action: `partner.${decision}`, entityType: "organization", entityId: orgId, details: { note } });
+  const what = { approve: "approved", reinstate: "reinstated", reject: "not approved", suspend: "suspended" }[decision];
+  await notifyOrg(orgId, { subject: `Your ModVerse partner organisation was ${what}`, body: `${o.name} has been ${what}.${note ? `\n\nNote from ModVerse: ${note}` : ""}${status === "approved" ? `\n\nOpen the partner portal: ${link("/partner")}` : ""}` });
   return row;
 }
 
@@ -185,6 +183,7 @@ export async function assignManufacturer(admin: SessionUser, orderId: string, or
     return j;
   });
   await audit({ actorUserId: admin.id, action: "production.assign", entityType: "order", entityId: orderId, details: { org: org.name, jobId: job.id, forced: !match.ok } });
+  await notifyOrg(orgId, { subject: `New production offer — order ${order.orderNumber}`, body: `ModVerse has offered you a production job for order ${order.orderNumber}${job.dueAt ? `, due ${job.dueAt.toLocaleDateString("en-IN")}` : ""}. Review the garments, placements and tech pack, then accept or decline.\n\n${link(`/partner/jobs/${job.id}`)}` });
   return job;
 }
 
@@ -201,6 +200,7 @@ export async function reviewQuotation(admin: SessionUser, quotationId: string, d
   await jobEvent(db, job.id, "status", { status, note: decision === "approved" ? `Quotation ₹${q.amount} approved` : `Quotation rejected${note ? `: ${note}` : ""}` }, admin.id);
   if (decision === "approved") await progressOrder(db, job.orderId, "manufacturing", "Manufacturer quotation approved — production can start", admin.id);
   await audit({ actorUserId: admin.id, action: `quotation.${decision}`, entityType: "quotation", entityId: q.id, details: { amount: q.amount } });
+  await notifyOrg(job.organizationId, { subject: decision === "approved" ? `Quotation approved — start production (₹${q.amount})` : "Quotation not approved — please revise", body: decision === "approved" ? `Your quotation of ₹${q.amount} (${q.leadTimeDays} days) was approved. Please start production and post stage updates.\n\n${link(`/partner/jobs/${job.id}`)}` : `Your quotation of ₹${q.amount} was not approved${note ? `: ${note}` : ""}. You can submit a revised quotation.\n\n${link(`/partner/jobs/${job.id}`)}` });
 }
 
 export async function requestRework(admin: SessionUser, jobId: string, reason: string) {
@@ -211,6 +211,7 @@ export async function requestRework(admin: SessionUser, jobId: string, reason: s
   await db.update(s.productionJobs).set({ status: "rework", updatedAt: new Date() }).where(eq(s.productionJobs.id, jobId));
   await jobEvent(db, jobId, "rework", { reason, by: "ModVerse" }, admin.id);
   await audit({ actorUserId: admin.id, action: "production.rework", entityType: "job", entityId: jobId, details: { reason } });
+  await notifyOrg(job.organizationId, { subject: "Rework requested by ModVerse", body: `ModVerse requested rework: ${reason}\n\nFix the issue, update the stage and record a new QC report.\n\n${link(`/partner/jobs/${jobId}`)}` });
 }
 
 export async function productionBoard() {
@@ -244,7 +245,8 @@ export async function adminOrderPartners(orderId: string) {
   const manufacturers = (await listOrganizations({ type: "manufacturer", status: "approved" })).map((o) => ({ id: o.id, name: o.name, match: matchManufacturer(manufacturerCapabilitiesSchema.parse(o.capabilities), items) }));
   const logistics = (await listOrganizations({ type: "logistics", status: "approved" })).map((o) => ({ id: o.id, name: o.name, couriers: logisticsCapabilitiesSchema.parse(o.capabilities).couriers }));
   const disputes = await db.select().from(s.disputes).where(eq(s.disputes.orderId, orderId)).orderBy(desc(s.disputes.createdAt));
-  return { jobs: jobs.map((j) => ({ ...j.job, org: j.org, quotations: quotes.filter((q) => q.jobId === j.job.id), events: events.filter((e) => e.jobId === j.job.id) })), shipments: shipments.map((x) => ({ ...x.shipment, org: x.org })), manufacturers, logistics, disputes };
+  const settlements = await db.select().from(s.settlements).where(eq(s.settlements.orderId, orderId));
+  return { settlements, jobs: jobs.map((j) => ({ ...j.job, org: j.org, quotations: quotes.filter((q) => q.jobId === j.job.id), events: events.filter((e) => e.jobId === j.job.id) })), shipments: shipments.map((x) => ({ ...x.shipment, org: x.org })), manufacturers, logistics, disputes };
 }
 
 // ── Manufacturer portal (org-scoped) ─────────────────────────────
@@ -291,6 +293,7 @@ export async function respondToJob(user: SessionUser, jobId: string, decision: "
   await jobEvent(db, job.id, "status", { status, note: reason ?? null }, user.id);
   await db.insert(s.orderEvents).values({ orderId: job.orderId, status: "production_assignment", note: `${org.name} ${decision === "accept" ? "accepted" : "rejected"} the production job${reason ? ` — ${reason}` : ""}`, actorUserId: user.id });
   await audit({ actorUserId: user.id, action: `production.${status}`, entityType: "job", entityId: job.id, details: { reason } });
+  if (decision === "reject") await notifyTeam({ subject: `${org.name} declined a production job`, body: `${org.name} declined the job${reason ? `: ${reason}` : ""}. Reassign the order to another manufacturer.\n\n${link(`/admin/orders/${job.orderId}`)}` });
 }
 
 export const quotationSchema = z.object({
@@ -311,6 +314,7 @@ export async function submitQuotation(user: SessionUser, jobId: string, raw: unk
   await db.update(s.productionJobs).set({ status: "quoted", updatedAt: new Date() }).where(eq(s.productionJobs.id, job.id));
   await jobEvent(db, job.id, "status", { status: "quoted", note: `Quotation ₹${input.amount}, ${input.leadTimeDays} days` }, user.id);
   await audit({ actorUserId: user.id, action: "quotation.submit", entityType: "quotation", entityId: q.id, details: { amount: q.amount } });
+  await notifyTeam({ subject: `Quotation to review: ${org.name} — ₹${input.amount}`, body: `${org.name} quoted ₹${input.amount} with a ${input.leadTimeDays}-day lead time.\n\nApprove or reject: ${link("/admin/production")}` }, "admins");
   return q;
 }
 
@@ -334,6 +338,7 @@ export async function reportIssue(user: SessionUser, jobId: string, raw: unknown
   const job = await myJob(db, org.id, jobId);
   await jobEvent(db, job.id, "issue", input, user.id);
   await audit({ actorUserId: user.id, action: "production.issue", entityType: "job", entityId: job.id, details: { severity: input.severity, title: input.title } });
+  await notifyTeam({ subject: `Production issue (${input.severity}) — ${org.name}`, body: `${input.title}${input.description ? `\n\n${input.description}` : ""}\n\n${link(`/admin/orders/${job.orderId}`)}` });
 }
 
 /** Resolve an issue (the manufacturer of the job, or ModVerse staff). */
@@ -368,6 +373,7 @@ export async function submitQc(user: SessionUser, jobId: string, raw: unknown) {
   if (input.result === "fail") await jobEvent(db, job.id, "rework", { reason: `QC failed: ${input.checks.filter((c) => !c.pass).map((c) => c.name).join(", ")}`, by: org.name }, user.id);
   else await progressOrder(db, job.orderId, "quality_inspection", "Manufacturer QC passed", user.id);
   await audit({ actorUserId: user.id, action: `production.qc_${input.result}`, entityType: "job", entityId: job.id, details: { defects: input.defects } });
+  if (input.result === "fail") await notifyTeam({ subject: `QC failed — ${org.name}`, body: `Failed checks: ${input.checks.filter((c) => !c.pass).map((c) => c.name).join(", ")}. The job is in rework.\n\n${link(`/admin/orders/${job.orderId}`)}` });
 }
 
 export async function addProductionPhoto(user: SessionUser, jobId: string, file: { name: string; bytes: Buffer }, caption?: string) {
@@ -388,6 +394,7 @@ export async function markReadyToDispatch(user: SessionUser, jobId: string) {
   await db.update(s.productionJobs).set({ status: "ready_to_dispatch", stage: "packing", updatedAt: new Date() }).where(eq(s.productionJobs.id, job.id));
   await jobEvent(db, job.id, "dispatch", { ready: true }, user.id);
   await progressOrder(db, job.orderId, "packed", "Packed by the manufacturer — ready for pickup", user.id);
+  await notifyTeam({ subject: `Ready for pickup — ${org.name}`, body: `The order is packed and QC-passed. Book the shipment with a logistics partner.\n\n${link(`/admin/orders/${job.orderId}`)}` });
 }
 
 /** Order item snapshot for tech-pack generation by the assigned manufacturer (or staff). */
@@ -412,7 +419,7 @@ type ShipStatus = ShipmentStatus;
 const NEXT = SHIPMENT_NEXT;
 
 export async function createShipment(admin: SessionUser, orderId: string, raw: unknown) {
-  const input = z.object({ organizationId: z.string().uuid(), courier: z.string().trim().min(2).max(40), direction: z.enum(["forward", "return"]).default("forward"), weightGrams: z.number().int().min(10).max(1_000_000).default(400), cod: z.boolean().default(false) }).parse(raw);
+  const input = z.object({ organizationId: z.string().uuid(), courier: z.string().trim().min(2).max(40), direction: z.enum(["forward", "return"]).default("forward"), weightGrams: z.number().int().min(10).max(1_000_000).default(400), cod: z.boolean().default(false), rate: z.number().int().min(0).max(100_000).optional() }).parse(raw);
   const db = await getDb();
   const [order] = await db.select().from(s.orders).where(eq(s.orders.id, orderId));
   if (!order) throw notFound("Order");
@@ -423,9 +430,10 @@ export async function createShipment(admin: SessionUser, orderId: string, raw: u
   const caps = logisticsCapabilitiesSchema.parse(org.capabilities);
   if (!caps.couriers.includes(input.courier)) throw badRequest(`${org.name} does not offer ${input.courier}`);
   if (input.cod && !caps.cod) throw badRequest(`${org.name} does not support cash on delivery`);
-  const [sh] = await db.insert(s.shipments).values({ orderId, organizationId: org.id, provider: "partner", courier: input.courier, direction: input.direction, weightGrams: input.weightGrams, cod: input.cod, status: "assigned", events: [{ at: new Date().toISOString(), status: "assigned", note: `Assigned to ${org.name} (${input.courier})` }] }).returning();
+  const [sh] = await db.insert(s.shipments).values({ orderId, organizationId: org.id, provider: "partner", courier: input.courier, direction: input.direction, weightGrams: input.weightGrams, cod: input.cod, rateAmount: input.rate ?? null, status: "assigned", events: [{ at: new Date().toISOString(), status: "assigned", note: `Assigned to ${org.name} (${input.courier})` }] }).returning();
   await db.insert(s.orderEvents).values({ orderId, status: input.direction === "return" ? "return_created" : "shipment_created", note: `${input.direction === "return" ? "Return pickup" : "Shipment"} booked with ${input.courier}`, actorUserId: admin.id });
   await audit({ actorUserId: admin.id, action: "shipment.create", entityType: "shipment", entityId: sh.id, details: { org: org.name, courier: input.courier, direction: input.direction } });
+  await notifyOrg(org.id, { subject: `New ${input.direction === "return" ? "return pickup" : "shipment"} — order ${order.orderNumber} (${input.courier})`, body: `Generate the label and schedule the pickup.\n\n${link(`/partner/shipments/${sh.id}`)}` });
   return sh;
 }
 
@@ -500,15 +508,26 @@ export async function addTrackingEvent(user: SessionUser, id: string, raw: unkno
   if (input.status === "failed_delivery") patch.failedAttempts = sh.failedAttempts + 1;
   if (input.status === "delivered") Object.assign(patch, { deliveredAt: new Date(), podName: input.podName ?? sh.podName });
   await db.update(s.shipments).set(patch).where(eq(s.shipments.id, sh.id));
+  if (finalStatus === "delivered" || finalStatus === "returned") await accrueShippingSettlement(db, sh.id);
+  let advanced = false; // the order timeline already records this step
   if (sh.direction === "forward") {
     if (input.status === "picked_up") {
-      await progressOrder(db, sh.orderId, "shipped", `Picked up by ${sh.courier} — AWB ${sh.awb ?? "pending"}`, user.id);
-      await db.update(s.productionJobs).set({ status: "dispatched", updatedAt: new Date() }).where(and(eq(s.productionJobs.orderId, sh.orderId), eq(s.productionJobs.status, "ready_to_dispatch")));
+      advanced = await progressOrder(db, sh.orderId, "shipped", `Picked up by ${sh.courier} — AWB ${sh.awb ?? "pending"}${input.location ? ` — ${input.location}` : ""}`, user.id);
+      const dispatched = await db.update(s.productionJobs).set({ status: "dispatched", updatedAt: new Date() }).where(and(eq(s.productionJobs.orderId, sh.orderId), eq(s.productionJobs.status, "ready_to_dispatch"))).returning({ id: s.productionJobs.id });
+      for (const j of dispatched) await accrueProductionSettlement(db, j.id);
     }
-    if (input.status === "delivered") await progressOrder(db, sh.orderId, "delivered", `Delivered${input.podName ? ` — received by ${input.podName}` : ""}`, user.id);
+    if (input.status === "delivered") advanced = await progressOrder(db, sh.orderId, "delivered", `Delivered${input.podName ? ` — received by ${input.podName}` : ""}`, user.id);
   }
-  await db.insert(s.orderEvents).values({ orderId: sh.orderId, status: `shipment_${finalStatus}`, note: `${sh.direction === "return" ? "Return" : "Shipment"} ${finalStatus.replace(/_/g, " ")}${input.location ? ` — ${input.location}` : ""}${input.reason ? ` — ${input.reason}` : ""}`, actorUserId: user.id });
+  if (!advanced) await db.insert(s.orderEvents).values({ orderId: sh.orderId, status: `shipment_${finalStatus}`, note: `${sh.direction === "return" ? "Return" : "Shipment"} ${finalStatus.replace(/_/g, " ")}${input.location ? ` — ${input.location}` : ""}${input.reason ? ` — ${input.reason}` : ""}`, actorUserId: user.id });
   await audit({ actorUserId: user.id, action: `shipment.${finalStatus}`, entityType: "shipment", entityId: sh.id });
+  const orderLink = link(`/account/orders/${sh.orderId}`);
+  if (sh.direction === "forward" && input.status === "picked_up") await notifyCustomer(sh.orderId, (n) => ({ subject: `Your ModVerse order ${n} has shipped`, body: `Your order is on its way with ${sh.courier}${sh.awb ? ` (tracking number ${sh.awb})` : ""}.\n\nTrack it: ${orderLink}` }));
+  if (sh.direction === "forward" && input.status === "out_for_delivery") await notifyCustomer(sh.orderId, (n) => ({ subject: `Order ${n} is out for delivery`, body: `Your order will be delivered today. Please keep your phone reachable.\n\n${orderLink}` }));
+  if (sh.direction === "forward" && input.status === "delivered") await notifyCustomer(sh.orderId, (n) => ({ subject: `Order ${n} was delivered`, body: `Your order was delivered${input.podName ? ` (received by ${input.podName})` : ""}. Once you've worn it, tell us how it fitted — it improves your future size recommendations.\n\n${orderLink}` }));
+  if (input.status === "failed_delivery") {
+    await notifyCustomer(sh.orderId, (n) => ({ subject: `We couldn't deliver order ${n}`, body: `The courier couldn't deliver your order: ${input.reason}. They will try again; if your address or phone needs a correction, report it on the order page.\n\n${orderLink}` }));
+    await notifyTeam({ subject: `Failed delivery (attempt ${sh.failedAttempts + 1})`, body: `${input.reason}\n\n${link(`/admin/orders/${sh.orderId}`)}` });
+  }
   return { ...sh, ...patch };
 }
 
@@ -571,6 +590,7 @@ export async function raiseDispute(user: SessionUser, raw: unknown) {
   // Customer-raised disputes appear on the customer's timeline; partner disputes stay internal.
   await db.insert(s.orderEvents).values({ orderId: order.id, status: orgId ? "partner_note" : "dispute_opened", note: orgId ? `Partner raised a ${input.kind} dispute` : `${input.kind} issue reported`, actorUserId: user.id });
   await audit({ actorUserId: user.id, action: "dispute.open", entityType: "dispute", entityId: d.id, details: { kind: d.kind } });
+  await notifyTeam({ subject: `New ${d.kind} dispute — order ${order.orderNumber}`, body: `${orgId ? "A partner" : "The customer"} wrote: ${d.description}\n\n${link("/admin/disputes")}` });
   return d;
 }
 
@@ -593,6 +613,7 @@ export async function resolveDispute(admin: SessionUser, id: string, raw: unknow
   if (!d) throw notFound("Dispute");
   await db.insert(s.orderEvents).values({ orderId: d.orderId, status: d.raisedByOrgId ? "partner_note" : `dispute_${input.status}`, note: d.raisedByOrgId ? `Partner dispute ${input.status}${input.resolution ? `: ${input.resolution}` : ""}` : input.resolution ?? null, actorUserId: admin.id });
   await audit({ actorUserId: admin.id, action: `dispute.${input.status}`, entityType: "dispute", entityId: id });
+  if (input.status !== "investigating" && d.raisedByUserId) await notifyUser(d.raisedByUserId, { subject: `Your ${d.kind} report was ${input.status}`, body: `ModVerse ${input.status === "resolved" ? "resolved" : "closed"} the problem you reported.\n\n${input.resolution ?? ""}` });
   return d;
 }
 
@@ -612,7 +633,7 @@ export async function listAllShipments() {
 
 /** Move a not-yet-picked-up shipment to another logistics partner/courier (the AWB is re-issued). */
 export async function reassignShipment(admin: SessionUser, id: string, raw: unknown) {
-  const input = z.object({ organizationId: z.string().uuid(), courier: z.string().trim().min(2).max(40) }).parse(raw);
+  const input = z.object({ organizationId: z.string().uuid(), courier: z.string().trim().min(2).max(40), rate: z.number().int().min(0).max(100_000).optional() }).parse(raw);
   const db = await getDb();
   const [sh] = await db.select().from(s.shipments).where(eq(s.shipments.id, id));
   if (!sh) throw notFound("Shipment");
@@ -621,7 +642,9 @@ export async function reassignShipment(admin: SessionUser, id: string, raw: unkn
   if (!org || org.type !== "logistics" || org.status !== "approved") throw badRequest("Choose an approved logistics partner");
   if (!logisticsCapabilitiesSchema.parse(org.capabilities).couriers.includes(input.courier)) throw badRequest(`${org.name} does not offer ${input.courier}`);
   const events = [...(sh.events as unknown[]), { at: new Date().toISOString(), status: "assigned", note: `Reassigned to ${org.name} (${input.courier})` }];
-  const [row] = await db.update(s.shipments).set({ organizationId: org.id, courier: input.courier, awb: null, status: "assigned", labelGeneratedAt: null, pickupAt: null, pickupWindow: null, events, updatedAt: new Date() }).where(eq(s.shipments.id, id)).returning();
+  const [row] = await db.update(s.shipments).set({ organizationId: org.id, courier: input.courier, rateAmount: input.rate ?? sh.rateAmount, awb: null, status: "assigned", labelGeneratedAt: null, pickupAt: null, pickupWindow: null, events, updatedAt: new Date() }).where(eq(s.shipments.id, id)).returning();
   await audit({ actorUserId: admin.id, action: "shipment.reassign", entityType: "shipment", entityId: id, details: { org: org.name, courier: input.courier } });
+  await notifyOrg(org.id, { subject: `Shipment assigned to you (${input.courier})`, body: `Generate the label and schedule the pickup.\n\n${link(`/partner/shipments/${id}`)}` });
+  if (sh.organizationId && sh.organizationId !== org.id) await notifyOrg(sh.organizationId, { subject: "A shipment was reassigned", body: "ModVerse moved one of your shipments to another partner. No further action is needed." });
   return row;
 }

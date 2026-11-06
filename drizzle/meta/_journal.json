@@ -36,6 +36,13 @@
       "when": 1793933056507,
       "tag": "0004_v2_partner_portals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793937356745,
+      "tag": "0005_v21_settlements",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,8 @@ import { Badge, Button, Notice, Select, toast } from "@/components/ui";
 import { FIT_FEEDBACK_LABEL, FIT_FEEDBACK_SCALE, type FitFeedbackValue } from "@/lib/garment/fit";
 import { useSession } from "@/components/session";
 import { DisputeForm } from "@/components/partners/DisputeForm";
+import { DesignFlat } from "@/components/garment/DesignFlat";
+import type { DesignConfig } from "@/lib/garment/schema";
 
 /** Customer-facing production wording (partner identities are never shown). */
 const PRODUCTION_LABEL: Record<string, string> = {
@@ -74,7 +76,7 @@ const FLOW = ["pending_payment", "payment_confirmed", "design_validation", "awai
 
 interface Data {
   order: { id: string; orderNumber: string; status: string; subtotal: number; discount?: number; discountCode?: string | null; gst: number; shipping: number; total: number; isSimulated: boolean; paymentStatus: string; createdAt: string; shippingAddress: Record<string, string> };
-  items: { id: string; designName: string; size: string; quantity: number; unitPrice: number; version: number; reviewStatus: string; projectId: string | null; specSnapshot: { validation?: { status: string } } }[];
+  items: { id: string; designName: string; size: string; quantity: number; unitPrice: number; version: number; reviewStatus: string; projectId: string | null; designSnapshot?: DesignConfig; specSnapshot: { validation?: { status: string } } }[];
   events: { id: string; status: string; note: string | null; createdAt: string }[];
   payments: { provider: string; environment: string; status: string; amount: number; signatureVerified: boolean; providerPaymentId: string | null }[];
   shipments: { courier: string | null; awb: string | null; status: string; trackingUrl: string | null; direction?: string; events?: { at: string; status: string; location?: string | null; note?: string | null }[]; podName?: string | null }[];
@@ -109,7 +111,7 @@ export function OrderDetail({ data, confirmation }: { data: Data; confirmation?:
   }
   return (
     <div className="space-y-6" data-testid="order-detail">
-      {confirmation && <div className="flex flex-col items-center gap-3 py-6 text-center"><Logo variant="lockup" className="w-56" /><p className="mv-display text-3xl">Thank you — your order is placed</p></div>}
+      {confirmation && FLOW.indexOf(o.status) <= FLOW.indexOf("awaiting_production_approval") && FLOW.indexOf(o.status) >= 0 && <div className="flex flex-col items-center gap-3 py-6 text-center"><Logo variant="lockup" className="w-56" /><p className="mv-display text-3xl">Thank you — your order is placed</p></div>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div><p className="mv-eyebrow">Order</p><h1 className="font-mono text-2xl">{o.orderNumber}</h1><p className="text-xs text-mute">{new Date(o.createdAt).toLocaleString("en-IN")}</p></div>
         <div className="flex gap-1">{o.isSimulated && <Badge tone="warn">simulated payment — local test mode</Badge>}<Badge>{o.status.replace(/_/g, " ")}</Badge></div>
@@ -132,7 +134,8 @@ export function OrderDetail({ data, confirmation }: { data: Data; confirmation?:
           {data.items.map((it) => (
             <div key={it.id} className="p-3 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <div><p>{it.designName} <span className="text-mute">· v{it.version} snapshot</span></p><p className="text-xs text-mute">Size {it.size} · qty {it.quantity} · review {it.reviewStatus.replace("_", " ")} · checks {it.specSnapshot.validation?.status ?? "-"}</p></div>
+                {it.designSnapshot && <div className="grid w-28 shrink-0 grid-cols-2 gap-1"><DesignFlat config={it.designSnapshot} view="front" className="h-14 w-full" /><DesignFlat config={it.designSnapshot} view="back" className="h-14 w-full" /></div>}
+                <div className="min-w-0 flex-1"><p>{it.designName} <span className="text-mute">· v{it.version} snapshot</span></p><p className="text-xs text-mute">Size {it.size} · qty {it.quantity} · review {it.reviewStatus.replace("_", " ")} · checks {it.specSnapshot.validation?.status ?? "-"}</p></div>
                 <span className="tabular-nums">{formatINR(it.unitPrice * it.quantity)}</span>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -153,7 +156,7 @@ export function OrderDetail({ data, confirmation }: { data: Data; confirmation?:
         <div className="space-y-3 text-sm">
           <div className="mv-card p-3"><p className="mv-label">Ship to</p><p>{o.shippingAddress.fullName}</p><p className="text-mute">{o.shippingAddress.line1}{o.shippingAddress.line2 ? `, ${o.shippingAddress.line2}` : ""}, {o.shippingAddress.city}, {o.shippingAddress.state} {o.shippingAddress.pincode}</p></div>
           <div className="mv-card p-3"><p className="mv-label">Payment</p>{data.payments.map((p, i) => <p key={i}>{p.provider} ({p.environment}) · {p.status}{p.signatureVerified ? " · signature verified" : ""}</p>)}</div>
-          {production && PRODUCTION_LABEL[production.status] && <div className="mv-card p-3" data-testid="order-production"><p className="mv-label">Production</p><p>{PRODUCTION_LABEL[production.status]}{production.status === "in_production" && production.stage ? ` — ${production.stage}` : ""}</p></div>}
+          {production && PRODUCTION_LABEL[production.status] && !["shipped", "delivered", "cancelled", "refunded"].includes(o.status) && <div className="mv-card p-3" data-testid="order-production"><p className="mv-label">Production</p><p>{PRODUCTION_LABEL[production.status]}{production.status === "in_production" && production.stage ? ` — ${production.stage}` : ""}</p></div>}
           <div className="mv-card p-3" data-testid="order-tracking"><p className="mv-label">Tracking</p>{data.shipments.length ? data.shipments.map((s, i) => (
             <div key={i} className={clsx(i > 0 && "mt-2 border-t border-line pt-2")}>
               <p>{s.direction === "return" ? "Return · " : ""}{s.courier} · AWB {s.awb ?? "being generated"} · {s.status.replace(/_/g, " ")}{s.trackingUrl && <> · <a className="underline" href={s.trackingUrl} target="_blank" rel="noopener noreferrer">track</a></>}</p>

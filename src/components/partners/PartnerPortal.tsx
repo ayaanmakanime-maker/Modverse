@@ -5,13 +5,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { Factory, Truck } from "lucide-react";
 import { api, errorMessage } from "@/lib/client/api";
-import { GarmentFlat } from "@/components/garment/GarmentFlat";
+import { DesignFlat } from "@/components/garment/DesignFlat";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { AUDIENCES, PRINT_METHODS, type PrintMethod } from "@/lib/garment/types";
 import { PRINT_METHOD_INFO } from "@/lib/garment/fabrics";
 import { INDIAN_COURIERS, JOB_STATUS_LABEL, QC_CHECKS, SHIPMENT_NEXT, STAGES } from "@/lib/partners/constants";
 import { Badge, Button, EmptyState, Field, Input, Notice, Segmented, Select, Spinner, toast } from "@/components/ui";
 import { DisputeForm } from "./DisputeForm";
+import { GSTIN_MESSAGE, validateGstin } from "@/lib/partners/gstin";
 
 // ── Shared ─────────────────────────────────────────────────────────
 type OrgType = "manufacturer" | "logistics";
@@ -108,6 +109,8 @@ export function PartnerApply({ signedIn, existing }: { signedIn: boolean; existi
   if (existing) return <Notice tone="info" title={`You're part of ${existing.org.name}`}>Status: {existing.org.status}. <Link href="/partner" className="underline">Open the partner portal</Link></Notice>;
   if (!signedIn) return <Notice title="Sign in to apply">Create a ModVerse account for your business (or sign in), then return here. <Link className="underline" href="/register?next=/partners">Create account</Link> · <Link className="underline" href="/login?next=/partners">Sign in</Link></Notice>;
   const f = (k: keyof typeof form) => ({ value: form[k], onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value }) });
+  const g = form.gstin.trim() ? validateGstin(form.gstin) : null;
+  const gstinError = g && !g.ok && form.gstin.trim().length >= 15 ? GSTIN_MESSAGE[g.problem] : null;
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -129,7 +132,7 @@ export function PartnerApply({ signedIn, existing }: { signedIn: boolean; existi
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Business name">{(id) => <Input id={id} required minLength={2} {...f("name")} />}</Field>
         <Field label="Legal name (optional)">{(id) => <Input id={id} {...f("legalName")} />}</Field>
-        <Field label="GSTIN (optional)" hint="15 characters, e.g. 27AAPFU0939F1ZV">{(id) => <Input id={id} {...f("gstin")} />}</Field>
+        <Field label="GSTIN (optional)" hint="15 characters, e.g. 27AAPFU0939F1ZV" error={gstinError}>{(id) => <Input id={id} {...f("gstin")} data-testid="apply-gstin" />}</Field>
         <Field label="Contact email">{(id) => <Input id={id} type="email" required {...f("contactEmail")} />}</Field>
         <Field label="Phone (optional)">{(id) => <Input id={id} {...f("phone")} />}</Field>
         <div className="grid grid-cols-2 gap-3"><Field label="City">{(id) => <Input id={id} {...f("city")} />}</Field><Field label="State">{(id) => <Input id={id} {...f("state")} />}</Field></div>
@@ -275,7 +278,7 @@ export function ManufacturerJob({ id }: { id: string }) {
       <Section title="Garments to produce">
         {data.items.map((it) => (
           <div key={it.id} className="flex flex-wrap gap-4 border-t border-line pt-3 first:border-0 first:pt-0" data-testid="job-item">
-            <div className="grid w-48 grid-cols-2 gap-1"><GarmentFlat config={it.designSnapshot} view="front" className="w-full" /><GarmentFlat config={it.designSnapshot} view="back" className="w-full" /></div>
+            <div className="grid w-full max-w-sm grid-cols-2 gap-2 sm:w-72"><DesignFlat config={it.designSnapshot} view="front" className="w-full" /><DesignFlat config={it.designSnapshot} view="back" className="w-full" /></div>
             <div className="min-w-0 flex-1 space-y-1 text-sm">
               <p>{it.designName} <span className="text-mute">· v{it.version}</span></p>
               <p className="text-xs text-mute">{it.spec.garment?.model} · {it.spec.garment?.fit} fit · size <strong className="text-bone">{it.size}</strong> · quantity <strong className="text-bone">{it.quantity}</strong></p>
@@ -299,6 +302,7 @@ export function ManufacturerJob({ id }: { id: string }) {
           {!["cancelled", "rejected", "dispatched"].includes(st) && <IssueForm busy={busy} onSubmit={(issue) => act({ action: "issue", issue }, "Issue reported to ModVerse")} />}
         </Section>
         <Section title="Production photos">
+          {!photos.length && <p className="text-xs text-mute">{st === "offered" ? "Accept the job to share production photos with ModVerse." : "No photos yet — photos help ModVerse confirm quality before dispatch."}</p>}
           <div className="grid grid-cols-3 gap-2">{photos.map((p) => (
              
             <figure key={p.id}><img src={`/api/uploads/${p.payload.uploadId}`} alt={String(p.payload.caption ?? "Production photo")} className="aspect-square w-full rounded-lg object-cover" /><figcaption className="truncate text-[0.65rem] text-mute">{String(p.payload.caption ?? "")}</figcaption></figure>
@@ -570,6 +574,39 @@ export function PartnerOrganisation() {
           </div>
         )}
       </Section>
+    </div>
+  );
+}
+
+// ── Payouts ───────────────────────────────────────────────────────
+interface Payout { id: string; kind: "production" | "shipping"; orderNumber: string; amount: number; originalAmount: number; status: "due" | "paid" | "void"; reference: string | null; note: string | null; paidAt: string | null; createdAt: string }
+
+export function PartnerPayouts() {
+  const { data, error } = useApi<{ organization: { name: string; type: OrgType }; settlements: Payout[]; totals: { due: number; paid: number } }>("/api/partner/payouts");
+  if (error) return <Notice tone="bad">{error.message}</Notice>;
+  if (!data) return <Spinner />;
+  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+  return (
+    <div className="space-y-5" data-testid="partner-payouts">
+      <h1 className="mv-display text-3xl">Payouts</h1>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="mv-card p-4"><p className="mv-display text-3xl tabular-nums">{inr(data.totals.due)}</p><p className="text-xs text-mute">due from ModVerse</p></div>
+        <div className="mv-card p-4"><p className="mv-display text-3xl tabular-nums">{inr(data.totals.paid)}</p><p className="text-xs text-mute">paid (recorded)</p></div>
+      </div>
+      <Notice tone="info">{data.organization.type === "manufacturer" ? "A payout becomes due when a job you produced is picked up by the courier, for your approved quotation." : "A payout becomes due when a shipment is delivered or returned, for the rate agreed when ModVerse booked it."} ModVerse pays by bank transfer outside this portal and records the transaction reference here.</Notice>
+      {!data.settlements.length ? <EmptyState title="No payouts yet" /> : (
+        <div className="mv-card divide-y divide-line">
+          {data.settlements.map((p) => (
+            <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 text-sm" data-testid="payout-row">
+              <span className="font-mono">{p.orderNumber}</span>
+              <Badge>{p.kind}</Badge>
+              <Badge tone={p.status === "paid" ? "ok" : p.status === "void" ? "bad" : "warn"}>{p.status}</Badge>
+              <span className="tabular-nums">{inr(p.amount)}{p.amount !== p.originalAmount && <span className="text-xs text-mute"> (was {inr(p.originalAmount)})</span>}</span>
+              <span className="text-xs text-mute">{p.status === "paid" ? `paid ${day(p.paidAt)} · ref ${p.reference}` : `accrued ${day(p.createdAt)}`}{p.note ? ` · ${p.note}` : ""}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

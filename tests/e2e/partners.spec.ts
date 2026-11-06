@@ -40,7 +40,7 @@ async function applyAsPartner(page: Page, type: "manufacturer" | "logistics", na
 
 test("manufacturer & logistics portals: approval → production → QC → shipping → delivery → dispute", async ({ page }) => {
   test.setTimeout(300_000);
-  page.on("dialog", (d) => d.accept(d.type() === "prompt" ? "Replacement tee sent with the next dispatch." : undefined));
+  page.on("dialog", (d) => d.accept(d.type() !== "prompt" ? undefined : /reference/i.test(d.message()) ? "UTR-E2E-000123" : "Replacement tee sent with the next dispatch."));
   const stamp = Date.now().toString(36);
   const makerName = `Loomcraft ${stamp}`;
   const shipperName = `SwiftRoute ${stamp}`;
@@ -124,6 +124,7 @@ test("manufacturer & logistics portals: approval → production → QC → shipp
   await page.goto(`/admin/orders/${orderId}`);
   await expect(page.getByTestId("admin-order")).toContainText("packed");
   await page.getByTestId("shipment-partner").selectOption({ label: shipperName });
+  await page.getByTestId("shipment-rate").fill("85");
   await page.getByTestId("shipment-submit").click();
   await expect(page.getByTestId("fulfil-shipment")).toContainText("assigned");
   await logout(page);
@@ -174,6 +175,15 @@ test("manufacturer & logistics portals: approval → production → QC → shipp
   await page.getByTestId("dispute-row").filter({ hasText: "neck label" }).getByTestId("dispute-resolve").click();
   await page.getByRole("button", { name: "Resolved" }).click();
   await expect(page.getByTestId("dispute-row").filter({ hasText: "neck label" })).toContainText("Replacement tee");
+  // Payouts: the approved quotation (650) accrued at pickup; the agreed rate (85) at delivery.
+  await page.goto("/admin/payouts");
+  const makerPayout = page.getByTestId("settlement-row").filter({ hasText: makerName });
+  await expect(makerPayout).toContainText("₹650");
+  await expect(page.getByTestId("settlement-row").filter({ hasText: shipperName })).toContainText("₹85");
+  await makerPayout.getByTestId("settlement-pay").click();
+  await expect(makerPayout).toHaveCount(0); // moved out of "Due"
+  const csv = await page.request.get("/api/admin/settlements?format=csv&status=paid");
+  expect(await csv.text()).toContain("UTR-E2E-000123");
   for (const p of ["/admin/shipping", "/admin/partners"]) {
     await page.goto(p);
     await expect(page.locator("h1")).toBeVisible();
@@ -182,4 +192,14 @@ test("manufacturer & logistics portals: approval → production → QC → shipp
   await login(page, buyer);
   await page.goto(orderUrl);
   await expect(page.getByTestId("my-disputes")).toContainText("Replacement tee");
+  await logout(page);
+
+  // The manufacturer sees its payout (and the notification in its mailbox).
+  await login(page, maker);
+  await page.goto("/partner/payouts");
+  await expect(page.getByTestId("payout-row").first()).toContainText("paid");
+  await expect(page.getByTestId("payout-row").first()).toContainText("UTR-E2E-000123");
+  await page.goto("/account/mailbox");
+  await expect(page.getByTestId("mail").filter({ hasText: "New production offer" })).toHaveCount(1);
+  expect((await page.request.get("/api/admin/settlements")).status()).toBe(403);
 });

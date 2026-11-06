@@ -91,7 +91,7 @@ export function AdminProduction() {
       <H1>Production</H1>
       <div className="mb-4 flex gap-2">{[["active", "Active jobs"], ["attention", "Needs attention"], ["all", "All"]].map(([v, l]) => <button key={v} className="mv-chip" data-active={filter === v} onClick={() => setFilter(v)}>{l}</button>)}</div>
       {error && <Notice tone="bad">{error}</Notice>}
-      {!rows ? <Spinner /> : !rows.length ? <EmptyState title="No production jobs">Assign manufacturers from an order&apos;s page once its items are approved.</EmptyState> : (
+      {!rows ? <Spinner /> : !rows.length ? <EmptyState title={filter === "attention" ? "Nothing needs attention" : filter === "active" ? "No active production jobs" : "No production jobs"}>Assign manufacturers from an order&apos;s page once its items are approved.</EmptyState> : (
         <div className="space-y-2">{rows.map((j) => (
           <div key={j.id} className="mv-card flex flex-wrap items-center gap-2 p-3 text-sm" data-testid="board-row">
             <Link href={`/admin/orders/${j.orderId}`} className="font-mono underline">{j.orderNumber}</Link>
@@ -151,14 +151,14 @@ export function AdminShipping() {
         ))}</div>
       )}
       <Modal open={!!reassign} onClose={() => setReassign(null)} title={`Reassign shipment ${reassign?.orderNumber ?? ""}`}>
-        {reassign && <ShipmentForm partners={opts} submitLabel="Reassign" onSubmit={async (v) => { await run(() => api(`/api/admin/shipments/${reassign.id}`, { method: "PATCH", body: { organizationId: v.organizationId, courier: v.courier } }), "Shipment reassigned", reload); setReassign(null); }} hideExtras />}
+        {reassign && <ShipmentForm partners={opts} submitLabel="Reassign" onSubmit={async (v) => { await run(() => api(`/api/admin/shipments/${reassign.id}`, { method: "PATCH", body: { organizationId: v.organizationId, courier: v.courier, rate: v.rate } }), "Shipment reassigned", reload); setReassign(null); }} hideExtras />}
       </Modal>
     </div>
   );
 }
 
-function ShipmentForm({ partners, onSubmit, submitLabel, hideExtras, allowReturn }: { partners: LogisticsOpt[]; onSubmit: (v: { organizationId: string; courier: string; direction: string; weightGrams: number; cod: boolean }) => unknown; submitLabel: string; hideExtras?: boolean; allowReturn?: boolean }) {
-  const [v, setV] = useState({ organizationId: "", courier: "", direction: "forward", weightGrams: 400, cod: false });
+function ShipmentForm({ partners, onSubmit, submitLabel, hideExtras, allowReturn }: { partners: LogisticsOpt[]; onSubmit: (v: { organizationId: string; courier: string; direction: string; weightGrams: number; cod: boolean; rate?: number }) => unknown; submitLabel: string; hideExtras?: boolean; allowReturn?: boolean }) {
+  const [v, setV] = useState({ organizationId: "", courier: "", direction: "forward", weightGrams: 400, cod: false, rate: "" });
   const org = partners.find((p) => p.id === v.organizationId);
   if (!partners.length) return <p className="text-xs text-mute">No approved logistics partners yet — approve one under Partners.</p>;
   return (
@@ -172,7 +172,8 @@ function ShipmentForm({ partners, onSubmit, submitLabel, hideExtras, allowReturn
           <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={v.cod} onChange={(e) => setV({ ...v, cod: e.target.checked })} /> COD</label>
         </>
       )}
-      <Button size="sm" disabled={!v.organizationId || !v.courier} onClick={() => onSubmit(v)} data-testid="shipment-submit">{submitLabel}</Button>
+      <Input type="number" min={0} aria-label="Agreed rate (₹)" placeholder="Agreed rate ₹ (optional)" value={v.rate} onChange={(e) => setV({ ...v, rate: e.target.value.replace(/\D/g, "") })} className="!w-44" data-testid="shipment-rate" />
+      <Button size="sm" disabled={!v.organizationId || !v.courier} onClick={() => onSubmit({ ...v, rate: v.rate ? Number(v.rate) : undefined })} data-testid="shipment-submit">{submitLabel}</Button>
     </div>
   );
 }
@@ -223,6 +224,7 @@ interface Fulfil {
   manufacturers: { id: string; name: string; match: { ok: boolean; reasons: string[] } }[];
   logistics: LogisticsOpt[];
   disputes: { id: string; kind: string; status: string; description: string }[];
+  settlements: { id: string; kind: string; amount: number; status: string; reference: string | null }[];
 }
 
 export function OrderFulfilmentPanel({ orderId, orderStatus, onChange }: { orderId: string; orderStatus: string; onChange: () => void }) {
@@ -261,6 +263,7 @@ export function OrderFulfilmentPanel({ orderId, orderStatus, onChange }: { order
       </div>
       <div className="space-y-2">
         <p className="text-sm font-medium">Shipping</p>
+        {!["packed", "quality_inspection", "manufacturing", "shipped", "delivered"].includes(orderStatus) && !data.shipments.length && <p className="text-xs text-mute">Book a shipment once production has started (forward) — returns can be booked after shipping.</p>}
         {(["packed", "quality_inspection", "manufacturing"].includes(orderStatus) || ["shipped", "delivered"].includes(orderStatus)) && <ShipmentForm partners={data.logistics} submitLabel="Create shipment" allowReturn={["shipped", "delivered"].includes(orderStatus)} onSubmit={(v) => post({ action: "shipment", shipment: v }, "Shipment created")} />}
         {data.shipments.map((s) => (
           <div key={s.id} className="rounded-lg border border-line p-2 text-xs" data-testid="fulfil-shipment">
@@ -269,6 +272,7 @@ export function OrderFulfilmentPanel({ orderId, orderStatus, onChange }: { order
           </div>
         ))}
       </div>
+      {!!data.settlements.length && <div><p className="text-sm font-medium">Partner payouts</p><ul className="text-xs">{data.settlements.map((st) => <li key={st.id}><Badge tone={tone(st.status === "due" ? "pending" : st.status === "paid" ? "approved" : "cancelled")}>{st.status}</Badge> {st.kind} ₹{st.amount.toLocaleString("en-IN")}{st.reference ? ` · ref ${st.reference}` : ""} — <Link className="underline" href="/admin/payouts">manage</Link></li>)}</ul></div>}
       {!!data.disputes.length && <div><p className="text-sm font-medium">Disputes</p><ul className="text-xs">{data.disputes.map((d) => <li key={d.id}><Badge tone={tone(d.status)}>{d.status}</Badge> {d.kind}: {d.description} — <Link className="underline" href="/admin/disputes">manage</Link></li>)}</ul></div>}
     </section>
   );
@@ -279,4 +283,47 @@ function ProductionPhotos({ events }: { events: { id: string; kind: string; payl
   if (!photos.length) return null;
    
   return <div className="mt-2 flex gap-1">{photos.map((p) => <img key={p.id} src={`/api/uploads/${p.payload.uploadId}`} alt={String(p.payload.caption ?? "Production photo")} className="size-14 rounded object-cover" />)}</div>;
+}
+
+// ── Payouts (settlements ledger) ──────────────────────────────────
+interface SettlementRow { id: string; organizationId: string; org: string; orgType: string; kind: string; orderId: string; orderNumber: string; amount: number; originalAmount: number; status: string; reference: string | null; note: string | null; paidAt: string | null; createdAt: string }
+
+export function AdminPayouts() {
+  const [status, setStatus] = useState("due");
+  const { data, reload } = useApi<{ settlements: SettlementRow[]; totals: { due: number; paid: number }; byOrganization: { organizationId: string; org: string; due: number; paid: number }[] }>(`/api/admin/settlements${status ? `?status=${status}` : ""}`);
+  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+  const act = (st: SettlementRow, action: "pay" | "adjust" | "void") => {
+    let body: Record<string, unknown> | null = null;
+    if (action === "pay") { const reference = prompt(`Bank / UPI transaction reference for ${inr(st.amount)} to ${st.org}`); if (reference) body = { action, reference }; }
+    if (action === "adjust") { const a = prompt("New amount (₹)", String(st.amount)); const note = a !== null ? prompt("Reason for the adjustment (shared with the partner)") : null; if (a && note) body = { action, amount: Number(a.replace(/\D/g, "")), note }; }
+    if (action === "void") { const note = prompt("Why is this payout cancelled? (shared with the partner)"); if (note) body = { action, note }; }
+    if (body) run(() => api(`/api/admin/settlements/${st.id}`, { method: "PATCH", body }), action === "pay" ? "Payment recorded" : action === "adjust" ? "Payout adjusted" : "Payout cancelled", reload);
+  };
+  return (
+    <div data-testid="admin-payouts">
+      <H1>Partner payouts</H1>
+      <Notice tone="info">A ledger of what ModVerse owes partners — approved quotations once a job is dispatched, agreed shipping rates once a shipment completes. Pay outside the app, then record the bank/UPI reference here. Nothing on this page moves money.</Notice>
+      <div className="my-4 flex flex-wrap items-center gap-2">
+        {[["due", "Due"], ["paid", "Paid"], ["void", "Cancelled"], ["", "All"]].map(([v, l]) => <button key={v} className="mv-chip" data-active={status === v} onClick={() => setStatus(v)}>{l}</button>)}
+        <a className="mv-chip ml-auto" href={`/api/admin/settlements?format=csv${status ? `&status=${status}` : ""}`} data-testid="payouts-csv">Export CSV</a>
+      </div>
+      {!data ? <Spinner /> : (
+        <div className="space-y-4">
+          {!!data.byOrganization.length && <div className="grid gap-2 sm:grid-cols-3">{data.byOrganization.map((o) => <div key={o.organizationId} className="mv-card p-3 text-sm"><p className="font-medium">{o.org}</p><p className="text-xs text-mute">due {inr(o.due)} · paid {inr(o.paid)}</p></div>)}</div>}
+          {!data.settlements.length ? <EmptyState title="Nothing here" /> : (
+            <div className="space-y-2">{data.settlements.map((st) => (
+              <div key={st.id} className="mv-card flex flex-wrap items-center gap-2 p-3 text-sm" data-testid="settlement-row">
+                <span className="font-medium">{st.org}</span><Badge>{st.kind}</Badge>
+                <Link href={`/admin/orders/${st.orderId}`} className="font-mono text-xs underline">{st.orderNumber}</Link>
+                <Badge tone={st.status === "paid" ? "ok" : st.status === "void" ? "bad" : "warn"}>{st.status}</Badge>
+                <span className="tabular-nums">{inr(st.amount)}{st.amount !== st.originalAmount && <span className="text-xs text-mute"> (was {inr(st.originalAmount)})</span>}</span>
+                <span className="text-xs text-mute">{st.status === "paid" ? `ref ${st.reference} · ${day(st.paidAt)}` : `accrued ${day(st.createdAt)}`}{st.note ? ` · ${st.note}` : ""}</span>
+                {st.status === "due" && <span className="ml-auto flex gap-1"><Button size="sm" onClick={() => act(st, "pay")} data-testid="settlement-pay">Record payment</Button><Button size="sm" variant="ghost" onClick={() => act(st, "adjust")}>Adjust</Button><Button size="sm" variant="ghost" onClick={() => act(st, "void")}>Cancel</Button></span>}
+              </div>
+            ))}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }

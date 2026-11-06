@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
 import { api, errorMessage } from "@/lib/client/api";
 import { formatINR } from "@/lib/garment/pricing";
-import { GarmentFlat } from "@/components/garment/GarmentFlat";
+import { DesignFlat } from "@/components/garment/DesignFlat";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { Badge, Button, EmptyState, Input, Modal, Notice, Select, Spinner, toast } from "@/components/ui";
 import { COLLECTIONS } from "@/lib/library/collections";
@@ -101,7 +101,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
         <p className="mv-eyebrow">Items — production approval required before manufacturing</p>
         {data.items.map((it) => (
           <div key={it.id} className="mv-card flex flex-wrap items-center gap-4 p-3">
-            <div className="w-24"><GarmentFlat config={it.designSnapshot} view="front" className="h-24 w-full" /></div>
+            <div className="grid w-40 grid-cols-2 gap-1"><DesignFlat config={it.designSnapshot} view="front" className="h-24 w-full" /><DesignFlat config={it.designSnapshot} view="back" className="h-24 w-full" /></div>
             <div className="min-w-0 flex-1 text-sm">
               <p>{it.designName} · v{it.version} snapshot · size {it.size} · qty {it.quantity}</p>
               <p className="text-xs text-mute">Automated checks: {it.specSnapshot.validation?.status ?? "n/a"} ({it.specSnapshot.validation?.counts?.error ?? 0} errors, {it.specSnapshot.validation?.counts?.warning ?? 0} warnings) · review: {it.reviewStatus.replace("_", " ")}</p>
@@ -129,7 +129,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
         </div>
       </section>
       <OrderFulfilmentPanel orderId={id} orderStatus={o.status} onChange={reload} />
-      <section><p className="mv-eyebrow">Ship to</p><p className="text-sm">{Object.values(o.shippingAddress).filter(Boolean).join(", ")}</p>{o.notes && <p className="text-sm text-mute">Notes: {o.notes}</p>}</section>
+      <section><p className="mv-eyebrow">Ship to</p><p className="text-sm">{[o.shippingAddress.fullName, o.shippingAddress.line1, o.shippingAddress.line2, o.shippingAddress.city, `${o.shippingAddress.state ?? ""} ${o.shippingAddress.pincode ?? ""}`.trim(), o.shippingAddress.phone && `phone ${o.shippingAddress.phone}`].filter(Boolean).join(", ")}</p>{o.notes && <p className="text-sm text-mute">Notes: {o.notes}</p>}</section>
       <section><p className="mv-eyebrow">Timeline</p><ul className="mt-2 space-y-1 text-xs">{data.events.map((e) => <li key={e.id}><span className="text-mute">{new Date(e.createdAt).toLocaleString("en-IN")}</span> — {e.status.replace(/_/g, " ")}{e.note ? `: ${e.note}` : ""}</li>)}</ul></section>
     </div>
   );
@@ -156,7 +156,7 @@ export function AdminDesigns() {
         ))}</div>
       )}
       <Modal open={!!preview} onClose={() => setPreview(null)} title={preview?.name ?? ""} wide>
-        {preview && <div className="grid grid-cols-2 gap-3"><GarmentFlat config={preview.config} view="front" className="w-full" /><GarmentFlat config={preview.config} view="back" className="w-full" /></div>}
+        {preview && <div className="grid grid-cols-2 gap-3"><DesignFlat config={preview.config} view="front" className="w-full" /><DesignFlat config={preview.config} view="back" className="w-full" /></div>}
       </Modal>
     </div>
   );

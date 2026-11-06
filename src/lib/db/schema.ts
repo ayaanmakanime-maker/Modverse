@@ -575,6 +575,8 @@ export const shipments = pgTable(
     deliveredAt: ts("delivered_at"),
     podName: text("pod_name"),
     podUploadId: uuid("pod_upload_id"),
+    /** Agreed shipping rate payable to the logistics partner (INR), if any (V2.1). */
+    rateAmount: integer("rate_amount"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -691,6 +693,33 @@ export const disputes = pgTable(
   (t) => [index("disputes_order_idx").on(t.orderId), index("disputes_status_idx").on(t.status)],
 );
 
+/**
+ * Settlements (V2.1): what ModVerse owes a partner for a dispatched job (approved
+ * quotation) or a completed shipment (agreed rate). A ledger only — paying is done
+ * outside the app; admins record the bank reference. No money is moved by ModVerse.
+ */
+export const settlements = pgTable(
+  "settlements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "restrict" }),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
+    kind: text("kind", { enum: ["production", "shipping"] }).notNull(),
+    jobId: uuid("job_id").references(() => productionJobs.id, { onDelete: "set null" }),
+    shipmentId: uuid("shipment_id").references(() => shipments.id, { onDelete: "set null" }),
+    amount: integer("amount").notNull(),
+    originalAmount: integer("original_amount").notNull(),
+    status: text("status", { enum: ["due", "paid", "void"] }).notNull().default("due"),
+    reference: text("reference"),
+    note: text("note"),
+    paidAt: ts("paid_at"),
+    paidBy: uuid("paid_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("settlements_org_idx").on(t.organizationId), index("settlements_status_idx").on(t.status), uniqueIndex("settlements_job_uq").on(t.jobId), uniqueIndex("settlements_shipment_uq").on(t.shipmentId)],
+);
+
 // ───────────────────────── Platform ─────────────────────────
 export const integrationProviders = pgTable("integration_providers", {
   id: text("id").primaryKey(),
@@ -761,6 +790,7 @@ export type Order = typeof orders.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
 export type ProductionJob = typeof productionJobs.$inferSelect;
 export type Shipment = typeof shipments.$inferSelect;
+export type Settlement = typeof settlements.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type DesignProject = typeof designProjects.$inferSelect;
 export type DesignVersion = typeof designVersions.$inferSelect;

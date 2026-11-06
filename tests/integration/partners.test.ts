@@ -21,6 +21,8 @@ import { addToCart, checkout, confirmSimulatedPayment, getOrder, reviewOrderItem
 import { createDesign, createImageLayer, createTextLayer } from "@/lib/garment/design";
 import { readUpload, storeUpload } from "@/lib/services/uploads";
 import * as P from "@/lib/services/partners";
+import { mailbox } from "@/lib/services/account";
+import * as Settle from "@/lib/services/settlements";
 import { PRINT_METHODS, AUDIENCES } from "@/lib/garment/types";
 
 async function makeUser(email: string, role: "customer" | "staff" | "admin" = "customer"): Promise<SessionUser> {
@@ -67,6 +69,7 @@ beforeAll(async () => {
 describe("onboarding & approval", () => {
   it("applies, blocks pending/rejected partners and approves", async () => {
     await expect(P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: "owner@stitchworks.example", gstin: "bad", capabilities: allCaps })).rejects.toThrow();
+    await expect(P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: "owner@stitchworks.example", gstin: "27AAPFU0939F1ZX", capabilities: allCaps })).rejects.toThrow(/check character/);
     const a = await P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: "owner@stitchworks.example", gstin: "27AAPFU0939F1ZV", city: "Tiruppur", state: "Tamil Nadu", capabilities: allCaps });
     expect(a.status).toBe("pending");
     await expect(P.applyAsPartner(m1, { type: "logistics", name: "Dup", contactEmail: "x@y.example", capabilities: { couriers: ["Delhivery"] } })).rejects.toMatchObject({ code: "already_partner" });
@@ -83,6 +86,12 @@ describe("onboarding & approval", () => {
     await expect(P.addMember(m1b, "outsider@example.com")).rejects.toMatchObject({ status: 403 });
     const db = await getDb();
     expect((await db.select().from(s.auditLogs).where(eq(s.auditLogs.action, "partner.approve"))).length).toBe(5);
+    // Notifications: applicant confirmation + approval to the organisation, application alert to admins only.
+    const ownerMail = (await mailbox(m1)).map((e) => e.subject);
+    expect(ownerMail).toContain("We received your ModVerse partner application");
+    expect(ownerMail).toContain("Your ModVerse partner organisation was approved");
+    expect((await mailbox(admin)).some((e) => e.subject.startsWith("New manufacturer partner application: StitchWorks"))).toBe(true);
+    expect((await mailbox(staff)).some((e) => e.subject.includes("partner application"))).toBe(false);
   });
 });
 
@@ -109,6 +118,10 @@ describe("manufacturing workflow & isolation", () => {
     await expect(P.listMyJobs(l1)).rejects.toMatchObject({ status: 403 });
     await expect(P.listMyJobs(outsider)).rejects.toMatchObject({ status: 403 });
     expect(await P.listMyJobs(m1b)).toHaveLength(1);
+    // Offers are only announced to the assigned organisation's members.
+    expect((await mailbox(m1b)).some((e) => e.subject.startsWith("New production offer"))).toBe(true);
+    expect((await mailbox(m2)).some((e) => e.subject.startsWith("New production offer"))).toBe(false);
+    expect((await mailbox(m3)).filter((e) => e.subject.startsWith("New production offer"))).toHaveLength(1); // its (since cancelled) first offer
 
     const view = await P.getMyJob(m1b, jobId);
     const json = JSON.stringify(view);
@@ -184,7 +197,7 @@ describe("logistics workflow & isolation", () => {
     await expect(P.createShipment(staff, orderId, { organizationId: orgs.m1, courier: "Delhivery" })).rejects.toMatchObject({ status: 400 });
     await expect(P.createShipment(staff, orderId, { organizationId: orgs.l2, courier: "Ecom Express", cod: true })).rejects.toMatchObject({ status: 400 });
     const sh = await P.createShipment(staff, orderId, { organizationId: orgs.l2, courier: "Ecom Express" });
-    const moved = await P.reassignShipment(staff, sh.id, { organizationId: orgs.l1, courier: "Delhivery" });
+    const moved = await P.reassignShipment(staff, sh.id, { organizationId: orgs.l1, courier: "Delhivery", rate: 90 });
     shipmentId = moved.id;
     expect(moved.organizationId).toBe(orgs.l1);
   });
@@ -225,6 +238,13 @@ describe("logistics workflow & isolation", () => {
     const o = await getOrder(alice, orderId);
     expect(o.order.status).toBe("delivered");
     expect(o.shipments[0].awb).toBe(labelled.awb);
+    const customerMail = (await mailbox(alice)).map((e) => e.subject);
+    for (const subject of ["has shipped", "is out for delivery", "couldn't deliver", "was delivered"]) expect(customerMail.some((x) => x.includes(subject))).toBe(true);
+    expect((await mailbox(l1)).some((e) => e.subject.startsWith("Shipment assigned to you"))).toBe(true);
+    expect((await mailbox(l2)).some((e) => e.subject === "A shipment was reassigned")).toBe(true);
+    // The order timeline records pickup and delivery once (no duplicate shipment events).
+    const statuses = o.events.map((e) => e.status);
+    expect(statuses.filter((x) => x === "shipped" || x === "shipment_picked_up")).toEqual(["shipped"]);
     const [sh] = await db.select().from(s.shipments).where(eq(s.shipments.id, shipmentId));
     expect(await P.partnerCanReadUpload(l1, sh.podUploadId!)).toBe(true);
     expect(await P.partnerCanReadUpload(l2, sh.podUploadId!)).toBe(false);
@@ -232,7 +252,7 @@ describe("logistics workflow & isolation", () => {
   });
 
   it("creates return shipments for delivered orders", async () => {
-    const ret = await P.createShipment(staff, orderId, { organizationId: orgs.l1, courier: "Blue Dart", direction: "return" });
+    const ret = await P.createShipment(staff, orderId, { organizationId: orgs.l1, courier: "Blue Dart", direction: "return", rate: 70 });
     const v = await P.getMyShipment(l1, ret.id);
     expect(v.pickup).toMatchObject({ kind: "customer", city: "Pune" });
     await P.generateLabel(l1, ret.id);
@@ -241,6 +261,46 @@ describe("logistics workflow & isolation", () => {
     const r = await P.addTrackingEvent(l1, ret.id, { status: "delivered" });
     expect(r.status).toBe("returned");
     expect((await getOrder(alice, orderId)).order.status).toBe("delivered"); // returns never move the order backwards
+  });
+});
+
+describe("settlements (payables ledger)", () => {
+  it("accrues the approved quotation at pickup and agreed rates on completion, per organisation", async () => {
+    const maker = await Settle.listMySettlements(m1b);
+    expect(maker.settlements).toHaveLength(1);
+    expect(maker.settlements[0]).toMatchObject({ kind: "production", amount: 1100, status: "due" });
+    const shipper = await Settle.listMySettlements(l1);
+    expect(shipper.settlements.map((x) => x.amount).sort()).toEqual([70, 90]);
+    expect(shipper.totals.due).toBe(160);
+    expect((await Settle.listMySettlements(m2)).settlements).toHaveLength(0);
+    expect((await Settle.listMySettlements(l2)).settlements).toHaveLength(0);
+    await expect(Settle.listMySettlements(outsider)).rejects.toMatchObject({ status: 403 });
+    expect((await mailbox(m1)).some((e) => e.subject.startsWith("Payout due: ₹1,100"))).toBe(true);
+    // Idempotent: accruing again does nothing.
+    const db = await getDb();
+    expect(await Settle.accrueProductionSettlement(db, maker.settlements[0].jobId!)).toBeNull();
+  });
+
+  it("lets admins adjust, record payments (reference required, once) and cancel; exports safe CSV", async () => {
+    const all = await Settle.listSettlements({ status: "due" });
+    expect(all.totals.due).toBe(1260);
+    const prod = all.settlements.find((x) => x.kind === "production")!;
+    await expect(Settle.updateSettlement(admin, prod.id, { action: "pay", reference: "" })).rejects.toThrow();
+    await Settle.updateSettlement(admin, prod.id, { action: "adjust", amount: 1050, note: "=HYPERLINK(\"x\") one reprinted piece deducted" });
+    await Settle.updateSettlement(admin, prod.id, { action: "pay", reference: "UTR-NEFT-123456" });
+    await expect(Settle.updateSettlement(admin, prod.id, { action: "pay", reference: "UTR-NEFT-999999" })).rejects.toMatchObject({ code: "invalid_state" });
+    const ship = all.settlements.find((x) => x.amount === 70)!;
+    await Settle.updateSettlement(admin, ship.id, { action: "void", note: "Return was ModVerse-paid separately" });
+    const mine = await Settle.listMySettlements(m1);
+    expect(mine.settlements[0]).toMatchObject({ amount: 1050, originalAmount: 1100, status: "paid", reference: "UTR-NEFT-123456" });
+    expect(mine.totals).toMatchObject({ due: 0, paid: 1050 });
+    expect((await mailbox(m1b)).some((e) => e.subject === "Payment recorded: ₹1,050")).toBe(true);
+    const csv = await Settle.settlementsCsv();
+    expect(csv.split("\n")[0]).toContain("partner,partner_type,kind");
+    expect(csv).toContain(`"'=HYPERLINK(""x"") one reprinted piece deducted"`);
+    expect(csv).not.toMatch(/,"=/);
+    const db = await getDb();
+    expect((await db.select().from(s.auditLogs).where(eq(s.auditLogs.action, "settlement.pay"))).length).toBe(1);
   });
 });
 
@@ -255,6 +315,7 @@ describe("disputes & suspension", () => {
     expect(list.find((d) => d.raisedByOrgId === orgs.m1)?.raisedByOrg).toBe("StitchWorks");
     await expect(P.resolveDispute(admin, list[0].id, { status: "resolved" })).rejects.toMatchObject({ status: 400 });
     await P.resolveDispute(admin, list[0].id, { status: "resolved", resolution: "Replacement shipped." });
+    expect((await mailbox(staff)).some((e) => e.subject.startsWith("New quality dispute"))).toBe(true);
     expect(await P.myDisputes(alice, orderId)).toHaveLength(1);
     // The customer's timeline never names partner organisations or shows partner disputes.
     const timeline = JSON.stringify((await getOrder(alice, orderId)).events);

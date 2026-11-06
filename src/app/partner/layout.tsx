@@ -13,7 +13,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
   if (!user) redirect("/login?next=/partner");
   const m = await getMembership(user);
   if (!m) redirect("/partners");
-  const nav: [string, string][] = [["/partner", m.org.type === "manufacturer" ? "Production jobs" : "Shipments"], ["/partner/organisation", "Organisation & team"]];
+  const nav: [string, string][] = [["/partner", m.org.type === "manufacturer" ? "Production jobs" : "Shipments"], ["/partner/payouts", "Payouts"], ["/partner/organisation", "Organisation & team"], ["/account/mailbox", "Messages"]];
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[240px_1fr]">
       <aside className="border-b border-line bg-ink-2 p-4 lg:min-h-dvh lg:border-b-0 lg:border-r">

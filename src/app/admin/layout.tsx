@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: { default: "Admin", template: "%s · ModVerse Admin" } };
 
 const NAV: [string, string, boolean][] = [
-  ["/admin", "Overview", false], ["/admin/orders", "Orders", false], ["/admin/designs", "Design reviews", false], ["/admin/production", "Production", false], ["/admin/shipping", "Shipping", false], ["/admin/disputes", "Disputes", false], ["/admin/partners", "Partners", false], ["/admin/users", "Customers & staff", true],
+  ["/admin", "Overview", false], ["/admin/orders", "Orders", false], ["/admin/designs", "Design reviews", false], ["/admin/production", "Production", false], ["/admin/shipping", "Shipping", false], ["/admin/disputes", "Disputes", false], ["/admin/partners", "Partners", false], ["/admin/payouts", "Payouts", false], ["/admin/users", "Customers & staff", true],
   ["/admin/catalogue", "Catalogue", false], ["/admin/library", "Creative Library", false], ["/admin/pricing", "Pricing & discounts", true], ["/admin/integrations", "Integrations", true], ["/admin/audit", "Audit log", true], ["/admin/settings", "Settings", true],
 ];
 
