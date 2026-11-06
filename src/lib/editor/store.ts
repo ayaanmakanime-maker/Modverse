@@ -37,8 +37,14 @@ export interface EditorState {
   selection: Selection | null;
   cloneSource: { layerId: string; u: number; v: number } | null;
   warpEdit: boolean;
+  /** Show decoration methods as they will look (thread, ink, film) in 2D and 3D. */
+  production: boolean;
+  /** Draw print boundaries and safe areas on the 3D garment. */
+  guides3d: boolean;
 
   setTool(t: ProTool): void;
+  setProduction(on: boolean): void;
+  setGuides3d(on: boolean): void;
   setBrush(p: Partial<BrushSettings>): void;
   setToolOpts(p: Partial<ToolOptions>): void;
   setSelection(s: Selection | null): void;
@@ -109,10 +115,14 @@ export const useEditor = create<EditorState>((set, get) => ({
   selection: null,
   cloneSource: null,
   warpEdit: false,
+  production: false,
+  guides3d: false,
   gestureBase: null,
   gestureOpen: false,
 
   setTool: (tool) => set({ tool }),
+  setProduction: (production) => set({ production }),
+  setGuides3d: (guides3d) => set({ guides3d }),
   endGesture: () => set({ gestureBase: null, gestureOpen: false }),
   setBrush: (p) => set({ brush: { ...get().brush, ...p } }),
   setToolOpts: (p) => set({ toolOpts: { ...get().toolOpts, ...p } }),

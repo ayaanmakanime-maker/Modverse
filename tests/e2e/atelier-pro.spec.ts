@@ -129,3 +129,52 @@ test("Atelier Pro: AI object selection runs on the device", async ({ page }) => 
     await expect(layerEls(page)).toHaveCount(2);
   }
 });
+
+test("Fabric Lab, garment regions, safe areas and production preview", async ({ page }) => {
+  test.setTimeout(120_000);
+  await register(page, "Fabric Lab");
+  await openEditor(page, "tee-classic-crew", "men", "pro");
+
+  // Fabric Lab: search, profiles, close-ups, compare three, recommendations, live apply.
+  await page.getByTestId("tab-fabriclab").click();
+  const lab = page.getByTestId("fabric-lab");
+  await expect(lab).toBeVisible();
+  await page.getByTestId("fabric-search").fill("heavyweight");
+  await expect(page.locator('[data-testid^="swatch-"]')).toHaveCount(1);
+  await page.getByTestId("fabric-search").fill("");
+  await page.getByTestId("profile-heavyweight-cotton").click();
+  await expect(page.getByTestId("fabric-detail")).toContainText("Heavyweight Cotton Jersey");
+  await expect(page.getByTestId("fabric-detail")).toContainText("Thickness");
+  for (const id of ["combed-cotton-jersey", "heavyweight-cotton-jersey", "cotton-elastane-jersey"]) await page.getByTestId(`compare-${id}`).check();
+  await expect(page.getByTestId("fabric-compare")).toBeVisible();
+  await expect(page.getByTestId("fabric-compare").locator("canvas")).toHaveCount(3);
+  await page.getByTestId("fabric-use").selectOption("sport & active");
+  await expect(page.getByTestId("fabric-recommend")).toContainText("Performance Poly Interlock");
+  await page.getByTestId("fabric-apply").click();
+  await expect(page.getByTestId("fabric-apply")).toHaveText("On the garment");
+
+  // Artwork + print boundaries / production-safe area.
+  await page.getByTestId("tab-library").click();
+  await page.locator('[data-testid^="asset-MVG_"]').first().click();
+  await expect(page.getByTestId("safe-area")).toBeVisible();
+
+  // Apply the artwork to the back and both sleeves in one step.
+  await page.getByTestId("region-copy").locator("summary").click();
+  for (const z of ["back", "left sleeve", "right sleeve"]) await page.getByTestId("region-copy").getByText(z, { exact: true }).click();
+  await page.getByTestId("region-apply").click();
+  await page.getByTestId("zone-back").click();
+  await expect(page.locator("[data-layer-id]")).toHaveCount(1);
+  await page.getByTestId("zone-sleeveLeft").click();
+  await expect(page.locator("[data-layer-id]")).toHaveCount(1);
+
+  // Production preview renders the decoration method (2D) — never in print files.
+  await page.getByTestId("zone-front").click();
+  await page.getByTestId("production-preview").check();
+  await expect.poll(() => page.locator("[data-layer-id]").first().evaluate((el) => el.innerHTML)).toMatch(/<filter id="pm-/);
+  await page.getByTestId("guides-3d").check();
+
+  const id = await saveDesign(page);
+  const { version } = await (await page.request.get(`/api/designs/${id}`)).json();
+  expect(version.config.fabric.id).toBe("heavyweight-cotton-jersey");
+  expect(version.config.layers.map((l: { zone: string }) => l.zone).sort()).toEqual(["back", "front", "sleeveLeft", "sleeveRight"]);
+});

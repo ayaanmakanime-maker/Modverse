@@ -13,6 +13,8 @@ import { computeMeasurements } from "../garment/sizing";
 import { pocketPlacement, shoulderSlope, sleeveShape, torsoShape, zoneCanvas, type Pt, type Rect } from "../garment/panels";
 import type { DesignConfig } from "../garment/schema";
 import type { GarmentMeasurements } from "../garment/types";
+import { getFabric } from "../garment/fabrics";
+import { thicknessFactor } from "../garment/fabric-lab";
 import { drapeProfile, type DrapeProfile } from "../garment/drape";
 
 export interface MeshData {
@@ -378,6 +380,8 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
   const c = config.construction;
   const kids = config.audience === "kids";
   const res = opts.resolution ?? 64;
+  // Fabric Lab: trims (collar, cuffs, placket, pockets) are as thick as the chosen cloth.
+  const tk = thicknessFactor(getFabric(config.fabric.id), config.fabric.gsm);
   const front = torsoShape(m, "front", c, kids);
   const back = torsoShape(m, "back", c, kids);
   const drape = drapeProfile(config, m);
@@ -564,7 +568,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         }
       }
       // Leaves get real thickness (two plies + edge) so the collar edge reads in close-ups.
-      collars.push(shellMesh(rowsLeaf, 0.16, (p) => norm([centroid[0] - p[0], 0.4, centroid[2] - p[2]]), (i, j) => [i / KS, 1 - j / VS], { j1: true, i0: true, i1: true }));
+      collars.push(shellMesh(rowsLeaf, 0.16 * tk, (p) => norm([centroid[0] - p[0], 0.4, centroid[2] - p[2]]), (i, j) => [i / KS, 1 - j / VS], { j1: true, i0: true, i1: true }));
       if (c.collar === "button-down") {
         for (const k of [Math.round(KS * 0.035), Math.round(KS * 0.965)]) {
           const pt = rowsLeaf[VS - 1][k];
@@ -608,7 +612,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const along = mul(s.dir, rel[0] * s.dir[0] + rel[1] * s.dir[1] + rel[2] * s.dir[2]);
         return norm(mul(sub(rel, along), -1));
       };
-      cuffs.push(shellMesh(rows, c.cuff === "rib" ? 0.22 : 0.3, axisAt, uv, { j0: true, j1: true }));
+      cuffs.push(shellMesh(rows, (c.cuff === "rib" ? 0.22 : 0.3) * tk, axisAt, uv, { j0: true, j1: true }));
       if (shirt && c.cuff !== "rib" && c.buttons.count > 0) {
         // Cuff button on the back of the wrist (towards the little finger), mid-height.
         let bi = 0;
@@ -638,7 +642,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       for (let i = 0; i <= 4; i++) row.push(body.map("front", -m.placketWidth / 2 + (m.placketWidth * i) / 4, y, 0.2));
       rows.push(row);
     }
-    placket = shellMesh(rows, 0.16, () => [0, 0, -1], (i, j) => [i / 4, 1 - j / steps], { i0: true, i1: true, j1: true });
+    placket = shellMesh(rows, 0.16 * tk, () => [0, 0, -1], (i, j) => [i / 4, 1 - j / steps], { i0: true, i1: true, j1: true });
   }
   if (c.buttons.count > 0 && c.placket !== "hidden") {
     const top = m.frontNeckDrop + (shirt ? 1.4 : 1.8);
@@ -671,7 +675,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       }
       rows.push(row);
     }
-    pockets.push(shellMesh(rows, 0.1, () => [0, 0, -1], (i, j) => {
+    pockets.push(shellMesh(rows, 0.1 * tk, () => [0, 0, -1], (i, j) => {
       const xx = -m.pocketWidth / 2 + (m.pocketWidth * i) / steps;
       const yy = (m.pocketHeight * j) / steps;
       return [(xx - pocketCanvas.x0) / (pocketCanvas.x1 - pocketCanvas.x0), 1 - (yy - pocketCanvas.y0) / (pocketCanvas.y1 - pocketCanvas.y0)];
@@ -688,7 +692,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         }
         fr.push(row);
       }
-      pockets.push(shellMesh(fr, 0.12, () => [0, 0, -1], (i, j) => [i / 8, 1 - j / 3], { i0: true, i1: true, j1: true }));
+      pockets.push(shellMesh(fr, 0.12 * tk, () => [0, 0, -1], (i, j) => [i / 8, 1 - j / 3], { i0: true, i1: true, j1: true }));
       if (c.buttons.count > 0) buttons.push({ position: body.map("front", pl.x, pl.y + 2.8, 0.55), normal: body.normal("front", pl.x, pl.y + 2.8), radius: c.buttons.sizeMm / 22, site: "pocket" });
     }
   }

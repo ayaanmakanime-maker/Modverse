@@ -6,10 +6,10 @@
  */
 import { namespaceSvgIds, parseSvgDimensions, recolorSvg, svgInner } from "../svg/sanitize";
 import { panelColor } from "../garment/design";
-import { polygonToPath, shoulderSlope, sleeveShape, torsoShape, zoneCanvas, type Pt, type Rect } from "../garment/panels";
+import { polygonToPath, printableArea, safeArea, SAFE_MARGIN_CM, shoulderSlope, sleeveShape, torsoShape, zoneCanvas, type Pt, type Rect } from "../garment/panels";
 import type { DesignConfig, Layer, TextLayer } from "../garment/schema";
 import type { Folder } from "../garment/layer-fx";
-import { drawingMarkup, layerFilterDef, maskDef, refSize, retouchMarkup, textFillDef, warpMarkup } from "./layer-fx-svg";
+import { drawingMarkup, layerFilterDef, maskDef, methodPreviewDef, refSize, retouchMarkup, textFillDef, warpMarkup } from "./layer-fx-svg";
 import type { GarmentMeasurements, PanelId, Zone } from "../garment/types";
 import { hexToHsl, hslToHex, isDark, pbrAlbedo, relativeLuminance } from "../color";
 import { getFabric, type WeaveTexture } from "../garment/fabrics";
@@ -210,6 +210,8 @@ export interface LayerMarkupOptions {
   folder?: Folder | null;
   /** Rendering a clipping base inside a mask: no blend mode or opacity. */
   forMask?: boolean;
+  /** Production preview: show how the decoration method looks (value = the design's default method). Never for print files. */
+  production?: string | null;
 }
 
 /** Folder and clipping base of a layer within its design (see LayerMarkupOptions). */
@@ -266,6 +268,13 @@ export function layerMarkup(l: Layer, assets: AssetResolver, opts: LayerMarkupOp
     defs.push(w.defs);
     content = w.markup;
   }
+  if (opts.production && !opts.forMask) {
+    const def = methodPreviewDef(l.method ?? opts.production, l.width, l.height, `pm-${id}`);
+    if (def) {
+      defs.push(def);
+      content = `<g filter="url(#pm-${id})">${content}</g>`;
+    }
+  }
   if (l.clip && opts.clipBase && !opts.forMask) {
     const base = layerMarkup(opts.clipBase, assets, { forTexture: opts.forTexture, idPrefix: `${id}-cb-`, forMask: true });
     const R = refSize(l.width, l.height);
@@ -279,7 +288,7 @@ export function layerMarkup(l: Layer, assets: AssetResolver, opts: LayerMarkupOp
 }
 
 /** All layers of one zone, bottom to top, with folders and clipping applied. */
-export function zoneLayersMarkup(config: Pick<DesignConfig, "layers" | "folders">, zone: Zone, assets: AssetResolver, opts: { forTexture?: boolean; idPrefix?: string } = {}): string {
+export function zoneLayersMarkup(config: Pick<DesignConfig, "layers" | "folders">, zone: Zone, assets: AssetResolver, opts: { forTexture?: boolean; idPrefix?: string; production?: string | null } = {}): string {
   return config.layers.filter((l) => l.zone === zone).map((l) => layerMarkup(l, assets, { ...opts, ...layerContext(config, l) })).join("");
 }
 
@@ -406,8 +415,10 @@ const FABRIC_NOISE: Record<WeaveTexture, { f: [number, number][]; strength: numb
 };
 
 function fabricLook(config: DesignConfig, zone: Zone, canvas: Rect, idPrefix: string, base: string): { defs: string; markup: string } {
-  const weave = getFabric(panelFabricId(config, zone)).weave;
-  const spec = FABRIC_NOISE[weave];
+  const fab = getFabric(panelFabricId(config, zone));
+  const weave = fab.weave;
+  const yarn = fab.yarnScale ?? 1;
+  const spec = { ...FABRIC_NOISE[weave], strength: FABRIC_NOISE[weave].strength * (fab.mottle ?? 1), f: FABRIC_NOISE[weave].f.map(([a, b]) => [a / yarn, b / yarn] as [number, number]) };
   // Light flecks read as dust on dark cloth and dark flecks as dirt on light cloth: weight by lightness.
   const lum = Math.sqrt(relativeLuminance(base));
   const defs: string[] = [];
@@ -428,7 +439,7 @@ function fabricLook(config: DesignConfig, zone: Zone, canvas: Rect, idPrefix: st
 }
 
 /** Full texture SVG for one zone (px size derived from cm canvas). */
-export function zoneTextureSvg(config: DesignConfig, zone: Zone, m: GarmentMeasurements, assets: AssetResolver, opts: { pxPerCm?: number; fontCss?: string; includeLayers?: boolean; fabricLook?: boolean } = {}): { svg: string; canvas: Rect; widthPx: number; heightPx: number } {
+export function zoneTextureSvg(config: DesignConfig, zone: Zone, m: GarmentMeasurements, assets: AssetResolver, opts: { pxPerCm?: number; fontCss?: string; includeLayers?: boolean; fabricLook?: boolean; production?: boolean; guides?: boolean } = {}): { svg: string; canvas: Rect; widthPx: number; heightPx: number } {
   const canvas = zoneCanvas(m, zone);
   const pxPerCm = opts.pxPerCm ?? 14;
   const W = canvas.x1 - canvas.x0;
@@ -441,7 +452,8 @@ export function zoneTextureSvg(config: DesignConfig, zone: Zone, m: GarmentMeasu
   const [patDefs, patFill] = patternDef(config, panel, assets, idPrefix);
   const overlay = constructionOverlay(config, zone, m, assets, idPrefix);
   const look = opts.fabricLook ? fabricLook(config, zone, canvas, idPrefix, base) : { defs: "", markup: "" };
-  const layers = opts.includeLayers === false ? "" : zoneLayersMarkup(config, zone, assets, { forTexture: true });
+  const layers = opts.includeLayers === false ? "" : zoneLayersMarkup(config, zone, assets, { forTexture: true, production: opts.production ? config.printMethod : null });
+  const guides = opts.guides ? printGuidesMarkup(config, zone, m) : "";
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${widthPx}" height="${heightPx}" viewBox="${n(canvas.x0)} ${n(canvas.y0)} ${n(W)} ${n(H)}" preserveAspectRatio="none">`,
     opts.fontCss ? `<style>${opts.fontCss}</style>` : "",
@@ -451,10 +463,22 @@ export function zoneTextureSvg(config: DesignConfig, zone: Zone, m: GarmentMeasu
     look.markup,
     overlay.markup,
     layers,
+    guides,
     `</svg>`,
   ].join("");
   return { svg, canvas, widthPx, heightPx };
 }
+
+
+/** Print boundary (dashed) and production-safe area (dotted) for one zone, in zone cm. */
+export function printGuidesMarkup(config: DesignConfig, zone: Zone, m: GarmentMeasurements): string {
+  const a = printableArea(m, zone, config.garmentType, config.construction);
+  const s = safeArea(a);
+  const ink = isDark(panelColor(config, zone as PanelId)) ? "#F3EFE8" : "#111111";
+  return `<g fill="none" stroke="${ink}" stroke-opacity="0.7"><rect x="${n(a.x0)}" y="${n(a.y0)}" width="${n(a.x1 - a.x0)}" height="${n(a.y1 - a.y0)}" stroke-width="0.12" stroke-dasharray="0.8 0.5"/><rect x="${n(s.x0)}" y="${n(s.y0)}" width="${n(s.x1 - s.x0)}" height="${n(s.y1 - s.y0)}" stroke="#C9B896" stroke-width="0.1" stroke-dasharray="0.15 0.3"/></g>`;
+}
+
+export { safeArea, SAFE_MARGIN_CM };
 
 /** Deterministic PRNG for procedural details. */
 function prng(seed: number) {

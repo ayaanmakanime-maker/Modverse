@@ -6,7 +6,7 @@ import { useEditor } from "@/lib/editor/store";
 import { GarmentFlat, flatViewBox } from "@/components/garment/GarmentFlat";
 import { computeMeasurements } from "@/lib/garment/sizing";
 import { printableArea, sleeveShape, zoneCanvas, polygonToPath, rotatedBounds, type Rect } from "@/lib/garment/panels";
-import { flatPatternFills, layerContext, layerMarkup, patternDef, type AssetResolver } from "@/lib/render/compose";
+import { flatPatternFills, layerContext, layerMarkup, patternDef, safeArea, type AssetResolver } from "@/lib/render/compose";
 import { ProToolbar, ToolOptionsBar, useProShortcuts, useProTools } from "./pro-tools";
 import { assetVersion, ensureDesignAssets, getDataUrl, getPatternUrl, getSvg, subscribeAssets } from "@/lib/render/assets";
 import { availableZones, panelColor } from "@/lib/garment/design";
@@ -125,6 +125,7 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
   }, []);
 
   const mode = useEditor((s) => s.mode);
+  const production = useEditor((s) => s.production);
   const cmPerPx = useMemo(() => {
     const svg = svgRef.current;
     if (!svg) return 0.1;
@@ -439,10 +440,11 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
           <rect x={area.x0} y={area.y0} width={area.x1 - area.x0} height={area.y1 - area.y0} fill="none" stroke={guideColor} strokeOpacity={0.5} strokeWidth={Math.max(0.06, cmPerPx * 1.2)} strokeDasharray={`${handle * 0.8} ${handle * 0.6}`} />
           <line x1={0} x2={0} y1={area.y0 - 2} y2={area.y1 + 2} stroke={guideColor} strokeOpacity={0.25} strokeWidth={cmPerPx} />
           <text x={area.x0} y={area.y0 - handle * 0.6} fontSize={handle * 1.1} fill={guideColor} opacity={0.6} fontFamily="Inter">Print area {(area.x1 - area.x0).toFixed(0)} × {(area.y1 - area.y0).toFixed(0)} cm</text>
+          {(() => { const sa = safeArea(area); return <rect x={sa.x0} y={sa.y0} width={sa.x1 - sa.x0} height={sa.y1 - sa.y0} fill="none" stroke="#C9B896" strokeOpacity={0.7} strokeWidth={Math.max(0.04, cmPerPx)} strokeDasharray={`${handle * 0.15} ${handle * 0.35}`} data-testid="safe-area"><title>Production-safe area: keep fine detail inside (print registration tolerance)</title></rect>; })()}
         </g>
       )}
       {layers.map((l) => (
-        <g key={l.id} data-layer-id={l.id} style={{ cursor: l.locked ? "not-allowed" : "move" }} dangerouslySetInnerHTML={{ __html: layerMarkup(l, resolver, layerContext(config, l)) }} />
+        <g key={l.id} data-layer-id={l.id} style={{ cursor: l.locked ? "not-allowed" : "move" }} dangerouslySetInnerHTML={{ __html: layerMarkup(l, resolver, { ...layerContext(config, l), production: production ? config.printMethod : null }) }} />
       ))}
       {guides.v !== null && <line x1={guides.v} x2={guides.v} y1={vb[1]} y2={vb[1] + vb[3]} stroke="#C9B896" strokeWidth={cmPerPx * 1.5} pointerEvents="none" />}
       {guides.h !== null && <line y1={guides.h} y2={guides.h} x1={vb[0]} x2={vb[0] + vb[2]} stroke="#C9B896" strokeWidth={cmPerPx * 1.5} pointerEvents="none" />}

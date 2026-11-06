@@ -16,7 +16,10 @@ import { computeMeasurements } from "@/lib/garment/sizing";
 import { printableArea } from "@/lib/garment/panels";
 import { alignLayers, distributeLayers, type AlignMode } from "@/lib/editor/selection";
 import { curveFn } from "@/lib/render/layer-fx-svg";
-import { Select, Slider } from "@/components/ui";
+import { availableZones } from "@/lib/garment/design";
+import { copyLayerToZones, REGION_NAMES } from "@/lib/garment/regions";
+import type { Zone } from "@/lib/garment/types";
+import { Select, Slider, toast } from "@/components/ui";
 
 const BLEND_LABEL: Record<string, string> = { "color-dodge": "Colour dodge", "color-burn": "Colour burn", "hard-light": "Hard light", "soft-light": "Soft light", color: "Colour" };
 const label = (s: string) => BLEND_LABEL[s] ?? s.charAt(0).toUpperCase() + s.slice(1);
@@ -382,6 +385,60 @@ function RetouchSection({ layer }: { layer: Layer }) {
       <button className="mv-chip !text-[0.65rem]" onClick={() => set({ retouch: [] }, "Clear retouching")}>Clear all retouching</button>
       <p className="text-[0.6rem] text-mute">Each stroke reveals a processed copy of the untouched original. Smudge and healing are approximations of their pixel-editor counterparts.</p>
     </Fold>
+  );
+}
+
+/* ---------------------------------------------------- garment regions */
+
+/** Copy the selected artwork onto other garment regions (Atelier & Atelier Pro). */
+export function RegionCopy({ layer }: { layer: Layer }) {
+  const mode = useEditor((s) => s.mode);
+  const config = useEditor((s) => s.config);
+  const commit = useEditor((s) => s.commit);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [mirror, setMirror] = useState(true);
+  if (mode === "studio") return null;
+  const options = availableZones(config).filter((z) => z !== layer.zone);
+  const apply = () => {
+    const { layers, scaled } = copyLayerToZones(config, layer, zones, { mirrorSleeves: mirror });
+    if (!layers.length) return;
+    commit(`Apply to ${layers.length} region${layers.length > 1 ? "s" : ""}`, (d) => {
+      const i = d.layers.findIndex((l) => l.id === layer.id);
+      d.layers.splice(i + 1, 0, ...layers);
+    });
+    toast(`Added to ${layers.map((l) => REGION_NAMES[l.zone]).join(", ")}${scaled.length ? ` — scaled down to fit the ${scaled.map((z) => REGION_NAMES[z]).join(", ")}` : " at the same size"}`);
+    setZones([]);
+  };
+  return (
+    <Fold title="Apply to other garment regions" testId="region-copy">
+      <div className="flex flex-wrap gap-1">
+        {options.map((z) => (
+          <label key={z} className={clsx("mv-chip cursor-pointer !text-[0.65rem]", zones.includes(z) && "!border-champagne !text-bone")}>
+            <input type="checkbox" className="sr-only" checked={zones.includes(z)} onChange={(e) => setZones(e.target.checked ? [...zones, z] : zones.filter((x) => x !== z))} data-testid={`region-${z}`} />
+            {REGION_NAMES[z]}
+          </label>
+        ))}
+      </div>
+      {(layer.zone === "sleeveLeft" || layer.zone === "sleeveRight") && <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={mirror} onChange={(e) => setMirror(e.target.checked)} /> Mirror onto the opposite sleeve</label>}
+      <button className="mv-chip !text-[0.65rem]" disabled={!zones.length} onClick={apply} data-testid="region-apply">Copy to {zones.length || "…"} region{zones.length === 1 ? "" : "s"}</button>
+      <p className="text-[0.6rem] text-mute">Copies keep the artwork&apos;s size, colours, rotation and typography, and its relative position in the print area; they only shrink when a region is smaller.</p>
+    </Fold>
+  );
+}
+
+/* -------------------------------------------------- production toggles */
+
+/** Decoration-method appearance preview (2D + 3D) and print-area guides on the 3D garment. */
+export function ProductionToggles() {
+  const production = useEditor((s) => s.production);
+  const setProduction = useEditor((s) => s.setProduction);
+  const guides = useEditor((s) => s.guides3d);
+  const setGuides = useEditor((s) => s.setGuides3d);
+  return (
+    <div className="flex items-center gap-2 text-[0.68rem] text-bone-2">
+      <label className="flex items-center gap-1" title="Show embroidery thread, screen ink, DTG, DTF film and sublimation as they will look (visual approximation)"><input type="checkbox" checked={production} onChange={(e) => setProduction(e.target.checked)} data-testid="production-preview" /> Production preview</label>
+      <label className="flex items-center gap-1" title="Print boundary (dashed) and production-safe area (dotted) on the 3D garment"><input type="checkbox" checked={guides} onChange={(e) => setGuides(e.target.checked)} data-testid="guides-3d" /> Print areas in 3D</label>
+    </div>
   );
 }
 

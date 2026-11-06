@@ -613,3 +613,31 @@ export function textFillDef(fill: TextFill, w: number, h: number, gradId: string
   const half = Math.abs((w / 2) * dx) + Math.abs((h / 2) * dy);
   return `<linearGradient id="${gradId}" gradientUnits="userSpaceOnUse" x1="${n(-dx * half)}" y1="${n(-dy * half)}" x2="${n(dx * half)}" y2="${n(dy * half)}">${stops}</linearGradient>`;
 }
+
+/* ------------------------------------------------- production previews */
+
+/**
+ * Appearance of a decoration method (preview only — never in print files):
+ * embroidery = raised satin-stitch thread with sheen; screen = opaque ink with
+ * a faint mesh texture; DTG = ink absorbed into the fibres; DTF = a thin glossy
+ * film; sublimation = dye inside the fabric. These are visual approximations.
+ */
+export function methodPreviewDef(method: string, w: number, h: number, filterId: string): string {
+  const R = refSize(w, h);
+  const reg = region(w, h, R);
+  const head = `<filter id="${filterId}" ${reg} primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">`;
+  switch (method) {
+    case "embroidery":
+      return `${head}<feTurbulence type="fractalNoise" baseFrequency="0.35 5.5" numOctaves="1" seed="11" result="t"/><feColorMatrix in="t" type="matrix" values="0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 1" result="flat"/><feColorMatrix in="t" type="luminanceToAlpha" result="ta"/><feComposite in="SourceGraphic" in2="ta" operator="arithmetic" k1="0.55" k2="0.72" result="thread"/><feGaussianBlur in="SourceAlpha" stdDeviation="0.09" result="b"/><feSpecularLighting in="b" surfaceScale="2.4" specularConstant="0.75" specularExponent="16" lighting-color="#ffffff" result="s"><feDistantLight azimuth="225" elevation="48"/></feSpecularLighting><feComposite in="s" in2="SourceAlpha" operator="in" result="hl"/><feComposite in="thread" in2="hl" operator="arithmetic" k2="1" k3="0.38" result="lit"/><feComposite in="lit" in2="SourceAlpha" operator="in" result="th"/><feOffset in="SourceAlpha" dx="0.05" dy="0.09" result="o"/><feGaussianBlur in="o" stdDeviation="0.07" result="sh"/><feColorMatrix in="sh" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0" result="shadow"/><feMerge><feMergeNode in="shadow"/><feMergeNode in="th"/></feMerge></filter>`;
+    case "screen":
+      return `${head}<feTurbulence type="fractalNoise" baseFrequency="9" numOctaves="1" seed="5" result="n"/><feColorMatrix in="n" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="g"/><feComposite in="SourceGraphic" in2="g" operator="arithmetic" k2="1" k3="0.05" k4="-0.025" result="m"/><feComposite in="m" in2="SourceAlpha" operator="in"/></filter>`;
+    case "dtg":
+      return `${head}<feGaussianBlur in="SourceGraphic" stdDeviation="0.025" result="soft"/><feTurbulence type="fractalNoise" baseFrequency="3.2" numOctaves="2" seed="9" result="n"/><feColorMatrix in="n" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="g"/><feComposite in="soft" in2="g" operator="arithmetic" k1="0.35" k2="0.75" result="m"/><feComposite in="m" in2="SourceAlpha" operator="in" result="ink"/><feComponentTransfer in="ink"><feFuncA type="linear" slope="0.93"/></feComponentTransfer></filter>`;
+    case "dtf":
+      return `${head}<feGaussianBlur in="SourceAlpha" stdDeviation="0.05" result="b"/><feSpecularLighting in="b" surfaceScale="1.2" specularConstant="0.6" specularExponent="40" lighting-color="#ffffff" result="s"><feDistantLight azimuth="235" elevation="55"/></feSpecularLighting><feComposite in="s" in2="SourceAlpha" operator="in" result="gl"/><feComposite in="SourceGraphic" in2="gl" operator="arithmetic" k2="1" k3="0.22"/></filter>`;
+    case "sublimation":
+      return `${head}<feColorMatrix in="SourceGraphic" type="saturate" values="0.88" result="d"/><feComponentTransfer in="d"><feFuncA type="linear" slope="0.95"/></feComponentTransfer></filter>`;
+    default:
+      return "";
+  }
+}

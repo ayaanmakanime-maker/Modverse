@@ -3,7 +3,7 @@ import { FONT_BY_FAMILY, missingScripts } from "../typography/fonts";
 import { FABRIC_BY_ID, PRINT_METHOD_INFO, getFabric } from "./fabrics";
 import { availableZones, layerMethod, panelColor, panelFabricId } from "./design";
 import { getModel, MODEL_BY_ID } from "./models";
-import { printableArea, rectContains, rectIntersects, rotatedBounds, type Rect } from "./panels";
+import { printableArea, rectContains, rectIntersects, rotatedBounds, safeArea, SAFE_MARGIN_CM, type Rect } from "./panels";
 import type { DesignConfig, Layer, TextLayer } from "./schema";
 import { bodyForSize, computeMeasurements } from "./sizing";
 import type { BodyMeasurements, GarmentMeasurements, PanelId, PrintMethod, Zone } from "./types";
@@ -192,6 +192,8 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
         suggestion: "Move it inside the dashed print boundary or reduce its size.",
         fix: { label: "Fit inside print area", patch: { kind: "layer", layerId: l.id, changes: fitInside(l, area) } },
       });
+    } else if (!rectContains(safeArea(area), b)) {
+      add({ code: "NEAR_PRINT_EDGE", severity: "info", category: "print", layerId: l.id, message: `"${l.name}" sits within ${SAFE_MARGIN_CM} cm of the print boundary.`, suggestion: "Print registration can shift artwork by a few millimetres — keep fine detail inside the dotted production-safe area." });
     }
     const pf = getFabric(panelFabricId(config, zonePanel(l.zone)));
     const suit = pf.printMethods[method];

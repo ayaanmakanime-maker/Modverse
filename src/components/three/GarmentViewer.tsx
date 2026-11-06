@@ -37,6 +37,10 @@ export interface GarmentViewerProps {
   lighting?: LightingPreset;
   exposure?: number;
   showAvatar?: boolean;
+  /** Decoration-method appearance preview (embroidery thread, ink, film). */
+  production?: boolean;
+  /** Print boundaries and production-safe areas drawn on the garment. */
+  guides?: boolean;
   avatar?: { body?: Partial<BodyMeasurements>; appearance?: AvatarAppearance };
   transparentBackground?: boolean;
   /** In-viewer controls: "full" (views + details), "details" (reset + detail inspection), "none". */
@@ -108,7 +112,7 @@ interface PanelTextures {
  * topstitching, hem turn-ups, procedural creases). Yoke artwork is drawn into
  * the back texture.
  */
-function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: number, relief: boolean): PanelTextures {
+function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: number, relief: boolean, production = false, guides = false): PanelTextures {
   const [textures, setTextures] = useState<PanelTextures>({ maps: {}, relief: {} });
   const [assetTick, setAssetTick] = useState(0);
   useEffect(() => subscribeAssets(() => setAssetTick((t) => t + 1)), []);
@@ -128,7 +132,7 @@ function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: nu
       await Promise.all([
         ...jobs.map(async ([key, z, includeLayers]) => {
           try {
-            const { svg, widthPx, heightPx } = zoneTextureSvg(merged, z, geo.measurements, resolver, { pxPerCm: z === "collar" || z === "pocket" || z === "cuffs" ? 24 : pxPerCm, fontCss, includeLayers, fabricLook: true });
+            const { svg, widthPx, heightPx } = zoneTextureSvg(merged, z, geo.measurements, resolver, { pxPerCm: z === "collar" || z === "pocket" || z === "cuffs" ? 24 : pxPerCm, fontCss, includeLayers, fabricLook: true, production, guides: guides && includeLayers });
             out.maps[key] = await svgToTexture(svg, widthPx, heightPx);
           } catch {
             /* keep previous texture */
@@ -159,7 +163,7 @@ function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: nu
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [config, geo, pxPerCm, assetTick, relief]);
+  }, [config, geo, pxPerCm, assetTick, relief, production, guides]);
   return textures;
 }
 
@@ -167,8 +171,8 @@ function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: nu
 function useWeaveMaps(fabricId: string, repeatW: number, repeatH: number) {
   return useMemo(() => {
     const f = getFabric(fabricId);
-    const look = FABRIC_LOOK[f.weave];
-    const period = WEAVE_PERIOD_CM[f.weave];
+    const look = { ...FABRIC_LOOK[f.weave], ...f.look };
+    const period = WEAVE_PERIOD_CM[f.weave] * (f.yarnScale ?? 1);
     const rep: [number, number] = [repeatW / period, repeatH / period];
     const bump = new THREE.CanvasTexture(weaveCanvas(f.weave));
     bump.wrapS = bump.wrapT = THREE.RepeatWrapping;
@@ -275,10 +279,10 @@ function Buttonhole({ h, thread }: { h: ButtonholeData; thread: string }) {
   );
 }
 
-export function Garment({ config, centered = true, relief = true }: { config: DesignConfig; centered?: boolean; relief?: boolean }) {
+export function Garment({ config, centered = true, relief = true, production = false, guides = false }: { config: DesignConfig; centered?: boolean; relief?: boolean; production?: boolean; guides?: boolean }) {
   const geo = useMemo(() => buildGarmentGeometry(config), [config]);
   const m = geo.measurements;
-  const { maps, relief: reliefMaps } = useZoneTextures(config, geo, 14, relief);
+  const { maps, relief: reliefMaps } = useZoneTextures(config, geo, 14, relief, production, guides);
   const g = useMemo(() => ({
     front: toGeometry(geo.front), back: toGeometry(geo.back), sleeveLeft: toGeometry(geo.sleeveLeft), sleeveRight: toGeometry(geo.sleeveRight),
     collar: geo.collar.map(toGeometry), cuffs: geo.cuffs.map(toGeometry), placket: geo.placket ? toGeometry(geo.placket) : null, pockets: geo.pockets.map(toGeometry),
@@ -509,7 +513,7 @@ function defaultQuality(compact?: boolean): RenderQuality {
 }
 
 export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>(function GarmentViewer(
-  { config, autoRotate, compact, view = "three-quarter", lighting = "studio", exposure = 1, showAvatar, avatar, transparentBackground, controls: controlsMode, quality: qualityProp, showStats, onReady },
+  { config, autoRotate, compact, view = "three-quarter", lighting = "studio", exposure = 1, showAvatar, avatar, production = false, guides = false, transparentBackground, controls: controlsMode, quality: qualityProp, showStats, onReady },
   ref,
 ) {
   const controls = useRef<OrbitControlsImpl | null>(null);
@@ -641,7 +645,7 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
           <Lightformer form="circle" intensity={0.7} position={[0, 8, -6]} scale={6} />
         </Environment>
         <group ref={garmentRef}>
-          <Garment config={config} relief={quality !== "low"} />
+          <Garment config={config} relief={quality !== "low"} production={production} guides={guides} />
         </group>
         {showAvatar && <Avatar config={config} body={avatar?.body} appearance={avatar?.appearance} armDrop={geo.sleeveAngleDeg} />}
         <ContactShadows position={[0, -geo.measurements.bodyLength / 2 - (showAvatar ? 90 : 4), 0]} opacity={0.5} scale={200} blur={2.6} far={120} resolution={512} />

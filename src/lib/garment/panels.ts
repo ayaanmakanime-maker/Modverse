@@ -173,6 +173,15 @@ export function zoneCanvas(m: GarmentMeasurements, zone: Zone): Rect {
 }
 
 /** Safe printable area for a zone (cm, zone coordinates). */
+/** Production-safe margin inside the print boundary (registration / platen tolerance), cm. */
+export const SAFE_MARGIN_CM = 1;
+
+/** The production-safe area: the print area inset by the safe margin (smaller on tiny zones). */
+export function safeArea(a: Rect): Rect {
+  const k = Math.min(SAFE_MARGIN_CM, (a.x1 - a.x0) / 6, (a.y1 - a.y0) / 6);
+  return { x0: a.x0 + k, y0: a.y0 + k, x1: a.x1 - k, y1: a.y1 - k };
+}
+
 export function printableArea(m: GarmentMeasurements, zone: Zone, garmentType: GarmentType, c: Construction): Rect {
   switch (zone) {
     case "front": {

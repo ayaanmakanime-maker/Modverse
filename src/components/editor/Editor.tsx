@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
+import { FlaskConical, Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
 import { useEditor, type EditorMode } from "@/lib/editor/store";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { getModel } from "@/lib/garment/models";
@@ -22,18 +22,19 @@ import { SelectedProperties } from "./properties";
 import { ConstructionPanel, FabricPanel, FitPanel, GarmentPanel, MeasurementsPanel, PanelsPanel } from "./panels-garment";
 import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from "./panels-artwork";
 import { MusePanel, TechPackPanel, ValidationPanel, VersionsPanel, useLiveValidation } from "./panels-pro";
-import { HistoryPanel } from "./pro-panels";
+import { HistoryPanel, ProductionToggles } from "./pro-panels";
+import { FabricLabPanel } from "./fabric-lab";
 import type { GarmentViewerHandle, LightingPreset, ViewPreset } from "@/components/three/GarmentViewer";
 import { isSoftwareRenderer } from "@/lib/three/capabilities";
 import { ThemeToggle } from "@/components/theme";
 
 const GarmentViewer = dynamic(() => import("@/components/three/GarmentViewer").then((m) => m.GarmentViewer), { ssr: false, loading: () => <BrandLoader label="Preparing 3D" /> });
 
-type Tab = "start" | "garment" | "construction" | "measurements" | "fabric" | "panels" | "library" | "text" | "upload" | "layers" | "muse" | "fit" | "check" | "versions" | "techpack";
+type Tab = "start" | "garment" | "construction" | "measurements" | "fabric" | "fabriclab" | "panels" | "library" | "text" | "upload" | "layers" | "muse" | "fit" | "check" | "versions" | "techpack";
 
 const TAB_META: Record<Tab, { label: string; icon: typeof Shirt }> = {
   start: { label: "Start", icon: Wand2 }, garment: { label: "Garment", icon: Shirt }, construction: { label: "Construction", icon: Scissors }, measurements: { label: "Proportions", icon: Ruler },
-  fabric: { label: "Colour & fabric", icon: Palette }, panels: { label: "Panels", icon: LayoutGrid }, library: { label: "Library", icon: ImageIcon }, text: { label: "Text", icon: Type },
+  fabric: { label: "Colour & fabric", icon: Palette }, fabriclab: { label: "Fabric Lab", icon: FlaskConical }, panels: { label: "Panels", icon: LayoutGrid }, library: { label: "Library", icon: ImageIcon }, text: { label: "Text", icon: Type },
   upload: { label: "Upload & AI", icon: Upload }, layers: { label: "Layers", icon: LayersIcon }, muse: { label: "The Muse", icon: Sparkles }, fit: { label: "Fit & avatar", icon: User },
   check: { label: "Check & order", icon: CheckCircle2 }, versions: { label: "Versions", icon: History }, techpack: { label: "Tech pack", icon: FileText },
 };
@@ -41,7 +42,7 @@ const TAB_META: Record<Tab, { label: string; icon: typeof Shirt }> = {
 const MODE_TABS: Record<EditorMode, Tab[]> = {
   studio: ["start", "garment", "fabric", "library", "text", "upload", "muse", "check"],
   atelier: ["garment", "construction", "fabric", "panels", "library", "text", "upload", "layers", "muse", "fit", "check", "versions"],
-  pro: ["garment", "construction", "measurements", "fabric", "panels", "library", "text", "upload", "layers", "muse", "fit", "check", "versions", "techpack"],
+  pro: ["garment", "construction", "measurements", "fabric", "fabriclab", "panels", "library", "text", "upload", "layers", "muse", "fit", "check", "versions", "techpack"],
 };
 
 const MODE_INFO: Record<EditorMode, string> = { studio: "Design Studio", atelier: "Atelier", pro: "Atelier Pro" };
@@ -303,6 +304,8 @@ function EditorLayout(p: {
   patternTarget: PanelId | null; setPatternTarget: (p: PanelId | null) => void; childProfiles: { id: string; nickname: string }[]; childId: string; setChildId: (s: string) => void;
   mobilePanel: boolean; setMobilePanel: (b: boolean) => void; selectedId: string | null;
 }) {
+  const production = useEditor((s) => s.production);
+  const guides3d = useEditor((s) => s.guides3d);
   const config = useEditor((s) => s.config);
   const { user } = useSession();
   const report = useLiveValidation();
@@ -323,6 +326,7 @@ function EditorLayout(p: {
       case "text": return <TextPanel />;
       case "upload": return <UploadPanel />;
       case "layers": return <LayersPanel />;
+      case "fabriclab": return <FabricLabPanel />;
       case "muse": return <MusePanel />;
       case "fit": return <FitPanel avatarOn={p.avatar.on} onAvatar={(on, body) => { p.setAvatar({ on, body }); if (on && p.view === "2d") p.setView("split"); }} />;
       case "versions": return <div className="space-y-5"><HistoryPanel /><VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} /></div>;
@@ -404,6 +408,7 @@ function EditorLayout(p: {
           <div className="flex flex-wrap items-center gap-2 border-b border-line px-2 py-1.5">
             <Segmented size="sm" label="Canvas view" value={p.view} onChange={p.setView} options={[{ value: "2d", label: "2D" }, { value: "split", label: "Split" }, { value: "3d", label: "3D" }]} />
             <span className="text-[0.68rem] text-mute">{model.name} · {config.fit} · {config.size} · {MODE_INFO[p.mode]}</span>
+            {p.mode !== "studio" && <ProductionToggles />}
             {p.view !== "2d" && (
               <div className="ml-auto flex flex-wrap items-center gap-1.5">
                 <Segmented size="sm" label="3D view" value={p.view3d} onChange={p.setView3d} options={[{ value: "front", label: "Front" }, { value: "back", label: "Back" }, { value: "left", label: "Side" }, { value: "three-quarter", label: "¾" }]} />
@@ -416,7 +421,7 @@ function EditorLayout(p: {
             {p.view !== "3d" && <div className="min-h-0 border-line md:border-r"><Canvas2D /></div>}
             {p.view !== "2d" && (
               <div className="relative min-h-0">
-                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body }} controls="details" />
+                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body }} controls="details" production={production} guides={guides3d} />
                 <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
               </div>
             )}

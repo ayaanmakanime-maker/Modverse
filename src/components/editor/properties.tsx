@@ -19,7 +19,7 @@ import { paletteSwapMap } from "@/lib/library/palette-swap";
 import { getSvg } from "@/lib/render/assets";
 import { extractSvgColors } from "@/lib/svg/sanitize";
 import { ZONE_LABELS } from "./Canvas2D";
-import { ProLayerSections } from "./pro-panels";
+import { ProLayerSections, RegionCopy } from "./pro-panels";
 
 const CATS: { value: FontCategory | "all"; label: string }[] = [
   { value: "all", label: "All" }, { value: "sans", label: "Sans" }, { value: "serif", label: "Serif" }, { value: "display", label: "Display" }, { value: "script", label: "Script" }, { value: "mono", label: "Mono" }, { value: "indic", label: "Indian scripts" },
@@ -176,6 +176,7 @@ function CommonControls({ layer }: { layer: Layer }) {
         </Select>
         <p className="text-[0.65rem] text-mute">{PRINT_METHOD_INFO[method].description} Max {PRINT_METHOD_INFO[method].maxWidthCm}×{PRINT_METHOD_INFO[method].maxHeightCm} cm.</p>
       </Section>
+      <RegionCopy layer={layer} />
       <ProLayerSections layer={layer} />
       <div className="flex flex-wrap gap-1 border-t border-line pt-3">
         <button className="mv-chip" onClick={() => reorder(layer.id, "top")}><ArrowUpToLine className="size-3" /> Front</button>
