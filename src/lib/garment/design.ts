@@ -3,7 +3,7 @@ import { getModel, type GarmentModel } from "./models";
 import { computeMeasurements, DEFAULT_SIZE, sizesFor } from "./sizing";
 import { fitToPlacement, placementPreset, type PlacementPreset } from "./panels";
 import type { Construction, DesignConfig, GraphicLayer, ImageLayer, Layer, PanelStyle, TextLayer } from "./schema";
-import { adjustmentsSchema, designConfigSchema } from "./schema";
+import { adjustmentsSchema, designConfigSchema, DESIGN_SCHEMA_VERSION } from "./schema";
 import {
   COLLARS, CUFFS, PANELS, PLACKETS, type Audience, type Collar, type Cuff, type GarmentMeasurements, type Neckline,
   type PanelId, type Placket, type PrintMethod, type SleeveLength, type Zone,
@@ -65,6 +65,7 @@ export function availablePanels(config: Pick<DesignConfig, "garmentType" | "cons
 export function availableZones(config: Pick<DesignConfig, "garmentType" | "construction">): Zone[] {
   const panels = availablePanels(config);
   const zones: Zone[] = ["front", "back", "sleeveLeft", "sleeveRight", "collar"];
+  if (panels.includes("cuffs")) zones.push("cuffs");
   if (panels.includes("pocket")) zones.push("pocket");
   if (panels.includes("yoke")) zones.push("yoke");
   return zones;
@@ -108,6 +109,17 @@ export function normalizeDesign(input: DesignConfig): { config: DesignConfig; co
     config.layers = config.layers.filter((l) => l.zone !== "pocket");
     notes.push("Removed artwork from the pocket because the pocket was removed.");
   }
+  if ((c.cuff === "hem" || c.cuff === "none") && config.layers.some((l) => l.zone === "cuffs")) {
+    config.layers = config.layers.filter((l) => l.zone !== "cuffs");
+    notes.push("Removed cuff artwork because the sleeves no longer have cuffs.");
+  }
+  for (const l of config.layers) {
+    if (l.type === "graphic" || l.type === "image") {
+      const cr = l.crop;
+      if (cr.x + cr.w > 1) cr.w = Math.max(0.05, +(1 - cr.x).toFixed(4));
+      if (cr.y + cr.h > 1) cr.h = Math.max(0.05, +(1 - cr.y).toFixed(4));
+    }
+  }
   if (c.backYoke === "none" && config.layers.some((l) => l.zone === "yoke")) {
     config.layers = config.layers.filter((l) => l.zone !== "yoke");
     notes.push("Removed artwork from the yoke because the yoke was removed.");
@@ -147,7 +159,7 @@ export function createDesign(modelId: string, audience: Audience, size?: string)
   const panels = Object.fromEntries(PANELS.map((p) => [p, blankPanel()])) as DesignConfig["panels"];
   for (const [p, color] of Object.entries(model.panelColors ?? {})) panels[p as PanelId].color = color;
   const draft: DesignConfig = {
-    schemaVersion: 1,
+    schemaVersion: DESIGN_SCHEMA_VERSION,
     audience: aud,
     garmentType: model.garmentType,
     modelId: model.id,
@@ -209,7 +221,7 @@ export function createTextLayer(config: DesignConfig, text: string, preset: Plac
   const lines = text.split("\n").length;
   const width = Math.min(p.maxWidth, Math.max(2, text.split("\n").reduce((mx, l) => Math.max(mx, l.length), 1) * fontSize * 0.62));
   const height = Math.max(fontSize * 1.2, lines * fontSize * 1.2);
-  const bg = panelColor(config, p.zone === "front" || p.zone === "back" ? p.zone : p.zone === "sleeveLeft" ? "sleeveLeft" : p.zone === "sleeveRight" ? "sleeveRight" : p.zone === "pocket" ? "pocket" : p.zone === "yoke" ? "yoke" : "collar");
+  const bg = panelColor(config, p.zone);
   return {
     id: newLayerId("text"),
     type: "text",
@@ -244,6 +256,8 @@ export function createTextLayer(config: DesignConfig, text: string, preset: Plac
     shadow: { enabled: false, color: "#000000", offsetX: 0.1, offsetY: 0.1, blur: 0.1 },
     background: { enabled: false, color: "#000000", padding: 0.4, radius: 0.2 },
     skewX: 0,
+    effects: [],
+    fontAssetId: null,
     ...overrides,
   };
 }
@@ -276,6 +290,7 @@ export function createGraphicLayer(
     url: asset.url,
     colorMap: {},
     aspect,
+    crop: { x: 0, y: 0, w: 1, h: 1 },
   };
 }
 
@@ -305,6 +320,7 @@ export function createImageLayer(
     url: img.url,
     pixelWidth: img.pixelWidth,
     pixelHeight: img.pixelHeight,
+    crop: { x: 0, y: 0, w: 1, h: 1 },
   };
 }
 

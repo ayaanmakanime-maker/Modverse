@@ -13,6 +13,7 @@ import { computeMeasurements } from "../garment/sizing";
 import { pocketPlacement, shoulderSlope, sleeveShape, torsoShape, zoneCanvas, type Pt, type Rect } from "../garment/panels";
 import type { DesignConfig } from "../garment/schema";
 import type { GarmentMeasurements } from "../garment/types";
+import { drapeProfile, type DrapeProfile } from "../garment/drape";
 
 export interface MeshData {
   positions: Float32Array;
@@ -24,6 +25,17 @@ export interface ButtonData {
   position: [number, number, number];
   normal: [number, number, number];
   radius: number;
+  /** Where the button sits (placket, cuff, collar tip, pocket flap). */
+  site?: "placket" | "cuff" | "collar" | "pocket";
+}
+
+/** A buttonhole: a satin-stitched slit, oriented along `along` (unit vector), lying on the surface with normal `normal`. */
+export interface ButtonholeData {
+  position: [number, number, number];
+  normal: [number, number, number];
+  along: [number, number, number];
+  length: number;
+  width: number;
 }
 
 export interface GarmentGeometry {
@@ -37,8 +49,12 @@ export interface GarmentGeometry {
   placket: MeshData | null;
   pockets: MeshData[];
   buttons: ButtonData[];
+  buttonholes: ButtonholeData[];
   sleeveAngleDeg: number;
   shoulderPoints: { left: [number, number, number]; right: [number, number, number] };
+  /** Points of interest for detail inspection (garment-local coordinates). */
+  anchors: { collar: [number, number, number]; chest: [number, number, number]; cuff: [number, number, number]; hem: [number, number, number]; back: [number, number, number] };
+  drape: DrapeProfile;
 }
 
 type V3 = [number, number, number];
@@ -102,12 +118,86 @@ function arcLengthResample(pts: V3[], count: number): V3[] {
   return out;
 }
 
+/** Largest |x| where the closed outline crosses the horizontal line at y (0 when it does not). */
+export function outlineHalfWidth(outline: Pt[], y: number): number {
+  let best = 0;
+  for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) {
+    const [xi, yi] = outline[i];
+    const [xj, yj] = outline[j];
+    if ((yi <= y && yj >= y) || (yj <= y && yi >= y)) {
+      const t = yj === yi ? 0 : (y - yi) / (yj - yi);
+      best = Math.max(best, Math.abs(xi + (xj - xi) * t));
+    }
+  }
+  return best;
+}
+
+/** Sampled lookup of a function of y (fast, monotone-safe). */
+function sampled(f: (y: number) => number, y0: number, y1: number, n = 240): (y: number) => number {
+  const step = (y1 - y0) / (n - 1);
+  const v = Array.from({ length: n }, (_, i) => f(y0 + i * step));
+  return (y) => {
+    const t = Math.min(n - 1, Math.max(0, (y - y0) / step));
+    const i = Math.min(n - 2, Math.floor(t));
+    return v[i] + (v[i + 1] - v[i]) * (t - i);
+  };
+}
+
+function mergeMeshes(list: MeshData[]): MeshData {
+  let vCount = 0;
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  for (const m of list) {
+    pos.push(...m.positions);
+    uv.push(...m.uvs);
+    for (const i of m.indices) idx.push(i + vCount);
+    vCount += m.positions.length / 3;
+  }
+  return { positions: new Float32Array(pos), uvs: new Float32Array(uv), indices: new Uint32Array(idx) };
+}
+
+/**
+ * Give a grid surface real thickness: an offset second surface (towards `towards(p)`)
+ * plus edge walls, so collars, cuffs, plackets and pockets read as layered fabric.
+ */
+function shellMesh(rows: V3[][], thickness: number, towards: (p: V3) => V3, uvFn: (i: number, j: number) => [number, number], walls: { j0?: boolean; j1?: boolean; i0?: boolean; i1?: boolean } = { j0: true, j1: true, i0: true, i1: true }): MeshData {
+  const R = rows.length;
+  const C = rows[0].length;
+  const under: V3[][] = rows.map((row, j) =>
+    row.map((p, i) => {
+      const du = sub(row[Math.min(C - 1, i + 1)], row[Math.max(0, i - 1)]);
+      const dv = sub(rows[Math.min(R - 1, j + 1)][i], rows[Math.max(0, j - 1)][i]);
+      let n = norm(cross(du, dv));
+      const t = towards(p);
+      if (n[0] * t[0] + n[1] * t[1] + n[2] * t[2] < 0) n = mul(n, -1);
+      return add(p, mul(n, thickness));
+    }),
+  );
+  const parts: MeshData[] = [gridMesh(rows, uvFn), gridMesh(under, uvFn)];
+  const strip = (a: V3[], b: V3[], uvs: [number, number][]) => gridMesh([a, b], (i) => uvs[i]);
+  if (walls.j1) parts.push(strip(rows[R - 1], under[R - 1], rows[R - 1].map((_, i) => uvFn(i, R - 1))));
+  if (walls.j0) parts.push(strip(rows[0], under[0], rows[0].map((_, i) => uvFn(i, 0))));
+  if (walls.i0) parts.push(strip(rows.map((r) => r[0]), under.map((r) => r[0]), rows.map((_, j) => uvFn(0, j))));
+  if (walls.i1) parts.push(strip(rows.map((r) => r[C - 1]), under.map((r) => r[C - 1]), rows.map((_, j) => uvFn(C - 1, j))));
+  return mergeMeshes(parts);
+}
+
 export interface BodyMapper {
   map(side: "front" | "back", x: number, y: number, offset?: number): V3;
   normal(side: "front" | "back", x: number, y: number): V3;
 }
 
-export function createBodyMapper(config: DesignConfig, m: GarmentMeasurements): BodyMapper {
+export interface BodyMapperOptions {
+  /** Half width of the actual panel outline at y (side seams / armholes) — makes front & back meet exactly. */
+  outlineHalf?: (y: number) => number;
+  /** Bottom of the side seam (hem curve starts below it). */
+  sideSeamEnd?: number;
+  /** Procedural fold field (omit for a smooth body, e.g. try-on overlays). */
+  drape?: DrapeProfile;
+}
+
+export function createBodyMapper(config: DesignConfig, m: GarmentMeasurements, opts: BodyMapperOptions = {}): BodyMapper {
   const kids = config.audience === "kids";
   const halfNeck = m.neckWidth / 2;
   const shoulderX = m.shoulderWidth / 2;
@@ -121,22 +211,74 @@ export function createBodyMapper(config: DesignConfig, m: GarmentMeasurements): 
     if (y <= waistY) return m.chest / 4 + (m.waist / 4 - m.chest / 4) * ((y - m.armholeDepth) / (waistY - m.armholeDepth));
     return m.waist / 4 + (m.hem / 4 - m.waist / 4) * Math.min(1, (y - waistY) / (m.bodyLength - waistY));
   };
-  const depth = (x: number, y: number) => {
-    const wb = halfWidthAt(y) + 0.01;
+  const sideEnd = opts.sideSeamEnd ?? m.bodyLength - m.hemCurve;
+  // Below the armhole the cross-section ends exactly at the side seam of the real outline.
+  const sectionHalf = (y: number) => {
+    if (!opts.outlineHalf || y <= m.armholeDepth) return halfWidthAt(y);
+    const w = opts.outlineHalf(Math.min(y, sideEnd - 0.01));
+    return w > 1 ? w : halfWidthAt(y);
+  };
+  const shirt = config.garmentType === "shirt";
+  const hasPlacket = shirt && m.placketWidth > 0;
+  const drape = opts.drape;
+  // ── Procedural folds (cm, outward). Zero at seams so panels stay joined. ──
+  const fold = (side: "front" | "back", x: number, y: number): number => {
+    if (!drape) return 0;
+    const ax = Math.abs(x);
+    const edge = opts.outlineHalf ? opts.outlineHalf(Math.min(y, sideEnd)) : halfWidthAt(y);
+    const wSide = smooth(0.4, 4.5, edge - ax);
+    const wTop = smooth(slope + 1.2, slope + 8, y);
+    if (wSide <= 0 || wTop <= 0) return 0;
+    const L = m.bodyLength;
+    const A = drape.foldAmplitude;
+    const lam = drape.foldWavelength;
+    const front = side === "front";
+    // a) vertical drape folds: grow from the chest to the hem, larger for loose fits
+    const sway = Math.sin(y / 21 + (front ? 0.6 : 2.1)) * lam * 0.2;
+    const th = (2 * Math.PI * (x + sway)) / lam + (front ? 0.9 : 2.4);
+    const env = smooth(m.armholeDepth * 0.5, L * 0.92, y);
+    const vertical = A * (0.45 + 0.55 * drape.looseness) * env * (Math.sin(th) + 0.28 * drape.creaseSharpness * Math.sin(2 * th + 0.7));
+    // b) underarm drag folds radiating from the armpit towards the waist (arms-down pose)
+    let drag = 0;
+    const armEdge = halfWidthAt(m.armholeDepth);
+    for (const s of [1, -1]) {
+      const px = s * x - (armEdge - 1.5);
+      const py = y - (m.armholeDepth + 1);
+      const a = (40 * Math.PI) / 180;
+      const u = -px * Math.cos(a) + py * Math.sin(a);
+      const v = px * Math.sin(a) + py * Math.cos(a);
+      const Lf = 11 + 10 * drape.looseness;
+      const envU = smooth(0, 2.5, u) * (1 - smooth(Lf * 0.45, Lf, u));
+      const spacing = 2.6 + 1.6 * drape.looseness;
+      let ridges = 0;
+      for (let j = -1; j <= 1; j++) ridges += (j === 0 ? 1 : -0.55) * Math.exp(-(((v - j * spacing) / (0.9 + 0.5 * (1 - drape.creaseSharpness))) ** 2));
+      drag += envU * ridges;
+    }
+    drag *= (0.4 + 0.6 * drape.looseness) * (1 - 0.3 * drape.stiffness) * (front ? 1 : 0.6);
+    // c) waist creasing at the sides of fitted garments
+    const waist = 0.14 * (1 - drape.looseness) * (1 - 0.5 * drape.stiffness) * Math.sin((2 * Math.PI * y) / 2.6 + x * 0.25) * Math.exp(-(((y - waistY) / 6) ** 2)) * smooth(edge - 10, edge - 3, ax);
+    // d) gentle hem waviness
+    const hem = 0.3 * A * Math.sin((2 * Math.PI * x) / (lam * 0.85) + (front ? 1.3 : 0.2)) * smooth(L - 12, L, y);
+    let total = (vertical + drag + waist + hem) * wSide * wTop;
+    if (hasPlacket && front) total *= 0.45 + 0.55 * smooth(m.placketWidth / 2, m.placketWidth / 2 + 5, ax);
+    return total;
+  };
+  const depth = (x: number, y: number, side: "front" | "back") => {
+    const wb = sectionHalf(y);
     const D = depthRatio * wb * (0.38 + 0.62 * smooth(0, m.armholeDepth * 1.05, y));
     const s = Math.min(1, Math.abs(x) / wb);
-    const prof = Math.pow(Math.max(0, 1 - Math.pow(s, p)), 1 / p);
+    // The superellipse is vertical at the side seam: snap vertices on the seam to z = 0 so the
+    // front and back panels meet exactly (a hair inside the edge would otherwise lift ~1 cm).
+    const prof = Math.abs(x) >= wb - 0.03 ? 0 : Math.pow(Math.max(0, 1 - Math.pow(s, p)), 1 / p);
     const ax = Math.abs(x);
     const topYz = ax <= halfNeck ? 0 : slope * Math.min(1.4, (ax - halfNeck) / Math.max(1, shoulderX - halfNeck));
     const f = Math.sin((Math.min(1, Math.max(0, y - topYz) / ramp) * Math.PI) / 2);
-    // gentle drape below the chest
-    const drape = 1 + 0.025 * Math.sin((x / wb) * Math.PI * 3) * smooth(m.armholeDepth, m.bodyLength, y);
-    return D * prof * f * drape;
+    return D * prof * f + fold(side, x, y);
   };
   const map = (side: "front" | "back", x: number, y: number, offset = 0): V3 => {
     const sign = side === "front" ? 1 : -1;
     const X = side === "front" ? x : -x;
-    return [X, -y, sign * (depth(x, y) + offset)];
+    return [X, -y, sign * (depth(x, y, side) + offset)];
   };
   const normal = (side: "front" | "back", x: number, y: number): V3 => {
     const e = 0.4;
@@ -231,14 +373,16 @@ function gridMesh(rows: V3[][], uvFn: (i: number, j: number) => [number, number]
 
 export const SLEEVE_DROP_DEG: Record<string, number> = { "set-in": 54, raglan: 52, "drop-shoulder": 58 };
 
-export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: number } = {}): GarmentGeometry {
+export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: number; folds?: boolean } = {}): GarmentGeometry {
   const m = computeMeasurements(config);
   const c = config.construction;
   const kids = config.audience === "kids";
   const res = opts.resolution ?? 64;
-  const body = createBodyMapper(config, m);
   const front = torsoShape(m, "front", c, kids);
   const back = torsoShape(m, "back", c, kids);
+  const drape = drapeProfile(config, m);
+  const outlineHalf = sampled((y) => Math.max(outlineHalfWidth(front.outline, y), outlineHalfWidth(back.outline, y)), -2, m.bodyLength + 2);
+  const body = createBodyMapper(config, m, { outlineHalf, drape: opts.folds === false ? undefined : drape });
   const torsoCanvas = zoneCanvas(m, "front");
 
   const frontMesh = panelMesh(front.outline, torsoCanvas, (x, y) => body.map("front", x, y), res);
@@ -250,8 +394,29 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
   const SW = sleeveCanvas.x1 - sleeveCanvas.x0;
   const SH = sleeveCanvas.y1 - sleeveCanvas.y0;
   const dropDeg = SLEEVE_DROP_DEG[c.sleeveStyle] ?? 54;
-  const N = 48; // ring resolution (must be even)
-  const ROWS = 30;
+  const N = 56; // ring resolution (must be even)
+  const ROWS = 90;
+  const longSleeve = c.sleeveLength === "long" || c.sleeveLength === "three-quarter";
+  // Sleeve folds (procedural): cuff bunching, inner-elbow creases, underarm ripples.
+  const sleeveFold = (t: number, cc: number, side: 1 | -1): number => {
+    if (opts.folds === false) return 0;
+    const Ls = sl.length;
+    const sharp = drape.creaseSharpness;
+    const A = (0.18 + 0.55 * drape.sleeveLooseness) * (0.8 + 0.4 * (1 - drape.stiffness));
+    let d = 0;
+    if (longSleeve) {
+      const env = smooth(0.62, 0.8, t) * (1 - smooth(0.93, 0.995, t));
+      const ph = (t * Ls) / (5 + 2 * drape.stiffness) + 0.45 * Math.sin(2 * Math.PI * cc + side) + 0.15 * cc;
+      d += 0.85 * A * env * (Math.sin(2 * Math.PI * ph) + 0.2 * sharp * Math.sin(4 * Math.PI * ph));
+      const elbowT = 0.55;
+      d += 0.9 * A * Math.exp(-(((t - elbowT) / 0.07) ** 2)) * Math.exp(-(((cc - 0.25) / 0.14) ** 2)) * Math.sin((2 * Math.PI * t * Ls) / 2.4);
+    } else {
+      d += 0.5 * A * smooth(0.55, 1, t) * Math.sin(2 * Math.PI * 3 * cc + side * 0.8);
+    }
+    const under = Math.exp(-(((Math.abs(cc) - 0.5) / 0.12) ** 2));
+    d += 0.8 * A * under * smooth(0.04, 0.12, t) * (1 - smooth(0.25, 0.42, t)) * Math.sin((2 * Math.PI * t * Ls) / 2.8 + 0.4);
+    return d * smooth(0, 0.06, t);
+  };
   const buildSleeve = (side: 1 | -1): { mesh: MeshData; endRing: V3[]; dir: V3; shoulder: V3; endCenter: V3; rEnd: number } => {
     const armF = front.armhole.map(([x, y]) => body.map("front", side * x, y));
     const armB = back.armhole.map(([x, y]) => body.map("back", -side * x, y));
@@ -282,7 +447,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const cc = -0.5 + i / N;
         const b = base[i];
         const capBlend = smooth(0, 0.35, t);
-        const r = rBicep + (rEnd - rBicep) * smooth(0.15, 1, t);
+        const r = rBicep + (rEnd - rBicep) * smooth(0.15, 1, t) + sleeveFold(t, cc, side);
         const centerT = add(shoulder, mul(dir, sl.length * t));
         const target = ringAt(sub(centerT, mul(upFixed, r)), r, cc);
         row.push(lerp3(b, target, capBlend * (1 - t) + t));
@@ -328,6 +493,8 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
     return s <= 0.5 ? s * 2 : -(1 - s) * 2;
   };
   const collars: MeshData[] = [];
+  const buttons: ButtonData[] = [];
+  const buttonholes: ButtonholeData[] = [];
   const shirt = config.garmentType === "shirt";
   const up: V3 = [0, 1, 0];
   const ringBand = (height: number, lean: number, thickness: number, heightFn?: (k: number) => number): MeshData => {
@@ -362,11 +529,11 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
     collars.push(ringBand(standH, 0.12, 0.3, roundFront));
     if (!isBand) {
       const styles: Record<string, { fall: number; tip: number; spread: number; maxK: number; round?: boolean }> = {
-        point: { fall: 4.2, tip: 3.2, spread: 0.25, maxK: 0.965 },
-        spread: { fall: 4.2, tip: 2.4, spread: 0.75, maxK: 0.955 },
-        cutaway: { fall: 4.0, tip: 1.8, spread: 1.15, maxK: 0.94 },
-        "button-down": { fall: 4.4, tip: 3.0, spread: 0.35, maxK: 0.965 },
-        club: { fall: 4.0, tip: 1.6, spread: 0.55, maxK: 0.955, round: true },
+        point: { fall: 4.6, tip: 4.6, spread: 0.25, maxK: 0.97 },
+        spread: { fall: 4.6, tip: 3.6, spread: 0.75, maxK: 0.96 },
+        cutaway: { fall: 4.4, tip: 2.8, spread: 1.15, maxK: 0.95 },
+        "button-down": { fall: 4.8, tip: 4.2, spread: 0.35, maxK: 0.97 },
+        club: { fall: 4.4, tip: 2.4, spread: 0.55, maxK: 0.96, round: true },
         camp: { fall: 6.0, tip: 4.2, spread: 0.9, maxK: 0.8 },
       };
       const st = styles[c.collar] ?? styles.point;
@@ -396,48 +563,96 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
           rowsLeaf[v].push(add(lerp3(fold, edge, t), bulge));
         }
       }
-      collars.push(gridMesh(rowsLeaf, (i, j) => [i / KS, 1 - j / VS]));
+      // Leaves get real thickness (two plies + edge) so the collar edge reads in close-ups.
+      collars.push(shellMesh(rowsLeaf, 0.16, (p) => norm([centroid[0] - p[0], 0.4, centroid[2] - p[2]]), (i, j) => [i / KS, 1 - j / VS], { j1: true, i0: true, i1: true }));
+      if (c.collar === "button-down") {
+        for (const k of [Math.round(KS * 0.035), Math.round(KS * 0.965)]) {
+          const pt = rowsLeaf[VS - 1][k];
+          const prev = rowsLeaf[VS - 2][k];
+          const tip = norm(sub(pt, prev));
+          const o = outward(pt);
+          buttons.push({ position: add(pt, mul(o, 0.1)), normal: norm(add(o, mul(tip, -0.3))), radius: 0.45, site: "collar" });
+        }
+      }
     }
   }
 
   // ── Cuffs (rings at sleeve ends) ─────────────────────────────
   const cuffs: MeshData[] = [];
   if (!["hem", "none"].includes(c.cuff)) {
-    for (const s of [left, right]) {
+    // UVs follow the unrolled cuff canvas (x along circumference, 0 = outer face; y from top edge),
+    // so the "cuffs" artwork zone maps 1:1 from the 2D editor.
+    const cuffCanvas = zoneCanvas(m, "cuffs");
+    const CWc = cuffCanvas.x1 - cuffCanvas.x0;
+    const CHc = cuffCanvas.y1 - cuffCanvas.y0;
+    const circ = cuffCanvas.x1 - cuffCanvas.x0;
+    for (const [s, side] of [[left, 1], [right, -1]] as const) {
       const h = m.cuffHeight;
       const rows: V3[][] = [];
-      for (let j = 0; j <= 2; j++) {
-        const back = (h * (2 - j)) / 2;
+      const steps = 4;
+      for (let j = 0; j <= steps; j++) {
+        const back = (h * (steps - j)) / steps;
         const ctr = sub(s.endCenter, mul(s.dir, back));
-        rows.push(s.endRing.map((p) => add(ctr, mul(sub(p, s.endCenter), 1.06))));
+        // slight barrel shape: the cuff is fuller in the middle of its height
+        const bulge = c.cuff === "rib" ? 1.02 - 0.04 * (j / steps) : 1.06 + 0.02 * Math.sin((Math.PI * j) / steps);
+        rows.push(s.endRing.map((p) => add(ctr, mul(sub(p, s.endCenter), bulge))));
       }
-      cuffs.push(gridMesh(rows, (i, j) => [i / N, j / 2]));
+      const uv = (i: number, j: number): [number, number] => {
+        const cc = -0.5 + i / N;
+        const xf = (side === 1 ? -cc : cc) * circ;
+        const yf = (j / steps) * h;
+        return [(xf - cuffCanvas.x0) / CWc, 1 - (yf - cuffCanvas.y0) / CHc];
+      };
+      const axisAt = (p: V3) => {
+        const rel = sub(p, s.endCenter);
+        const along = mul(s.dir, rel[0] * s.dir[0] + rel[1] * s.dir[1] + rel[2] * s.dir[2]);
+        return norm(mul(sub(rel, along), -1));
+      };
+      cuffs.push(shellMesh(rows, c.cuff === "rib" ? 0.22 : 0.3, axisAt, uv, { j0: true, j1: true }));
+      if (shirt && c.cuff !== "rib" && c.buttons.count > 0) {
+        // Cuff button on the back of the wrist (towards the little finger), mid-height.
+        let bi = 0;
+        rows[2].forEach((p, i) => {
+          if (p[2] < rows[2][bi][2]) bi = i;
+        });
+        const p = rows[2][bi];
+        const o = mul(axisAt(p), -1);
+        if (c.cuff !== "french") buttons.push({ position: add(p, mul(o, 0.32)), normal: o, radius: c.buttons.sizeMm / 22, site: "cuff" });
+        const nb = rows[2][(bi + 3) % rows[2].length];
+        buttonholes.push({ position: add(nb, mul(o, 0.33)), normal: o, along: norm(sub(rows[2][(bi + 4) % rows[2].length], rows[2][(bi + 2) % rows[2].length])), length: c.buttons.sizeMm / 10 + 0.3, width: 0.32 });
+      }
     }
   }
 
   // ── Placket, buttons, pockets ─────────────────────────────────
   let placket: MeshData | null = null;
-  const buttons: ButtonData[] = [];
   const showPlacket = c.placket === "standard" || c.placket === "contrast" || c.placket === "henley";
   if (showPlacket && m.placketWidth > 0) {
     const y0 = m.frontNeckDrop + 0.2;
     const y1 = c.placket === "henley" ? m.frontNeckDrop + m.placketLength : m.bodyLength - 0.4;
     const rows: V3[][] = [];
-    const steps = 40;
+    const steps = 60;
     for (let j = 0; j <= steps; j++) {
       const y = y0 + ((y1 - y0) * j) / steps;
       const row: V3[] = [];
-      for (let i = 0; i <= 2; i++) row.push(body.map("front", -m.placketWidth / 2 + (m.placketWidth * i) / 2, y, 0.12));
+      for (let i = 0; i <= 4; i++) row.push(body.map("front", -m.placketWidth / 2 + (m.placketWidth * i) / 4, y, 0.2));
       rows.push(row);
     }
-    placket = gridMesh(rows, (i, j) => [i / 2, 1 - j / steps]);
+    placket = shellMesh(rows, 0.16, () => [0, 0, -1], (i, j) => [i / 4, 1 - j / steps], { i0: true, i1: true, j1: true });
   }
   if (c.buttons.count > 0 && c.placket !== "hidden") {
     const top = m.frontNeckDrop + (shirt ? 1.4 : 1.8);
     const bottom = c.placket === "henley" ? top + m.placketLength - 3 : m.bodyLength - 9;
     for (let i = 0; i < c.buttons.count; i++) {
       const y = top + ((bottom - top) * i) / Math.max(1, c.buttons.count - 1);
-      buttons.push({ position: body.map("front", 0, y, 0.3), normal: body.normal("front", 0, y), radius: c.buttons.sizeMm / 20 });
+      const nrm = body.normal("front", 0, y);
+      buttons.push({ position: body.map("front", 0, y, 0.42), normal: nrm, radius: c.buttons.sizeMm / 20, site: "placket" });
+      // Vertical buttonhole through the placket, slightly longer than the button (visible above & below it).
+      const len = c.buttons.sizeMm / 10 + 0.3;
+      const a = body.map("front", 0, y - 1, 0.38);
+      const b = body.map("front", 0, y + 1, 0.38);
+      if (c.buttons.material !== "snap" && c.buttons.material !== "pearl-snap")
+        buttonholes.push({ position: body.map("front", 0, y, 0.38), normal: nrm, along: norm(sub(b, a)), length: len, width: 0.34 });
     }
   }
   const pockets: MeshData[] = [];
@@ -456,11 +671,11 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       }
       rows.push(row);
     }
-    pockets.push(gridMesh(rows, (i, j) => {
+    pockets.push(shellMesh(rows, 0.1, () => [0, 0, -1], (i, j) => {
       const xx = -m.pocketWidth / 2 + (m.pocketWidth * i) / steps;
       const yy = (m.pocketHeight * j) / steps;
       return [(xx - pocketCanvas.x0) / (pocketCanvas.x1 - pocketCanvas.x0), 1 - (yy - pocketCanvas.y0) / (pocketCanvas.y1 - pocketCanvas.y0)];
-    }));
+    }, { i0: true, i1: true, j0: true, j1: true }));
     if (c.pocketStyle === "flap" || c.pocketStyle === "western-flap") {
       const fr: V3[][] = [];
       for (let j = 0; j <= 3; j++) {
@@ -473,8 +688,8 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         }
         fr.push(row);
       }
-      pockets.push(gridMesh(fr, (i, j) => [i / 8, 1 - j / 3]));
-      if (c.buttons.count > 0) buttons.push({ position: body.map("front", pl.x, pl.y + 2.8, 0.45), normal: body.normal("front", pl.x, pl.y + 2.8), radius: c.buttons.sizeMm / 22 });
+      pockets.push(shellMesh(fr, 0.12, () => [0, 0, -1], (i, j) => [i / 8, 1 - j / 3], { i0: true, i1: true, j1: true }));
+      if (c.buttons.count > 0) buttons.push({ position: body.map("front", pl.x, pl.y + 2.8, 0.55), normal: body.normal("front", pl.x, pl.y + 2.8), radius: c.buttons.sizeMm / 22, site: "pocket" });
     }
   }
 
@@ -489,7 +704,16 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
     placket,
     pockets,
     buttons,
+    buttonholes,
     sleeveAngleDeg: dropDeg,
     shoulderPoints: { left: left.shoulder, right: right.shoulder },
+    anchors: {
+      collar: add(centroid, [0, 2, 3]),
+      chest: body.map("front", 0, m.armholeDepth, 0),
+      cuff: left.endCenter,
+      hem: body.map("front", 0, m.bodyLength - 2, 0),
+      back: body.map("back", 0, m.yokeDepth || 10, 0),
+    },
+    drape,
   };
 }

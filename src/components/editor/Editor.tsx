@@ -2,24 +2,29 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
 import { useEditor, type EditorMode } from "@/lib/editor/store";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { getModel } from "@/lib/garment/models";
-import { formatINR, priceDesign } from "@/lib/garment/pricing";
+import { formatINR } from "@/lib/garment/pricing";
+import { useDesignPrice } from "@/lib/client/pricing";
+import { PriceBreakdownView } from "@/components/pricing/PriceBreakdownView";
 import type { PanelId } from "@/lib/garment/types";
 import { api, errorMessage } from "@/lib/client/api";
 import { useSession } from "@/components/session";
 import { Logo, BrandLoader } from "@/components/brand/Logo";
 import { Badge, Button, Notice, Segmented, Select, toast } from "@/components/ui";
 import { Canvas2D } from "./Canvas2D";
+import { ACCEPTED_ARTWORK, copySelection, pasteClipboard, uploadAndInsert, ZONE_DEFAULT_PRESET } from "@/lib/editor/insert";
 import { SelectedProperties } from "./properties";
 import { ConstructionPanel, FabricPanel, FitPanel, GarmentPanel, MeasurementsPanel, PanelsPanel } from "./panels-garment";
 import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from "./panels-artwork";
 import { MusePanel, TechPackPanel, ValidationPanel, VersionsPanel, useLiveValidation } from "./panels-pro";
 import type { GarmentViewerHandle, LightingPreset, ViewPreset } from "@/components/three/GarmentViewer";
+import { isSoftwareRenderer } from "@/lib/three/capabilities";
+import { ThemeToggle } from "@/components/theme";
 
 const GarmentViewer = dynamic(() => import("@/components/three/GarmentViewer").then((m) => m.GarmentViewer), { ssr: false, loading: () => <BrandLoader label="Preparing 3D" /> });
 
@@ -55,6 +60,9 @@ const DRAFT_KEY = "mv-draft";
 export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial; childProfiles?: { id: string; nickname: string }[] }) {
   const router = useRouter();
   const { user, setCartCount } = useSession();
+  const userRef = useRef(user);
+  userRef.current = user;
+  const pendingPaste = useRef<number | null>(null);
   const init = useEditor((s) => s.init);
   const config = useEditor((s) => s.config);
   const mode = useEditor((s) => s.mode);
@@ -103,6 +111,14 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
   useEffect(() => {
     if (!MODE_TABS[mode].includes(tab)) setTab(MODE_TABS[mode][0]);
   }, [mode, tab]);
+
+  // Without a GPU, a live 3D pane makes every edit wait for a CPU-rendered frame: open in 2D instead.
+  useEffect(() => {
+    if (!ready || !isSoftwareRenderer() || useEditor.getState().view !== "split") return;
+    setView("2d");
+    toast("3D preview is paused on this device (no GPU acceleration) — choose Split or 3D any time.", "info");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   useEffect(() => {
     if (!ready || !dirty) return;
@@ -176,6 +192,19 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
       } else if (mod && e.key.toLowerCase() === "y") {
         e.preventDefault();
         st.redo();
+      } else if (mod && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "x") && st.multi.length) {
+        // Let the browser keep any selected page text; copy layers only when nothing else is selected.
+        if (window.getSelection()?.toString()) return;
+        e.preventDefault();
+        const n = copySelection(e.key.toLowerCase() === "x");
+        if (n) toast(`${e.key.toLowerCase() === "x" ? "Cut" : "Copied"} ${n} layer${n > 1 ? "s" : ""}`, "info");
+      } else if (mod && e.key.toLowerCase() === "v") {
+        // Defer: a 'paste' event carrying image files (screenshots, copied images) takes precedence.
+        const inPlace = e.shiftKey;
+        pendingPaste.current = window.setTimeout(() => {
+          pendingPaste.current = null;
+          pasteClipboard(inPlace);
+        }, 80);
       } else if (mod && e.key.toLowerCase() === "d") {
         e.preventDefault();
         st.duplicateSelected();
@@ -199,8 +228,33 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
         });
       }
     };
+    const onPaste = async (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const files = Array.from(e.clipboardData?.files ?? []).filter((f) => ACCEPTED_ARTWORK.includes(f.type));
+      if (!files.length) return;
+      e.preventDefault();
+      if (pendingPaste.current) {
+        window.clearTimeout(pendingPaste.current);
+        pendingPaste.current = null;
+      }
+      if (!userRef.current) return void toast("Sign in to paste images — uploads are stored privately in your account.", "info");
+      const zone = useEditor.getState().zone;
+      for (const f of files.slice(0, 3)) {
+        try {
+          await uploadAndInsert(f, { preset: ZONE_DEFAULT_PRESET[zone] });
+          toast("Pasted image uploaded and placed");
+        } catch (err) {
+          toast(errorMessage(err), "bad");
+        }
+      }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("paste", onPaste);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("paste", onPaste);
+    };
   }, [save]);
 
   useEffect(() => {
@@ -242,7 +296,7 @@ function EditorLayout(p: {
   const config = useEditor((s) => s.config);
   const { user } = useSession();
   const report = useLiveValidation();
-  const price = useMemo(() => priceDesign(config), [config]);
+  const price = useDesignPrice(config);
   const model = getModel(config.modelId);
   const tabs = MODE_TABS[p.mode];
   const isXL = useIsXL(); // properties render once: sidebar on xl, bottom drawer below
@@ -262,13 +316,14 @@ function EditorLayout(p: {
       case "muse": return <MusePanel />;
       case "fit": return <FitPanel avatarOn={p.avatar.on} onAvatar={(on, body) => { p.setAvatar({ on, body }); if (on && p.view === "2d") p.setView("split"); }} />;
       case "versions": return <VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} />;
-      case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} />;
+      case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} exportGlb={() => p.viewer.current?.exportGlb() ?? Promise.resolve(null)} />;
       case "check": return (
         <div className="space-y-4">
           <div className="mv-card p-3 text-xs">
             <p className="mv-eyebrow !text-[0.6rem]">Estimated price</p>
             <p className="mv-display mt-1 text-3xl">{formatINR(price.unitTotal)}</p>
             <p className="text-mute">{formatINR(price.unitPrice)} + GST {formatINR(price.gst)} (estimate) · size {config.size}</p>
+            <details className="mt-2"><summary className="cursor-pointer text-[0.68rem] text-bone-2" data-testid="price-details">Itemised breakdown</summary><div className="mt-2"><PriceBreakdownView price={price} /></div></details>
           </div>
           {config.audience === "kids" && !p.projectId && user && (
             <label className="block text-xs"><span className="mv-label">Link to child profile (optional)</span>
@@ -297,6 +352,7 @@ function EditorLayout(p: {
         <div className="hidden md:block"><Segmented size="sm" label="Design mode" value={p.mode} onChange={p.setMode} options={(["studio", "atelier", "pro"] as const).map((m) => ({ value: m, label: MODE_INFO[m] }))} /></div>
         <div className="md:hidden"><Select aria-label="Design mode" value={p.mode} onChange={(e) => p.setMode(e.target.value as EditorMode)} className="!w-auto !py-1 !text-xs">{(["studio", "atelier", "pro"] as const).map((m) => <option key={m} value={m}>{MODE_INFO[m]}</option>)}</Select></div>
         <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle className="hidden sm:block" />
           <button onClick={p.undo} disabled={!p.canUndo} className="rounded-full p-2 text-bone-2 hover:bg-surface-2 disabled:opacity-30" aria-label="Undo" title="Undo (Ctrl+Z)" data-testid="undo"><Undo2 className="size-4" /></button>
           <button onClick={p.redo} disabled={!p.canRedo} className="rounded-full p-2 text-bone-2 hover:bg-surface-2 disabled:opacity-30" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" data-testid="redo"><Redo2 className="size-4" /></button>
           <button onClick={() => p.setTab("check")} className="hidden items-center gap-1.5 rounded-full px-2 py-1 text-xs hover:bg-surface-2 sm:flex" title="Validation" data-testid="validation-status">
@@ -350,7 +406,7 @@ function EditorLayout(p: {
             {p.view !== "3d" && <div className="min-h-0 border-line md:border-r"><Canvas2D /></div>}
             {p.view !== "2d" && (
               <div className="relative min-h-0">
-                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body }} />
+                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body }} controls="details" />
                 <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
               </div>
             )}

@@ -90,9 +90,41 @@ export interface FontNeed {
   family: string;
   weight: number;
   italic: boolean;
+  /** Customer-uploaded font (served privately from /api/uploads/:id). */
+  assetId?: string | null;
 }
 
+// ── Customer-uploaded fonts ───────────────────────────────────────
+const customFonts = new Map<string, { family: string; b64: string; mime: string }>();
+
+const customFontUrl = (assetId: string) => `/api/uploads/${assetId}`;
+
+/** Load a customer font, register it with the document (2D) and keep base64 for 3D/print embedding. */
+export function loadCustomFont(assetId: string, family: string): Promise<void> {
+  if (customFonts.has(assetId)) return Promise.resolve();
+  return once(`cfont:${assetId}`, async () => {
+    const res = await fetch(customFontUrl(assetId), { credentials: "same-origin" });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const mime = res.headers.get("content-type") ?? "font/ttf";
+    const buf = new Uint8Array(await res.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+    if (typeof document !== "undefined" && "fonts" in document && typeof FontFace !== "undefined") {
+      const face = new FontFace(family, buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer);
+      await face.load();
+      document.fonts.add(face);
+    }
+    customFonts.set(assetId, { family, b64: btoa(bin), mime });
+    bump();
+  });
+}
+
+export const isCustomFontLoaded = (assetId: string) => customFonts.has(assetId);
+
+const FONT_FORMAT: Record<string, string> = { "font/woff2": "woff2", "font/woff": "woff", "font/otf": "opentype", "font/ttf": "truetype" };
+
 export function fontFiles(n: FontNeed): string[] {
+  if (n.assetId) return [];
   const f = FONT_BY_FAMILY.get(n.family);
   if (!f) return [];
   const w = nearestWeight(f, n.weight);
@@ -101,6 +133,7 @@ export function fontFiles(n: FontNeed): string[] {
 }
 
 export function loadFont(n: FontNeed): Promise<void> {
+  if (n.assetId) return loadCustomFont(n.assetId, n.family);
   const files = fontFiles(n);
   return Promise.all(
     files.map((url) =>
@@ -132,6 +165,14 @@ export function embeddedFontCss(needs: FontNeed[]): string {
   const rules: string[] = [];
   const seen = new Set<string>();
   for (const n of needs) {
+    if (n.assetId) {
+      const cf = customFonts.get(n.assetId);
+      if (cf && !seen.has(`c:${n.assetId}`)) {
+        seen.add(`c:${n.assetId}`);
+        rules.push(`@font-face{font-family:'${cf.family.replace(/'/g, "")}';src:url(data:${cf.mime};base64,${cf.b64}) format('${FONT_FORMAT[cf.mime] ?? "truetype"}');}`);
+      }
+      continue;
+    }
     const f = FONT_BY_FAMILY.get(n.family);
     if (!f) continue;
     const w = nearestWeight(f, n.weight);
@@ -147,7 +188,7 @@ export function embeddedFontCss(needs: FontNeed[]): string {
 }
 
 export function fontNeeds(config: DesignConfig): FontNeed[] {
-  return config.layers.filter((l) => l.type === "text").map((l) => ({ family: (l as { fontFamily: string }).fontFamily, weight: (l as { fontWeight: number }).fontWeight, italic: (l as { italic: boolean }).italic }));
+  return config.layers.flatMap((l) => (l.type === "text" ? [{ family: l.fontFamily, weight: l.fontWeight, italic: l.italic, assetId: l.fontAssetId }] : []));
 }
 
 /** Load everything a design needs to render (graphics, images, patterns, fonts). */

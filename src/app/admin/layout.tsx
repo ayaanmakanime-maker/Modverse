@@ -2,13 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: { default: "Admin", template: "%s · ModVerse Admin" } };
 
 const NAV: [string, string, boolean][] = [
-  ["/admin", "Overview", false], ["/admin/orders", "Orders", false], ["/admin/designs", "Design reviews", false], ["/admin/users", "Customers & staff", true],
-  ["/admin/catalogue", "Catalogue", false], ["/admin/library", "Creative Library", false], ["/admin/integrations", "Integrations", true], ["/admin/audit", "Audit log", true], ["/admin/settings", "Settings", true],
+  ["/admin", "Overview", false], ["/admin/orders", "Orders", false], ["/admin/designs", "Design reviews", false], ["/admin/production", "Production", false], ["/admin/shipping", "Shipping", false], ["/admin/disputes", "Disputes", false], ["/admin/partners", "Partners", false], ["/admin/payouts", "Payouts", false], ["/admin/users", "Customers & staff", true],
+  ["/admin/catalogue", "Catalogue", false], ["/admin/library", "Creative Library", false], ["/admin/pricing", "Pricing & discounts", true], ["/admin/integrations", "Integrations", true], ["/admin/audit", "Audit log", true], ["/admin/settings", "Settings", true],
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </nav>
         <p className="mt-6 hidden text-xs text-mute lg:block">Signed in as {user.email} ({user.role})</p>
         <Link href="/" className="mt-2 hidden text-xs text-mute underline lg:block">Back to store</Link>
+        <ThemeToggle className="mt-2 hidden lg:block" />
       </aside>
       <main className="min-w-0 p-4 md:p-8">{children}</main>
     </div>

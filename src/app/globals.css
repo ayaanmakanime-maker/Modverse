@@ -43,7 +43,45 @@
 
 :root {
   color-scheme: dark;
+  --mv-btn-hover: #ffffff;
+  --mv-checker-a: #1b1b1d;
+  --mv-checker-b: #222222;
 }
+
+/*
+ * Light theme — white UI. The same token names keep their roles: "ink" is the page
+ * background and "bone" the primary text, so every component switches without changes.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-ink: #ffffff;
+  --color-ink-2: #fafaf8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f3f0;
+  --color-surface-3: #ebe9e4;
+  --color-line: #e6e3dd;
+  --color-line-2: #d2cdc4;
+  --color-bone: #111111;
+  --color-bone-2: #3b3833;
+  --color-mute: #6b675f;
+  --color-mute-2: #8e897f;
+  --color-champagne: #8a7650;
+  --color-champagne-2: #6f5f40;
+  --color-ok: #2f7a4a;
+  --color-warn: #8a5d0c;
+  --color-bad: #b4433a;
+  --color-info: #2f5f8f;
+  --mv-btn-hover: #2a2a2a;
+  --mv-checker-a: #f1efeb;
+  --mv-checker-b: #e4e1db;
+}
+:root[data-theme="light"] .mv-canvas-bg { background: radial-gradient(ellipse at center, #ffffff 0%, #e9e6e0 75%); }
+:root[data-theme="light"] .mv-card { box-shadow: 0 1px 2px rgb(17 17 17 / 0.04), 0 4px 16px rgb(17 17 17 / 0.04); }
+
+/* Logo artwork: light lettering on dark UI, dark lettering on light UI (both derived from the original). */
+.mv-logo-on-light { display: none; }
+:root[data-theme="light"] .mv-logo-on-dark { display: none; }
+:root[data-theme="light"] .mv-logo-on-light { display: block; }
 
 html,
 body {
@@ -103,7 +141,7 @@ body {
     background: var(--color-bone);
     color: var(--color-ink);
   }
-  .mv-btn-primary:hover { background: #ffffff; }
+  .mv-btn-primary:hover { background: var(--mv-btn-hover); }
   .mv-btn-ghost {
     border: 1px solid var(--color-line-2);
     color: var(--color-bone);
@@ -152,10 +190,12 @@ body {
   .mv-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
   .mv-scroll::-webkit-scrollbar-thumb { background: var(--color-line-2); border-radius: 8px; }
   .mv-scroll::-webkit-scrollbar-track { background: transparent; }
+  /* 2D design canvas backdrop: a soft studio vignette in both themes. */
+  .mv-canvas-bg { background: radial-gradient(ellipse at center, #1a1a1c 0%, #0a0a0b 70%); }
   .mv-checker {
-    background-color: #1b1b1d;
-    background-image: linear-gradient(45deg, #222 25%, transparent 25%), linear-gradient(-45deg, #222 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #222 75%), linear-gradient(-45deg, transparent 75%, #222 75%);
+    background-color: var(--mv-checker-a);
+    background-image: linear-gradient(45deg, var(--mv-checker-b) 25%, transparent 25%), linear-gradient(-45deg, var(--mv-checker-b) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--mv-checker-b) 75%), linear-gradient(-45deg, transparent 75%, var(--mv-checker-b) 75%);
     background-size: 16px 16px;
     background-position: 0 0, 0 8px, 8px -8px, -8px 0;
   }

@@ -1,14 +1,17 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Eye, EyeOff, Lock, Unlock, ChevronUp, ChevronDown, Star, Upload, Wand2, Type, Group as GroupIcon, Ungroup, Save, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Lock, Unlock, ChevronUp, ChevronDown, Star, Upload, Wand2, Type, Group as GroupIcon, Ungroup, Save, Trash2, Copy, ClipboardPaste, GripVertical } from "lucide-react";
 import { useEditor } from "@/lib/editor/store";
-import { createGraphicLayer, createImageLayer, createTextLayer, newLayerId } from "@/lib/garment/design";
+import { createTextLayer, newLayerId, availablePanels, availableZones } from "@/lib/garment/design";
 import { computeMeasurements } from "@/lib/garment/sizing";
-import { fitToPlacement, placementPreset, PLACEMENT_LABELS, type PlacementPreset } from "@/lib/garment/panels";
-import type { Layer, TextLayer } from "@/lib/garment/schema";
+import { placementPreset, PLACEMENT_LABELS, type PlacementPreset } from "@/lib/garment/panels";
+import type { Layer } from "@/lib/garment/schema";
 import { PANEL_LABELS, type PanelId } from "@/lib/garment/types";
-import { availablePanels } from "@/lib/garment/design";
+import { copySelection, hasClipboard, insertLibraryItem, insertTypography, insertUpload, pasteClipboard, setDragPayload, ZONE_DEFAULT_PRESET, type LibraryItem, type UploadItem } from "@/lib/editor/insert";
+import { searchTypography, TYPOGRAPHY_CATEGORIES, TYPOGRAPHY_PRESETS, type TypographyCategory } from "@/lib/typography/presets";
+import { useCustomFonts } from "@/lib/typography/custom-fonts";
+import { CustomFontUpload } from "./properties";
 import { COLLECTIONS } from "@/lib/library/collections";
 import type { LibraryAssetKind } from "@/lib/library/types";
 import { api, errorMessage } from "@/lib/client/api";
@@ -16,43 +19,45 @@ import { useSession } from "@/components/session";
 import { Badge, Button, Notice, Select, Spinner, toast } from "@/components/ui";
 import { ZONE_LABELS } from "./Canvas2D";
 
-interface AssetRow { id: string; kind: LibraryAssetKind; name: string; collectionSlug: string; url: string | null; baseUrl: string | null; width: number; height: number; colors: string[]; editableTexts: { text: string; x: number; y: number; fontSize: number; fontWeight: string; fill: string; letterSpacing: number; anchor: string }[] | null }
+type AssetRow = LibraryItem & { kind: LibraryAssetKind; collectionSlug: string };
 
-const KIND_TABS: { value: LibraryAssetKind | "favorites" | "recent" | "compositions"; label: string }[] = [
-  { value: "graphic", label: "Graphics" }, { value: "element", label: "Stickers" }, { value: "template", label: "Templates" }, { value: "pattern", label: "Patterns" }, { value: "palette", label: "Palettes" },
+const KIND_TABS: { value: LibraryAssetKind | "typography" | "favorites" | "recent" | "compositions"; label: string }[] = [
+  { value: "graphic", label: "Graphics" }, { value: "element", label: "Stickers" }, { value: "template", label: "Templates" }, { value: "typography", label: "Typography" }, { value: "pattern", label: "Patterns" }, { value: "palette", label: "Palettes" },
   { value: "favorites", label: "★ Favourites" }, { value: "recent", label: "Recent" }, { value: "compositions", label: "My compositions" },
 ];
 
 function useAddAsset() {
-  const config = useEditor((s) => s.config);
-  const addLayer = useEditor((s) => s.addLayer);
-  const commit = useEditor((s) => s.commit);
   const { user } = useSession();
-  return useCallback(
-    (a: AssetRow, preset?: PlacementPreset) => {
-      if (!a.url) return;
-      if (user) api("/api/library/recent", { body: { assetId: a.id } }).catch(() => undefined);
-      if (a.kind === "template" && a.baseUrl) {
-        const m = computeMeasurements(config);
-        const p = placementPreset(m, preset ?? "full-front", config.audience === "kids");
-        const fit = fitToPlacement(p, a.width / a.height);
-        const gid = newLayerId("grp");
-        const base = { ...createGraphicLayer(config, { id: a.id, name: `${a.name} (base)`, url: a.baseUrl, width: a.width, height: a.height }, preset ?? "full-front"), groupId: gid };
-        const k = fit.width / a.width;
-        const texts: TextLayer[] = (a.editableTexts ?? []).map((t) => {
-          const tl = createTextLayer(config, t.text, preset ?? "full-front", {
-            fontFamily: "Inter", fontWeight: t.fontWeight === "bold" ? 700 : Number(t.fontWeight) || 400, fontSize: +(t.fontSize * k).toFixed(2), color: t.fill, letterSpacing: t.letterSpacing / Math.max(1, t.fontSize), align: "center",
-          });
-          return { ...tl, zone: fit.zone, x: +(fit.x + (t.x - a.width / 2) * k).toFixed(2), y: +(fit.y + (t.y - t.fontSize * 0.35 - a.height / 2) * k).toFixed(2), groupId: gid };
-        });
-        commit(`Template ${a.name}`, (d) => void d.layers.push(base, ...texts));
-        useEditor.setState({ selectedId: base.id, multi: [base.id, ...texts.map((t) => t.id)], zone: base.zone });
-        return;
-      }
-      const layer = createGraphicLayer(config, { id: a.id, name: a.name, url: a.url, width: a.width, height: a.height }, preset ?? (a.kind === "element" ? "left-chest" : "center-chest"));
-      addLayer(layer, `Add ${a.name}`);
-    },
-    [config, addLayer, commit, user],
+  return useCallback((a: AssetRow, preset?: PlacementPreset) => void insertLibraryItem(a, { preset }, !!user), [user]);
+}
+
+/** Placement presets valid for the current construction (e.g. no cuff preset without cuffs). */
+function usablePresets(config: ReturnType<typeof useEditor.getState>["config"]): PlacementPreset[] {
+  const zones = availableZones(config);
+  const m = computeMeasurements(config);
+  return (Object.keys(PLACEMENT_LABELS) as PlacementPreset[]).filter((p) => zones.includes(placementPreset(m, p).zone));
+}
+
+function TypographyGrid({ q, category, preset }: { q: string; category: TypographyCategory | ""; preset?: PlacementPreset }) {
+  const list = searchTypography(q, category);
+  return (
+    <div className="grid grid-cols-2 gap-1.5" data-testid="typography-grid">
+      {list.map((p) => (
+        <button
+          key={p.id}
+          draggable
+          onDragStart={(e) => setDragPayload(e, { type: "typography", id: p.id })}
+          onClick={() => insertTypography(p.id, { preset })}
+          className="flex min-h-16 flex-col justify-between rounded-lg border border-line p-2 text-left hover:border-bone"
+          title={`${p.name} — click to add, or drag onto the garment`}
+          data-testid={`typo-${p.id}`}
+        >
+          <span className="truncate text-base leading-tight" style={{ fontFamily: `'${p.style.fontFamily}'`, fontWeight: p.style.fontWeight, fontStyle: p.style.italic ? "italic" : undefined, textTransform: p.style.textTransform === "uppercase" ? "uppercase" : undefined, letterSpacing: p.style.letterSpacing ? `${p.style.letterSpacing}em` : undefined }}>{p.text.split("\n")[0]}</span>
+          <span className="text-[0.6rem] text-mute">{p.name}</span>
+        </button>
+      ))}
+      {!list.length && <p className="col-span-2 py-4 text-center text-xs text-mute">No typography matches.</p>}
+    </div>
   );
 }
 
@@ -70,6 +75,7 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
   const [favs, setFavs] = useState<string[]>([]);
   const [compositions, setCompositions] = useState<{ id: string; name: string; layers: Layer[] }[]>([]);
   const [preset, setPreset] = useState<PlacementPreset | "">("");
+  const [typoCat, setTypoCat] = useState<TypographyCategory | "">("");
   const [panel, setPanel] = useState<PanelId | "allover">(patternTarget ?? "allover");
   const add = useAddAsset();
   useEffect(() => {
@@ -86,6 +92,11 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
     try {
       const off = reset ? 0 : offset;
       let url: string;
+      if (kind === "typography") {
+        setItems([]);
+        setTotal(0);
+        return;
+      }
       if (kind === "compositions") {
         if (!user) return setItems([]);
         const r = await api<{ compositions: { id: string; name: string; layers: Layer[] }[] }>("/api/library/compositions");
@@ -164,11 +175,18 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
       </div>
       {!["favorites", "recent", "compositions"].includes(kind) && (
         <div className="flex gap-1.5">
-          <input className="mv-input !py-1.5 !text-xs" placeholder="Search the library…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search library" />
-          <Select aria-label="Collection" value={collection} onChange={(e) => setCollection(e.target.value)} className="!w-36 !py-1.5 !text-xs">
-            <option value="">All collections</option>
-            {COLLECTIONS.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-          </Select>
+          <input className="mv-input !py-1.5 !text-xs" placeholder={kind === "typography" ? "Search typography…" : "Search the library…"} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search library" />
+          {kind === "typography" ? (
+            <Select aria-label="Typography category" value={typoCat} onChange={(e) => setTypoCat(e.target.value as TypographyCategory | "")} className="!w-36 !py-1.5 !text-xs">
+              <option value="">All styles</option>
+              {TYPOGRAPHY_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </Select>
+          ) : (
+            <Select aria-label="Collection" value={collection} onChange={(e) => setCollection(e.target.value)} className="!w-36 !py-1.5 !text-xs">
+              <option value="">All collections</option>
+              {COLLECTIONS.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+            </Select>
+          )}
         </div>
       )}
       {kind === "pattern" && (
@@ -179,16 +197,19 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
           </Select>
         </label>
       )}
-      {(kind === "graphic" || kind === "element" || kind === "template" || kind === "favorites" || kind === "recent") && (
+      {(kind === "graphic" || kind === "element" || kind === "template" || kind === "typography" || kind === "favorites" || kind === "recent") && (
         <label className="flex items-center gap-2 text-xs"><span className="text-mute">Place on</span>
           <Select aria-label="Placement" value={preset} onChange={(e) => setPreset(e.target.value as PlacementPreset | "")} className="!py-1 !text-xs">
             <option value="">Auto</option>
-            {(Object.keys(PLACEMENT_LABELS) as PlacementPreset[]).filter((p) => (p !== "pocket" || config.construction.pocketCount) && (p !== "yoke" || config.construction.backYoke !== "none")).map((p) => <option key={p} value={p}>{PLACEMENT_LABELS[p]}</option>)}
+            {usablePresets(config).map((p) => <option key={p} value={p}>{PLACEMENT_LABELS[p]}</option>)}
           </Select>
+          <span className="ml-auto flex items-center gap-1 text-[0.6rem] text-mute"><GripVertical className="size-3" />or drag onto the garment</span>
         </label>
       )}
       <div className="min-h-0 flex-1 overflow-y-auto pr-1 mv-scroll">
-        {kind === "compositions" ? (
+        {kind === "typography" ? (
+          <TypographyGrid q={q} category={typoCat} preset={preset || undefined} />
+        ) : kind === "compositions" ? (
           !user ? <p className="text-xs text-mute">Sign in to save and reuse compositions.</p> : compositions.length === 0 ? <p className="text-xs text-mute">No saved compositions. Select layers and use “Save as composition” in the Layers panel.</p> : (
             <ul className="space-y-1.5">{compositions.map((c) => (
               <li key={c.id} className="flex items-center justify-between rounded-lg border border-line px-2.5 py-2 text-xs">
@@ -204,13 +225,13 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
               {items.map((a) => (
                 <div key={a.id} className="group relative">
                   {a.kind === "palette" ? (
-                    <button onClick={() => applyPalette(a)} className="flex w-full items-center gap-2 rounded-lg border border-line p-1.5 text-left hover:border-line-2" title="Apply palette to garment colours">
+                    <button onClick={() => applyPalette(a)} draggable onDragStart={(e) => setDragPayload(e, { type: "library", item: a })} className="flex w-full items-center gap-2 rounded-lg border border-line p-1.5 text-left hover:border-line-2" title="Apply palette to garment colours (or drag onto the garment)">
                       <span className="flex overflow-hidden rounded">{a.colors.map((c) => <span key={c} className="h-6 w-6" style={{ background: c }} />)}</span>
                       <span className="text-[0.68rem]">{a.name}</span>
                     </button>
                   ) : (
-                    <button onClick={() => (a.kind === "pattern" ? applyPattern(a) : add(a, preset || undefined))} className="mv-checker block aspect-[5/6] w-full overflow-hidden rounded-lg border border-line p-1 transition hover:border-bone" title={`${a.name} · ${a.collectionSlug.replace(/_/g, " ")}`} data-testid={`asset-${a.id}`}>
-                      <img src={a.url!} alt={a.name} className="h-full w-full object-contain" loading="lazy" />
+                    <button draggable onDragStart={(e) => setDragPayload(e, { type: "library", item: a })} onClick={() => (a.kind === "pattern" ? applyPattern(a) : add(a, preset || undefined))} className="mv-checker block aspect-[5/6] w-full cursor-grab overflow-hidden rounded-lg border border-line p-1 transition hover:border-bone active:cursor-grabbing" title={`${a.name} · ${a.collectionSlug.replace(/_/g, " ")} — click to add or drag onto the garment`} data-testid={`asset-${a.id}`}>
+                      <img src={a.url!} alt={a.name} className="pointer-events-none h-full w-full object-contain" loading="lazy" draggable={false} />
                     </button>
                   )}
                   {a.kind !== "palette" && <button onClick={() => toggleFav(a.id)} aria-label={favs.includes(a.id) ? "Remove favourite" : "Add favourite"} className={clsx("absolute right-1 top-1 rounded-full bg-ink/70 p-1", favs.includes(a.id) ? "text-champagne" : "text-mute opacity-0 group-hover:opacity-100")}><Star className={clsx("size-3", favs.includes(a.id) && "fill-champagne")} /></button>}
@@ -223,52 +244,70 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
           </>
         )}
       </div>
-      <p className="text-[0.62rem] text-mute">ModVerse Original Creative Library v0.1 — procedural SVG artwork. Not sewing patterns or stitch files.</p>
+      <p className="text-[0.62rem] text-mute">ModVerse Creative Library (supplied v0.1 + Studio Library) — original SVG artwork. Not sewing patterns or stitch files.</p>
     </div>
   );
 }
-
-const TEXT_PRESETS: { label: string; text: string; style: Partial<TextLayer>; preset: PlacementPreset }[] = [
-  { label: "Name across the back", text: "SHARMA", preset: "upper-back", style: { fontFamily: "Bebas Neue", fontWeight: 400, letterSpacing: 0.08, textTransform: "uppercase" } },
-  { label: "Varsity number", text: "07", preset: "full-back", style: { fontFamily: "Oswald", fontWeight: 700, fontSize: 18, outline: { enabled: true, color: "#F3EFE8", width: 0.25 } } },
-  { label: "Arched slogan", text: "YOUR WORLD", preset: "center-chest", style: { fontFamily: "Archivo Black", fontWeight: 400, curve: { mode: "arc", amount: 45 } } },
-  { label: "Script signature", text: "Mumbai", preset: "left-chest", style: { fontFamily: "Dancing Script", fontWeight: 700 } },
-  { label: "हिन्दी", text: "अपनी दुनिया", preset: "center-chest", style: { fontFamily: "Noto Sans Devanagari", fontWeight: 700 } },
-  { label: "Circular badge", text: "MODVERSE • ORIGINAL • ", preset: "left-chest", style: { fontFamily: "Space Grotesk", fontWeight: 700, curve: { mode: "circle", amount: 100 }, fontSize: 0.9 } },
-];
 
 export function TextPanel() {
   const config = useEditor((s) => s.config);
   const zone = useEditor((s) => s.zone);
   const addLayer = useEditor((s) => s.addLayer);
+  const { user } = useSession();
+  const fonts = useCustomFonts((s) => s.fonts);
+  const loadFonts = useCustomFonts((s) => s.load);
+  const removeFont = useCustomFonts((s) => s.remove);
   const [text, setText] = useState("");
-  const zonePreset: Record<string, PlacementPreset> = { front: "center-chest", back: "upper-back", sleeveLeft: "left-sleeve", sleeveRight: "right-sleeve", collar: "collar", pocket: "pocket", yoke: "yoke" };
+  useEffect(() => {
+    if (user) loadFonts();
+  }, [user, loadFonts]);
+  const quick = ["TY_001", "TY_002", "TY_004", "TY_008", "TY_010", "TY_013", "TY_015", "TY_018"].map((id) => TYPOGRAPHY_PRESETS.find((p) => p.id === id)!);
   return (
     <div className="space-y-4" data-testid="text-panel">
       <div className="space-y-2">
         <label className="mv-label" htmlFor="new-text">Type your text</label>
         <textarea id="new-text" className="mv-input min-h-16" placeholder="Name, initials, number, quote, slogan… (multi-line & multilingual)" value={text} onChange={(e) => setText(e.target.value)} />
-        <Button size="sm" disabled={!text.trim()} onClick={() => { addLayer(createTextLayer(config, text.trim(), zonePreset[zone]), "Add text"); setText(""); }} data-testid="add-text"><Type className="size-3.5" /> Add to {ZONE_LABELS[zone]}</Button>
+        <Button size="sm" disabled={!text.trim()} onClick={() => { addLayer(createTextLayer(config, text.trim(), ZONE_DEFAULT_PRESET[zone]), "Add text"); setText(""); }} data-testid="add-text"><Type className="size-3.5" /> Add to {ZONE_LABELS[zone]}</Button>
       </div>
       <div className="space-y-1.5">
-        <p className="mv-eyebrow !text-[0.6rem]">Quick typography presets</p>
-        {TEXT_PRESETS.map((p) => (
-          <button key={p.label} onClick={() => { const base = createTextLayer(config, p.text, p.preset); addLayer({ ...base, ...p.style, ...(p.style.fontSize ? { width: base.width * (p.style.fontSize / base.fontSize), height: base.height * (p.style.fontSize / base.fontSize) } : {}) } as TextLayer, `Add ${p.label}`); }} className="flex w-full items-center justify-between rounded-lg border border-line px-3 py-2 text-left hover:border-line-2">
-            <span className="text-lg" style={{ fontFamily: `'${p.style.fontFamily}'` }}>{p.text.slice(0, 16)}</span>
-            <span className="text-[0.65rem] text-mute">{p.label}</span>
+        <p className="mv-eyebrow !text-[0.6rem]">Typography styles <span className="normal-case tracking-normal text-mute">· click or drag onto the garment</span></p>
+        {quick.map((p) => (
+          <button key={p.id} draggable onDragStart={(e) => setDragPayload(e, { type: "typography", id: p.id })} onClick={() => insertTypography(p.id)} className="flex w-full items-center justify-between rounded-lg border border-line px-3 py-2 text-left hover:border-line-2">
+            <span className="truncate text-lg" style={{ fontFamily: `'${p.style.fontFamily}'` }}>{p.text.split("\n")[0].slice(0, 16)}</span>
+            <span className="shrink-0 text-[0.65rem] text-mute">{p.name}</span>
           </button>
         ))}
+        <p className="text-[0.62rem] text-mute">{TYPOGRAPHY_PRESETS.length} styles in Library → Typography, incl. layered effects and Indian scripts.</p>
+      </div>
+      <div className="space-y-2 border-t border-line pt-4">
+        <p className="mv-eyebrow !text-[0.6rem]">Your fonts</p>
+        {user ? (
+          <>
+            {fonts.length > 0 && (
+              <ul className="space-y-1">
+                {fonts.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between rounded-lg border border-line px-2.5 py-1.5 text-xs">
+                    <span className="truncate text-base" style={{ fontFamily: `'${f.family}'` }}>{f.displayName}</span>
+                    <span className="flex gap-1">
+                      <button className="mv-chip" onClick={() => addLayer({ ...createTextLayer(config, text.trim() || f.displayName, ZONE_DEFAULT_PRESET[zone]), fontFamily: f.family, fontAssetId: f.id, fontWeight: 400 }, "Add text")}>Use</button>
+                      <button className="mv-chip" aria-label={`Delete font ${f.displayName}`} onClick={() => removeFont(f.id).catch((e) => toast(errorMessage(e), "bad"))}><Trash2 className="size-3" /></button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <CustomFontUpload />
+          </>
+        ) : <p className="text-[0.65rem] text-mute">Sign in to upload your own TTF, OTF or WOFF fonts.</p>}
       </div>
       <p className="text-[0.65rem] text-mute">34 OFL-licensed fonts including Devanagari, Tamil and Bengali. Text renders with the same font files in 2D, 3D and print exports.</p>
     </div>
   );
 }
 
-interface UploadRow { id: string; url: string; mime: string; width: number | null; height: number | null; kind: string; name: string | null }
+type UploadRow = UploadItem;
 
 export function UploadPanel() {
-  const config = useEditor((s) => s.config);
-  const addLayer = useEditor((s) => s.addLayer);
   const { user } = useSession();
   const [busy, setBusy] = useState(false);
   const [uploads, setUploads] = useState<UploadRow[]>([]);
@@ -280,10 +319,7 @@ export function UploadPanel() {
     api<{ available: boolean; provider: string | null }>("/api/ai/generate-image").then(setGen).catch(() => setGen({ available: false, provider: null }));
     if (user) api<{ uploads: UploadRow[] }>("/api/uploads").then((r) => setUploads(r.uploads.reverse())).catch(() => undefined);
   }, [user]);
-  const place = (u: UploadRow) => {
-    if (u.mime === "image/svg+xml") addLayer(createGraphicLayer(config, { id: u.id, name: u.name ?? "Uploaded SVG", url: u.url, width: u.width ?? 100, height: u.height ?? 100 }, "center-chest", "upload"), "Add upload");
-    else addLayer(createImageLayer(config, { id: u.id, name: u.name ?? "Uploaded image", url: u.url, pixelWidth: u.width ?? 1000, pixelHeight: u.height ?? 1000 }, "center-chest", u.kind === "generated" ? "generated" : "upload"), "Add image");
-  };
+  const place = (u: UploadRow) => void insertUpload(u, { preset: ZONE_DEFAULT_PRESET[useEditor.getState().zone] });
   async function onFile(f: File) {
     setBusy(true);
     try {
@@ -320,14 +356,14 @@ export function UploadPanel() {
           <>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" className="hidden" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} data-testid="upload-input" />
             <Button size="sm" loading={busy} onClick={() => fileRef.current?.click()}><Upload className="size-3.5" /> Upload PNG, JPG, WebP or SVG</Button>
-            <p className="text-[0.65rem] text-mute">Max 12 MB. SVGs are sanitised. 200–300 DPI at print size recommended. Uploads are private to your account.</p>
+            <p className="text-[0.65rem] text-mute">Max 12 MB. SVGs are sanitised. 200–300 DPI at print size recommended. Uploads are private to your account. You can also drop files onto the garment or paste an image (⌘V).</p>
           </>
         ) : <Notice tone="info">Sign in to upload artwork — uploads are stored privately in your account.</Notice>}
         {uploads.length > 0 && (
           <div className="grid grid-cols-3 gap-1.5">
             {uploads.map((u) => (
-              <button key={u.id} onClick={() => place(u)} className="mv-checker aspect-square overflow-hidden rounded-lg border border-line p-1 hover:border-bone" title={u.name ?? ""}>
-                <img src={u.url} alt={u.name ?? "upload"} className="h-full w-full object-contain" />
+              <button key={u.id} draggable onDragStart={(e) => setDragPayload(e, { type: "upload", item: u })} onClick={() => place(u)} className="mv-checker relative aspect-square cursor-grab overflow-hidden rounded-lg border border-line p-1 hover:border-bone" title={`${u.name ?? ""} — click to add or drag onto the garment`}>
+                <img src={u.url} alt={u.name ?? "upload"} className="pointer-events-none h-full w-full object-contain" draggable={false} />
                 {u.kind === "generated" && <Badge tone="accent" className="absolute">AI</Badge>}
               </button>
             ))}
@@ -364,6 +400,10 @@ export function LayersPanel() {
   const { user } = useSession();
   const layers = [...config.layers].reverse();
   const sel = config.layers.find((l) => l.id === selectedId);
+  const [canPaste, setCanPaste] = useState(false);
+  useEffect(() => {
+    setCanPaste(hasClipboard());
+  }, [multi, config]);
   async function saveComposition() {
     const ls = config.layers.filter((l) => multi.includes(l.id));
     if (!ls.length) return;
@@ -379,12 +419,14 @@ export function LayersPanel() {
   return (
     <div className="space-y-2" data-testid="layers-panel">
       <div className="flex flex-wrap gap-1">
+        <button className="mv-chip" disabled={!multi.length} onClick={() => { const n = copySelection(); if (n) toast(`Copied ${n} layer${n > 1 ? "s" : ""}`, "info"); }} title="Copy (⌘C)"><Copy className="size-3" /> Copy</button>
+        <button className="mv-chip" onClick={() => { if (!pasteClipboard()) toast("Nothing copied yet", "info"); }} title="Paste (⌘V) · paste in place ⇧⌘V" data-testid="paste-layers" disabled={!canPaste}><ClipboardPaste className="size-3" /> Paste</button>
         <button className="mv-chip" disabled={multi.length < 2} onClick={group}><GroupIcon className="size-3" /> Group</button>
         {sel?.groupId && <button className="mv-chip" onClick={() => ungroup(sel.groupId!)}><Ungroup className="size-3" /> Ungroup</button>}
         {user && <button className="mv-chip" disabled={!multi.length} onClick={saveComposition}><Save className="size-3" /> Save as composition</button>}
         <button className="mv-chip text-bad" disabled={!multi.length} onClick={() => remove(multi)}><Trash2 className="size-3" /> Delete</button>
       </div>
-      <p className="text-[0.65rem] text-mute">Shift-click to multi-select. Top of the list prints on top.</p>
+      <p className="text-[0.65rem] text-mute">Shift-click to multi-select. Top of the list prints on top. ⌘C / ⌘X / ⌘V copy, cut and paste — also between designs.</p>
       {layers.length === 0 && <p className="py-6 text-center text-xs text-mute">No layers yet.</p>}
       <ul className="space-y-1">
         {layers.map((l) => (

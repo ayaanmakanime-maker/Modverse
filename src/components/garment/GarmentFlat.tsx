@@ -36,11 +36,30 @@ function shade(hex: string, dl: number): string {
   return hslToHex(h, s, Math.max(0, Math.min(1, l + dl)));
 }
 
-export function sleevePlacement(m: GarmentMeasurements, styleKey: string, side: 1 | -1, kids = false) {
+export function sleevePlacement(m: GarmentMeasurements, styleKey: string, side: 1 | -1, kids = false, outline?: Pt[]) {
   const slope = shoulderSlope(m, kids);
   const angle = SLEEVE_ANGLE[styleKey] ?? 58;
   const x = side * (m.shoulderWidth / 2 - m.bicep * 0.03);
-  return { x, y: slope - 0.5, rotate: -side * angle };
+  const rotate = -side * angle;
+  let y = slope - 0.5;
+  if (outline?.length) {
+    // The symmetric sleeve cap, rotated outwards, would otherwise rise above the shoulder seam (a "raised pauldron").
+    // Drop the sleeve so its highest point sits on the shoulder tip; the torso (drawn on top) hides the overlap.
+    const r = (rotate * Math.PI) / 180, s = Math.sin(r), c = Math.cos(r);
+    const top = Math.min(...outline.map(([px, py]) => px * s + py * c));
+    y = slope - 0.5 - top;
+  }
+  return { x, y, rotate };
+}
+
+/**
+ * Sleeve as drawn on a flat (folded) garment: nearly straight edges from the shoulder tip, like a real
+ * flat-lay, instead of the rounded sewing-pattern cap (which looks puffy when rotated outwards).
+ */
+export function flatSleeveOutline(m: GarmentMeasurements, c: DesignConfig["construction"]): Pt[] {
+  const sl = sleeveShape(m, c);
+  const hb = sl.halfBicep * 0.5, ho = sl.halfOpening * 0.5, cap = sl.capHeight * 0.8;
+  return [[0, 0], [hb * 0.5, 0.15], [hb, cap], [ho, sl.length], [-ho, sl.length], [-hb, cap], [-hb * 0.5, 0.15]];
 }
 
 /** Tight view box from the real torso outline and the transformed sleeve outlines. */
@@ -50,10 +69,9 @@ export function flatViewBox(m: GarmentMeasurements, showSleeves = true, c?: Desi
   let minY = -Math.max(5, m.collarHeight + 2.5);
   let maxY = m.bodyLength + 1;
   if (showSleeves && c) {
-    const sl = sleeveShape(m, c);
-    const flatOutline = sl.outline.map(([x, y]) => [x * 0.5, y] as Pt);
+    const flatOutline = flatSleeveOutline(m, c);
     for (const side of [1, -1] as const) {
-      const p = sleevePlacement(m, c.sleeveStyle, side, kids);
+      const p = sleevePlacement(m, c.sleeveStyle, side, kids, flatOutline);
       const r = (p.rotate * Math.PI) / 180;
       for (const [x, y] of flatOutline) {
         const X = p.x + x * Math.cos(r) - y * Math.sin(r);
@@ -74,7 +92,7 @@ export function GarmentFlat({ config, view, className, children, patternFill = {
   const torso = torsoShape(m, view, c, kids);
   // A technical flat shows the sleeve folded flat: width = half the circumference.
   const sleeveRaw = sleeveShape(m, c);
-  const sleeve = { ...sleeveRaw, outline: sleeveRaw.outline.map(([x, y]) => [x * 0.5, y] as Pt), halfOpening: sleeveRaw.halfOpening * 0.5, halfBicep: sleeveRaw.halfBicep * 0.5 };
+  const sleeve = { ...sleeveRaw, outline: flatSleeveOutline(m, c), halfOpening: sleeveRaw.halfOpening * 0.5, halfBicep: sleeveRaw.halfBicep * 0.5 };
   const body = panelColor(config, view);
   const line = stroke ?? (isDark(body) ? shade(body, 0.32) : shade(body, -0.3));
   const stitchColor = c.stitching.contrast ? c.stitching.color : line;
@@ -92,7 +110,7 @@ export function GarmentFlat({ config, view, className, children, patternFill = {
   const cuffColor = panelColor(config, "cuffs");
 
   const sleeveEl = (side: 1 | -1, color: string, panel: string) => {
-    const p = sleevePlacement(m, c.sleeveStyle, side, kids);
+    const p = sleevePlacement(m, c.sleeveStyle, side, kids, sleeve.outline);
     const pts = sleeve.outline.map(([x, y]) => [x, y] as Pt);
     return (
       <g transform={`translate(${p.x} ${p.y}) rotate(${p.rotate})`} key={panel}>

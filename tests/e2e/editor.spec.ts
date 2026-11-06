@@ -46,6 +46,9 @@ test("text, typography, library graphics, patterns, construction, undo/redo, Mus
   await page.getByTestId("muse-input").fill("make the sleeves navy and the buttons brown");
   await page.keyboard.press("Enter");
   await expect(page.getByText(/sleeveLeft colour → navy/)).toBeVisible();
+  // The Muse proposes a previewed transaction; nothing changes until it is applied.
+  await expect(page.getByTestId("muse-proposal").last()).toContainText("Left sleeve colour");
+  await page.getByTestId("muse-apply").last().click();
 
   const id = await saveDesign(page);
   const res = await page.request.get(`/api/designs/${id}`);

@@ -85,6 +85,30 @@ const layerBase = {
   flipY: z.boolean().default(false),
 };
 
+/** Normalised crop window (0…1 of the source asset). */
+export const cropSchema = z
+  .object({
+    x: z.number().min(0).max(0.95).default(0),
+    y: z.number().min(0).max(0.95).default(0),
+    w: z.number().min(0.05).max(1).default(1),
+    h: z.number().min(0.05).max(1).default(1),
+  })
+  .default({ x: 0, y: 0, w: 1, h: 1 });
+export type Crop = z.infer<typeof cropSchema>;
+
+/** Additional stacked text effects rendered behind the main glyphs (v2). */
+export const textEffectSchema = z.object({
+  kind: z.enum(["stroke", "shadow", "extrude", "glow"]),
+  color: hexColor,
+  /** Stroke width / glow radius in cm. */
+  width: z.number().min(0).max(3).default(0.15),
+  offsetX: z.number().min(-5).max(5).default(0),
+  offsetY: z.number().min(-5).max(5).default(0),
+  blur: z.number().min(0).max(3).default(0),
+  opacity: z.number().min(0).max(1).default(1),
+});
+export type TextEffect = z.infer<typeof textEffectSchema>;
+
 export const textLayerSchema = z.object({
   ...layerBase,
   type: z.literal("text"),
@@ -93,7 +117,8 @@ export const textLayerSchema = z.object({
   fontWeight: z.number().int().min(100).max(900).default(700),
   italic: z.boolean().default(false),
   underline: z.boolean().default(false),
-  textTransform: z.enum(["none", "uppercase", "lowercase", "capitalize"]).default("none"),
+  /** "title" = true title case (minor words lower-case); "capitalize" = every word (v1). */
+  textTransform: z.enum(["none", "uppercase", "lowercase", "capitalize", "title"]).default("none"),
   /** Font size (em) in centimetres. */
   fontSize: cm(0.3, 40),
   color: hexColor,
@@ -110,6 +135,10 @@ export const textLayerSchema = z.object({
   shadow: z.object({ enabled: z.boolean(), color: hexColor, offsetX: z.number().min(-3).max(3), offsetY: z.number().min(-3).max(3), blur: z.number().min(0).max(3) }),
   background: z.object({ enabled: z.boolean(), color: hexColor, padding: z.number().min(0).max(5), radius: z.number().min(0).max(5) }),
   skewX: z.number().min(-45).max(45).default(0),
+  /** Layered effects (v2) — up to four, drawn behind the main text, first = closest. */
+  effects: z.array(textEffectSchema).max(4).default([]),
+  /** Customer-uploaded font (v2). When set, fontFamily is the registered custom family name. */
+  fontAssetId: z.string().max(64).nullable().default(null),
 });
 export type TextLayer = z.infer<typeof textLayerSchema>;
 
@@ -123,6 +152,7 @@ export const graphicLayerSchema = z.object({
   colorMap: z.record(z.string(), hexColor).default({}),
   /** Natural aspect ratio (w / h) */
   aspect: z.number().positive().default(1),
+  crop: cropSchema,
 });
 export type GraphicLayer = z.infer<typeof graphicLayerSchema>;
 
@@ -134,14 +164,32 @@ export const imageLayerSchema = z.object({
   url: z.string().max(500),
   pixelWidth: z.number().int().positive(),
   pixelHeight: z.number().int().positive(),
+  crop: cropSchema,
 });
 export type ImageLayer = z.infer<typeof imageLayerSchema>;
 
 export const layerSchema = z.discriminatedUnion("type", [textLayerSchema, graphicLayerSchema, imageLayerSchema]);
 export type Layer = z.infer<typeof layerSchema>;
 
-export const designConfigSchema = z.object({
-  schemaVersion: z.literal(1),
+/**
+ * Design schema versions
+ *  1 — V1 launch.
+ *  2 — cuff artwork zone, crop for graphics/images, layered text effects,
+ *      custom fonts, true title case. All additions have defaults, so v1
+ *      documents upgrade losslessly (see upgradeDesignConfig).
+ */
+export const DESIGN_SCHEMA_VERSION = 2 as const;
+
+/** Upgrade older stored design documents to the current schema version. */
+export function upgradeDesignConfig(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const r = raw as Record<string, unknown>;
+  if (r.schemaVersion === 1) return { ...r, schemaVersion: 2 };
+  return raw;
+}
+
+const designConfigObject = z.object({
+  schemaVersion: z.literal(DESIGN_SCHEMA_VERSION),
   audience: z.enum(AUDIENCES),
   garmentType: z.enum(GARMENT_TYPES),
   modelId: z.string().max(64),
@@ -156,7 +204,10 @@ export const designConfigSchema = z.object({
   measurementProfileId: z.string().max(64).nullable().default(null),
   notes: z.string().max(2000).default(""),
 });
-export type DesignConfig = z.infer<typeof designConfigSchema>;
+
+/** The single source of truth for 2D, 3D, AI, pricing, validation and orders. Accepts v1 documents. */
+export const designConfigSchema = z.preprocess(upgradeDesignConfig, designConfigObject);
+export type DesignConfig = z.infer<typeof designConfigObject>;
 
 export function parseDesignConfig(input: unknown): DesignConfig {
   return designConfigSchema.parse(input);

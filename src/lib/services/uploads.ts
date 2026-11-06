@@ -9,8 +9,26 @@ import { getStorage } from "../storage";
 import { extractSvgColors, parseSvgDimensions, sanitizeSvg, SvgSanitizeError } from "../svg/sanitize";
 
 export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
+export const MAX_FONT_BYTES = 6 * 1024 * 1024;
 
-type Detected = { mime: "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml" | "application/pdf"; ext: string };
+type Detected = { mime: "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml" | "application/pdf" | "font/ttf" | "font/otf" | "font/woff" | "font/woff2"; ext: string };
+
+/** Detect TrueType / OpenType / WOFF / WOFF2 font files from their signature. */
+export function detectFont(buf: Buffer): Detected | null {
+  if (buf.length < 12) return null;
+  const tag = buf.subarray(0, 4);
+  if (tag.equals(Buffer.from([0x00, 0x01, 0x00, 0x00])) || tag.toString("latin1") === "true") return { mime: "font/ttf", ext: "ttf" };
+  if (tag.toString("latin1") === "OTTO") return { mime: "font/otf", ext: "otf" };
+  if (tag.toString("latin1") === "wOFF") return { mime: "font/woff", ext: "woff" };
+  if (tag.toString("latin1") === "wOF2") return { mime: "font/woff2", ext: "woff2" };
+  return null;
+}
+
+/** CSS family name for an uploaded font (unique, safe for CSS and SVG attributes). */
+export function customFontFamily(displayName: string, id: string): string {
+  const slug = displayName.normalize("NFKD").replace(/[^A-Za-z0-9 ]/g, "").trim().replace(/\s+/g, " ").slice(0, 40) || "Custom";
+  return `${slug} MV${id.replace(/-/g, "").slice(0, 6)}`;
+}
 
 /** Detect file type from magic bytes — the client-declared type is never trusted. */
 export function detectType(buf: Buffer): Detected | null {
@@ -89,11 +107,63 @@ export async function storeUpload(user: SessionUser, file: { name: string; bytes
   return { id: row.id, url: `/api/uploads/${row.id}`, mime: row.mime, width: row.width, height: row.height, colors: row.colors as string[] | null, kind: row.kind, name: row.originalName };
 }
 
-export async function readUpload(user: SessionUser, id: string) {
+/**
+ * Store a customer font. The uploader must confirm they hold the rights to use
+ * it for printed products — ModVerse cannot verify third-party font licences.
+ */
+export async function storeFont(user: SessionUser, file: { name: string; bytes: Buffer }, displayName: string) {
+  if (file.bytes.length === 0) throw new ApiError(400, "empty_file", "The file is empty");
+  if (file.bytes.length > MAX_FONT_BYTES) throw new ApiError(413, "too_large", "Font files must be 6 MB or smaller");
+  const type = detectFont(file.bytes);
+  if (!type) throw new ApiError(415, "unsupported_type", "Upload a TTF, OTF, WOFF or WOFF2 font file");
+  const name = displayName.replace(/[\u0000-\u001f<>"'`\\]/g, "").trim().slice(0, 60) || file.name.replace(/\.[a-z0-9]+$/i, "").slice(0, 60) || "Custom font";
+  const id = randomUUID();
+  const key = `${user.id}/fonts/${id}.${type.ext}`;
+  await getStorage().put(key, file.bytes, type.mime);
+  const family = customFontFamily(name, id);
+  const db = await getDb();
+  const [row] = await db
+    .insert(s.uploadedAssets)
+    .values({
+      id, userId: user.id, kind: "font", storageProvider: getStorage().id, storageKey: key, originalName: file.name.replace(/[^\w.\- ]/g, "_").slice(0, 120),
+      mime: type.mime, bytes: file.bytes.length, sha256: createHash("sha256").update(file.bytes).digest("hex"),
+      meta: { displayName: name, family, rightsConfirmedAt: new Date().toISOString() },
+    })
+    .returning();
+  return fontRow(row);
+}
+
+function fontRow(r: typeof s.uploadedAssets.$inferSelect) {
+  const meta = (r.meta ?? {}) as { displayName?: string; family?: string };
+  return { id: r.id, url: `/api/uploads/${r.id}`, mime: r.mime, displayName: meta.displayName ?? r.originalName ?? "Custom font", family: meta.family ?? customFontFamily(r.originalName ?? "Custom", r.id), bytes: r.bytes, createdAt: r.createdAt };
+}
+
+export async function listFonts(user: SessionUser) {
+  const db = await getDb();
+  const rows = await db.select().from(s.uploadedAssets).where(and(eq(s.uploadedAssets.userId, user.id), eq(s.uploadedAssets.kind, "font")));
+  return rows.map(fontRow);
+}
+
+export async function deleteFont(user: SessionUser, id: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw notFound("Font");
+  const db = await getDb();
+  const [row] = await db.select().from(s.uploadedAssets).where(and(eq(s.uploadedAssets.id, id), eq(s.uploadedAssets.userId, user.id), eq(s.uploadedAssets.kind, "font")));
+  if (!row) throw notFound("Font");
+  await db.delete(s.uploadedAssets).where(eq(s.uploadedAssets.id, id));
+  await getStorage().delete(row.storageKey);
+}
+
+/**
+ * Owner or staff may read a private file. `extraAccess` lets a caller grant a
+ * narrowly-scoped additional reader (e.g. the partner organisation assigned to
+ * an order that uses this artwork) without widening the default rule.
+ */
+export async function readUpload(user: SessionUser, id: string, extraAccess?: (uploadId: string) => Promise<boolean>) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw notFound("File");
   const db = await getDb();
   const [row] = await db.select().from(s.uploadedAssets).where(eq(s.uploadedAssets.id, id));
-  if (!row || (row.userId !== user.id && user.role === "customer")) throw notFound("File");
+  if (!row) throw notFound("File");
+  if (row.userId !== user.id && user.role === "customer" && !(extraAccess && row.kind !== "export" && (await extraAccess(id)))) throw notFound("File");
   return { row, bytes: await getStorage().get(row.storageKey) };
 }
 

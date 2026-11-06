@@ -1,5 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
+import { ThemePicker } from "@/components/theme";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Trash2, Pencil } from "lucide-react";
@@ -22,7 +23,7 @@ function useList<T>(url: string, key: string) {
   return { items, reload };
 }
 
-interface Profile { id: string; name: string; audience: "men" | "women" | "kids"; measurements: Record<string, number>; fitPreference: "closer" | "true" | "looser"; childProfileId: string | null }
+interface Profile { id: string; name: string; audience: "men" | "women" | "kids"; measurements: Record<string, number>; provenance?: Record<string, { source: "user" | "camera" | "derived"; confidence: string; toleranceCm?: number }>; fitPreference: "closer" | "true" | "looser"; childProfileId: string | null }
 interface Child { id: string; nickname: string; birthYear: number; allowSharing: boolean; consentVersion: string; consentGivenAt: string }
 
 const FIELDS: [string, string][] = [["height", "Height"], ["chest", "Chest"], ["waist", "Waist"], ["hip", "Hip"], ["shoulder", "Shoulder width"], ["armLength", "Arm length"], ["neck", "Neck"], ["bicep", "Bicep"], ["wrist", "Wrist"]];
@@ -37,7 +38,8 @@ export function MeasurementsManager() {
     setBusy(true);
     try {
       const measurements = Object.fromEntries(Object.entries(edit.measurements ?? {}).filter(([, v]) => v !== undefined && !Number.isNaN(v)));
-      const body = { name: edit.name, audience: edit.audience, measurements, fitPreference: edit.fitPreference ?? "true", childProfileId: edit.childProfileId || null };
+      const provenance = Object.fromEntries(Object.entries(edit.provenance ?? {}).filter(([k]) => k in measurements));
+      const body = { name: edit.name, audience: edit.audience, measurements, provenance, fitPreference: edit.fitPreference ?? "true", childProfileId: edit.childProfileId || null };
       await api(edit.id ? `/api/account/measurements/${edit.id}` : "/api/account/measurements", { method: edit.id ? "PATCH" : "POST", body });
       setEdit(null);
       reload();
@@ -51,12 +53,12 @@ export function MeasurementsManager() {
   return (
     <div className="space-y-4" data-testid="measurements">
       <div className="flex items-center justify-between"><h1 className="mv-display text-3xl">Measurements</h1><Button size="sm" onClick={() => setEdit({ audience: "men", measurements: {}, fitPreference: "true" })} data-testid="add-measurements">Add profile</Button></div>
-      <Notice tone="info">Measure your body (not a garment) in centimetres. ModVerse compares your measurements with real garment dimensions to recommend sizes — always labelled as an estimate.</Notice>
+      <Notice tone="info">Measure your body (not a garment) in centimetres. ModVerse compares your measurements with real garment dimensions to recommend sizes — always labelled as an estimate. Values you entered are shown plainly; camera estimates from the trial room are marked with their ± tolerance. Editing a value makes it yours.</Notice>
       {!items ? <Spinner /> : items.length === 0 ? <EmptyState title="No measurement profiles" /> : items.map((p) => {
         const rec = p.measurements.chest ? recommendSize(p.measurements as { chest: number }, createDesign(p.audience === "kids" ? "tee-classic-crew" : "tee-regular", p.audience), p.fitPreference) : null;
         return (
           <div key={p.id} className="mv-card flex flex-wrap items-center justify-between gap-3 p-4">
-            <div><p className="font-medium">{p.name} <Badge>{p.audience}</Badge>{p.childProfileId && <Badge tone="info">guardian-managed</Badge>}</p><p className="text-xs text-mute">{Object.entries(p.measurements).map(([k, v]) => `${k} ${v}`).join(" · ")}</p></div>
+            <div><p className="font-medium">{p.name} <Badge>{p.audience}</Badge>{p.childProfileId && <Badge tone="info">guardian-managed</Badge>}</p><p className="text-xs text-mute">{Object.entries(p.measurements).map(([k, v]) => { const pv = p.provenance?.[k]; return <span key={k} className="mr-2 inline-block">{k} {v}{pv && pv.source !== "user" && <span className={pv.source === "camera" ? "text-champagne" : "text-warn"} title={pv.source === "camera" ? "Camera estimate" : "Rough estimate"}> ({pv.source === "camera" ? "camera" : "est."}{pv.toleranceCm ? ` ±${pv.toleranceCm}` : ""})</span>}</span>; })}</p></div>
             <div className="flex items-center gap-2">{rec && <span className="text-xs">Regular tee: <b>{rec.size}</b> <span className="text-mute">({rec.confidence}, estimate)</span></span>}<button className="mv-chip" onClick={() => setEdit(p)} aria-label="Edit"><Pencil className="size-3" /></button><button className="mv-chip text-bad" aria-label="Delete" onClick={async () => { if (confirm("Delete this profile?")) { await api(`/api/account/measurements/${p.id}`, { method: "DELETE" }); reload(); } }}><Trash2 className="size-3" /></button></div>
           </div>
         );
@@ -75,7 +77,7 @@ export function MeasurementsManager() {
             )}
             <div className="grid grid-cols-3 gap-2">
               {FIELDS.map(([k, label]) => (
-                <Field key={k} label={`${label} (cm)`}>{(id) => <Input id={id} inputMode="decimal" value={edit.measurements?.[k] ?? ""} onChange={(e) => setEdit({ ...edit, measurements: { ...(edit.measurements ?? {}), [k]: e.target.value === "" ? (undefined as unknown as number) : Number(e.target.value) } })} data-testid={`mp-${k}`} />}</Field>
+                <Field key={k} label={`${label} (cm)${edit.provenance?.[k] && edit.provenance[k].source !== "user" ? ` · ${edit.provenance[k].source === "camera" ? "camera est." : "rough est."}` : ""}`}>{(id) => <Input id={id} inputMode="decimal" value={edit.measurements?.[k] ?? ""} onChange={(e) => { const prov = { ...(edit.provenance ?? {}) }; delete prov[k]; setEdit({ ...edit, provenance: prov, measurements: { ...(edit.measurements ?? {}), [k]: e.target.value === "" ? (undefined as unknown as number) : Number(e.target.value) } }); }} data-testid={`mp-${k}`} />}</Field>
               ))}
             </div>
             <Segmented label="Fit preference" value={edit.fitPreference ?? "true"} onChange={(v) => setEdit({ ...edit, fitPreference: v })} options={[{ value: "closer", label: "Closer" }, { value: "true", label: "True to fit" }, { value: "looser", label: "Looser" }]} />
@@ -204,6 +206,7 @@ export function SettingsPanel() {
   return (
     <div className="space-y-6">
       <h1 className="mv-display text-3xl">Settings</h1>
+      <section className="mv-card space-y-3 p-4"><p className="font-medium">Appearance</p><p className="text-sm text-mute">Dark is the ModVerse signature look; Light is a clean white interface; System follows your device.</p><ThemePicker /></section>
       <form className="mv-card space-y-3 p-4" onSubmit={async (e) => { e.preventDefault(); try { await api("/api/account", { method: "PATCH", body: { name: profile.name, phone: profile.phone || null, marketingOptIn: profile.marketingOptIn } }); toast("Profile updated"); router.refresh(); } catch (err) { toast(errorMessage(err), "bad"); } }}>
         <p className="font-medium">Profile</p>
         <p className="text-sm text-mute">{profile.email}</p>

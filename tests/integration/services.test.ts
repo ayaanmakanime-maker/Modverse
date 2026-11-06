@@ -15,10 +15,15 @@ import type { SessionUser } from "@/lib/auth/session";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createProject, saveProject, listVersions, revertProject, duplicateProject, getProjectWithVersion, deleteProject, listProjects } from "@/lib/services/designs";
 import { addToCart, checkout, confirmSimulatedPayment, getCart, getOrder, staffUpdateOrder, reviewOrderItem, cancelOrder } from "@/lib/services/commerce";
-import { createChild, upsertMeasurementProfile, deleteChild, listMeasurementProfiles, deleteAccount } from "@/lib/services/account";
+import { getPricingRules, savePricingRules, upsertDiscount, setCartDiscount, resetPricingRules } from "@/lib/services/pricing";
+import { reorder, redesignFromOrder } from "@/lib/services/commerce";
+import { DEFAULT_PRICING } from "@/lib/garment/pricing";
+import { createChild, upsertMeasurementProfile, deleteChild, listMeasurementProfiles, deleteAccount, submitFitFeedback, listFitFeedback } from "@/lib/services/account";
 import { saveCredentials, setEnabled, getActiveIntegration, listIntegrations, recordTest } from "@/lib/integrations/config";
 import { createDesign, createTextLayer } from "@/lib/garment/design";
-import { detectType, rasterSize } from "@/lib/services/uploads";
+import { detectType, rasterSize, storeFont, listFonts, readUpload, deleteFont } from "@/lib/services/uploads";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 
 let alice: SessionUser;
 let bob: SessionUser;
@@ -44,7 +49,7 @@ beforeAll(async () => {
 describe("seed & auth", () => {
   it("seeds the real catalogue, library and an admin with an Argon2id hash", async () => {
     const db = await getDb();
-    expect((await db.select().from(s.creativeAssets)).length).toBe(1000);
+    expect((await db.select().from(s.creativeAssets)).length).toBeGreaterThanOrEqual(1967);
     expect((await db.select().from(s.garmentModels)).length).toBe(32);
     const [admin] = await db.select().from(s.users).where(eq(s.users.role, "admin"));
     expect(admin.passwordHash.startsWith("$argon2id$")).toBe(true);
@@ -139,8 +144,17 @@ describe("commerce: cart → simulated checkout → production approval", () => 
     expect(m.order.status).toBe("manufacturing");
     await expect(staffUpdateOrder(staff, order.id, { status: "payment_confirmed" })).rejects.toMatchObject({ code: "invalid_transition" });
     await expect(cancelOrder(alice, order.id)).rejects.toMatchObject({ code: "cannot_cancel" });
+    // Fit can only be verified once delivered/shipped, and only by the customer who ordered.
+    await expect(submitFitFeedback(alice, { orderItemId: paid.items[0].id, overall: "true", areas: {} })).rejects.toMatchObject({ status: 400 });
     const shipped = await staffUpdateOrder(staff, order.id, { status: "shipped", tracking: { courier: "Delhivery", awb: "TEST123" } });
     expect(shipped.shipments).toHaveLength(1);
+    await expect(submitFitFeedback(bob, { orderItemId: paid.items[0].id, overall: "true", areas: {} })).rejects.toMatchObject({ status: 404 });
+    const fb = await submitFitFeedback(alice, { orderItemId: paid.items[0].id, overall: "slightly-loose", areas: { length: "true" } });
+    expect(fb).toMatchObject({ modelId: "tee-classic-crew", size: "L", overall: "slightly-loose" });
+    const again = await submitFitFeedback(alice, { orderItemId: paid.items[0].id, overall: "true", areas: {} });
+    expect(again.id).toBe(fb.id);
+    expect((await listFitFeedback(alice, "tee-classic-crew")).map((f) => f.overall)).toEqual(["true"]);
+    expect(await listFitFeedback(bob)).toHaveLength(0);
   });
 
   it("blocks adding designs with validation errors to the cart", async () => {
@@ -149,6 +163,61 @@ describe("commerce: cart → simulated checkout → production approval", () => 
     cfg.fabric.id = "pure-linen";
     await saveProject(alice, project.id, { config: cfg });
     await expect(addToCart(alice, { projectId: project.id, quantity: 1 })).rejects.toMatchObject({ code: "design_invalid" });
+  });
+});
+
+describe("dynamic pricing, discounts, reorder", () => {
+  it("applies admin rules server-side, validates discounts, refuses stale totals and snapshots prices", async () => {
+    const adminRow = (await (await getDb()).select().from(s.users).where(eq(s.users.role, "admin")))[0];
+    const admin: SessionUser = { id: adminRow.id, email: adminRow.email, name: adminRow.name, role: "admin", emailVerified: true, sessionId: "t" };
+    const dana = await makeUser("dana@example.com");
+    const { project } = await createProject(dana, { modelId: "tee-classic-crew", audience: "men" });
+    const cfg = createDesign("tee-classic-crew", "men");
+    cfg.layers = [createTextLayer(cfg, "PRICE", "center-chest")];
+    await saveProject(dana, project.id, { config: cfg });
+    const before = await addToCart(dana, { projectId: project.id, quantity: 1 });
+    await savePricingRules(admin, { ...DEFAULT_PRICING, margins: { ...DEFAULT_PRICING.margins, decoration: 3 } });
+    expect((await getPricingRules()).margins.decoration).toBe(3);
+    const after = await getCart(dana);
+    expect(after.lines[0].unitPrice).toBeGreaterThan(before.lines[0].unitPrice);
+    expect(after.lines[0].priceChanged).toBe(true);
+    await expect(savePricingRules(admin, { ...DEFAULT_PRICING, tax: { ...DEFAULT_PRICING.tax, gstLowRate: 2 } })).rejects.toBeTruthy();
+
+    await upsertDiscount(admin, { code: "WELCOME10", kind: "percent", value: 10, perUserLimit: 1 });
+    await upsertDiscount(admin, { code: "OLDCODE", kind: "fixed", value: 100, endsAt: "2020-01-01" });
+    await expect(upsertDiscount(admin, { code: "welcome10", kind: "fixed", value: 50 })).rejects.toMatchObject({ status: 409 });
+    await expect(upsertDiscount(admin, { code: "TOOMUCH", kind: "percent", value: 95 })).rejects.toBeTruthy();
+    await expect(setCartDiscount(dana, "OLDCODE")).rejects.toMatchObject({ message: expect.stringMatching(/expired/) });
+    await expect(setCartDiscount(dana, "NOPE")).rejects.toMatchObject({ status: 400 });
+    await setCartDiscount(dana, "welcome10");
+    const disc = await getCart(dana);
+    expect(disc.discount).toBe(Math.round(disc.subtotal * 0.1));
+    expect(disc.total).toBe(disc.subtotal - disc.discount + disc.gst + disc.shipping);
+
+    await expect(checkout(dana, { address, expectedTotal: disc.total + 1 })).rejects.toMatchObject({ code: "price_changed" });
+    const { order } = await checkout(dana, { address, expectedTotal: disc.total });
+    expect(order.discount).toBe(disc.discount);
+    expect(order.discountCode).toBe("WELCOME10");
+    const full = await getOrder(dana, order.id);
+    const snap = full.items[0].specSnapshot as { price: { unitPrice: number; lines: unknown[] }; pricingRulesVersion: number; placements: unknown[] };
+    expect(snap.price.unitPrice).toBe(disc.lines[0].unitPrice);
+    expect(snap.pricingRulesVersion).toBe(2);
+    expect(snap.placements).toHaveLength(1);
+
+    // Per-customer limit: the same code can't be used twice.
+    await addToCart(dana, { projectId: project.id, quantity: 1 });
+    await expect(setCartDiscount(dana, "WELCOME10")).rejects.toMatchObject({ message: expect.stringMatching(/already used/) });
+
+    // Reorder (current prices) and redesign (new editable copy); other customers cannot.
+    await resetPricingRules(admin);
+    const r = await reorder(dana, order.id);
+    expect(r.cart.lines.some((l) => l.projectId === project.id)).toBe(true);
+    await expect(reorder(bob, order.id)).rejects.toMatchObject({ status: 404 });
+    const { projectId } = await redesignFromOrder(dana, order.id, full.items[0].id);
+    expect(projectId).not.toBe(project.id);
+    const copy = await getProjectWithVersion(dana, projectId);
+    expect((copy.version.config as { layers: { text?: string }[] }).layers[0].text).toBe("PRICE");
+    await expect(redesignFromOrder(bob, order.id, full.items[0].id)).rejects.toMatchObject({ status: 404 });
   });
 });
 
@@ -181,6 +250,33 @@ describe("uploads", () => {
     expect(detectType(Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"))?.mime).toBe("image/svg+xml");
     expect(detectType(Buffer.from("<html><script>1</script></html>"))).toBeNull();
     expect(detectType(Buffer.from("MZ\x90\x00"))).toBeNull();
+  });
+});
+
+describe("measurement provenance", () => {
+  it("stores per-field provenance and never lets camera estimates claim high confidence", async () => {
+    const p = await upsertMeasurementProfile(alice, { name: "Cam", audience: "men", measurements: { chest: 98, shoulder: 45 }, provenance: { shoulder: { source: "camera", confidence: "high", toleranceCm: 3 } } });
+    expect((p.provenance as Record<string, { confidence: string }>).shoulder.confidence).toBe("medium");
+    const plain = await upsertMeasurementProfile(alice, { name: "Tape", audience: "men", measurements: { chest: 98 } });
+    expect(plain.provenance).toEqual({});
+  });
+});
+
+describe("custom fonts", () => {
+  it("stores fonts privately with rights metadata and enforces ownership", async () => {
+    const dir = path.join(process.cwd(), "public/fonts/inter");
+    const bytes = readFileSync(path.join(dir, readdirSync(dir).find((f) => f.endsWith(".woff2"))!));
+    const font = await storeFont(alice, { name: "brand.woff2", bytes }, "Alice Brand");
+    expect(font.family).toMatch(/^Alice Brand MV[0-9a-f]{6}$/);
+    expect(font.mime).toBe("font/woff2");
+    expect((await listFonts(alice)).map((f) => f.id)).toContain(font.id);
+    expect(await listFonts(bob)).toHaveLength(0);
+    await expect(readUpload(bob, font.id)).rejects.toBeTruthy();
+    expect((await readUpload(staff, font.id)).bytes.length).toBe(bytes.length);
+    await expect(storeFont(alice, { name: "x.ttf", bytes: Buffer.from("<svg onload=alert(1)>") }, "Bad")).rejects.toMatchObject({ status: 415 });
+    await expect(deleteFont(bob, font.id)).rejects.toBeTruthy();
+    await deleteFont(alice, font.id);
+    expect(await listFonts(alice)).toHaveLength(0);
   });
 });
 

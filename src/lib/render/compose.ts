@@ -9,7 +9,9 @@ import { panelColor } from "../garment/design";
 import { polygonToPath, shoulderSlope, sleeveShape, torsoShape, zoneCanvas, type Pt, type Rect } from "../garment/panels";
 import type { DesignConfig, Layer, TextLayer } from "../garment/schema";
 import type { GarmentMeasurements, PanelId, Zone } from "../garment/types";
-import { hexToHsl, hslToHex, isDark } from "../color";
+import { hexToHsl, hslToHex, isDark, pbrAlbedo, relativeLuminance } from "../color";
+import { getFabric, type WeaveTexture } from "../garment/fabrics";
+import { panelFabricId } from "../garment/design";
 
 export interface AssetResolver {
   svg(url: string): string | undefined;
@@ -28,11 +30,37 @@ export function shade(hex: string, dl: number): string {
   return hslToHex(h, s, Math.max(0, Math.min(1, l + dl)));
 }
 
-export function transformText(l: TextLayer): string {
+const MINOR_WORDS = new Set(["a", "an", "and", "as", "at", "but", "by", "for", "in", "nor", "of", "on", "or", "per", "the", "to", "via", "vs"]);
+
+/** True title case: words capitalised, minor words lower-case except first/last of each line. */
+export function titleCase(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const words = line.split(/(\s+)/);
+      const idx = words.map((w, i) => (/\S/.test(w) ? i : -1)).filter((i) => i >= 0);
+      const first = idx[0];
+      const last = idx[idx.length - 1];
+      return words
+        .map((w, i) => {
+          if (!/\S/.test(w)) return w;
+          // Keep deliberate all-caps acronyms (e.g. "NYC") and words with digits as typed.
+          if (w.length > 1 && w === w.toUpperCase() && /\p{L}/u.test(w)) return w;
+          const lower = w.toLocaleLowerCase();
+          if (i !== first && i !== last && MINOR_WORDS.has(lower.replace(/[^\p{L}]/gu, ""))) return lower;
+          return lower.replace(/\p{L}/u, (c) => c.toLocaleUpperCase());
+        })
+        .join("");
+    })
+    .join("\n");
+}
+
+export function transformText(l: Pick<TextLayer, "text" | "textTransform">): string {
   switch (l.textTransform) {
     case "uppercase": return l.text.toUpperCase();
     case "lowercase": return l.text.toLowerCase();
-    case "capitalize": return l.text.replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+    case "capitalize": return l.text.replace(/(^|[^\p{L}\p{N}'’])(\p{L})/gu, (_m, pre: string, c: string) => pre + c.toUpperCase());
+    case "title": return titleCase(l.text);
     default: return l.text;
   }
 }
@@ -109,6 +137,28 @@ function textContent(l: TextLayer): string {
     const p = l.background.padding;
     parts.push(`<rect x="${n(-l.width / 2 - p)}" y="${n(-l.height / 2 - p)}" width="${n(l.width + 2 * p)}" height="${n(l.height + 2 * p)}" rx="${n(l.background.radius)}" fill="${l.background.color}"/>`);
   }
+  // Layered effects (v2): drawn back-to-front, so effects[0] sits directly behind the main text.
+  for (let ei = l.effects.length - 1; ei >= 0; ei--) {
+    const fx = l.effects[ei];
+    const fid = `${id}-fx${ei}`;
+    const outlineW = l.outline.enabled ? l.outline.width * 2 : 0;
+    let filter: string | undefined;
+    if (fx.blur > 0 || fx.kind === "glow") {
+      filter = `blur-${fid}`;
+      defs.push(`<filter id="${filter}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${n(fx.kind === "glow" ? Math.max(fx.blur, fx.width) : fx.blur)}"/></filter>`);
+    }
+    const body = (pathId: string) =>
+      textBody(l, { fill: fx.color, pathId, filter, strokeColor: fx.color, strokeWidth: fx.kind === "stroke" || fx.kind === "glow" ? outlineW + fx.width * 2 : outlineW || undefined });
+    const op = fx.opacity < 1 ? ` opacity="${n(fx.opacity)}"` : "";
+    if (fx.kind === "extrude") {
+      const steps = Math.max(2, Math.min(14, Math.round(Math.hypot(fx.offsetX, fx.offsetY) / 0.08)));
+      const copies: string[] = [];
+      for (let k = steps; k >= 1; k--) copies.push(`<g transform="translate(${n((fx.offsetX * k) / steps)} ${n((fx.offsetY * k) / steps)})">${body(`tpx-${fid}-${k}`)}</g>`);
+      parts.push(`<g${op}>${copies.join("")}</g>`);
+    } else {
+      parts.push(`<g transform="translate(${n(fx.offsetX)} ${n(fx.offsetY)})"${op}>${body(`tpx-${fid}`)}</g>`);
+    }
+  }
   if (l.shadow.enabled) {
     let filter: string | undefined;
     if (l.shadow.blur > 0) {
@@ -128,13 +178,24 @@ function graphicContent(l: Extract<Layer, { type: "graphic" }>, assets: AssetRes
   const dims = parseSvgDimensions(raw);
   let inner = svgInner(namespaceSvgIds(raw, `g${safeId(l.id)}`));
   if (Object.keys(l.colorMap).length) inner = recolorSvg(inner, l.colorMap);
-  return `<svg x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" viewBox="${dims.viewBox.join(" ")}" preserveAspectRatio="xMidYMid meet" overflow="visible">${inner}</svg>`;
+  const [vx, vy, vw, vh] = dims.viewBox;
+  const cropped = isCropped(l.crop);
+  const vb = cropped ? [vx + l.crop.x * vw, vy + l.crop.y * vh, l.crop.w * vw, l.crop.h * vh] : dims.viewBox;
+  return `<svg x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" viewBox="${vb.map(n).join(" ")}" preserveAspectRatio="xMidYMid meet" overflow="${cropped ? "hidden" : "visible"}">${inner}</svg>`;
 }
 
 function imageContent(l: Extract<Layer, { type: "image" }>, assets: AssetResolver, forTexture: boolean): string {
   const href = forTexture ? assets.dataUrl(l.url) : (assets.dataUrl(l.url) ?? l.url);
   if (!href) return `<rect x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" fill="#8883"/>`;
-  return `<image href="${esc(href)}" x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" preserveAspectRatio="none"/>`;
+  if (!isCropped(l.crop)) return `<image href="${esc(href)}" x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" preserveAspectRatio="none"/>`;
+  // Crop: show only the crop window of the source pixels, stretched to the layer box.
+  const pw = l.pixelWidth;
+  const ph = l.pixelHeight;
+  return `<svg x="${n(-l.width / 2)}" y="${n(-l.height / 2)}" width="${n(l.width)}" height="${n(l.height)}" viewBox="${n(l.crop.x * pw)} ${n(l.crop.y * ph)} ${n(l.crop.w * pw)} ${n(l.crop.h * ph)}" preserveAspectRatio="none" overflow="hidden"><image href="${esc(href)}" x="0" y="0" width="${pw}" height="${ph}" preserveAspectRatio="none"/></svg>`;
+}
+
+export function isCropped(c: { x: number; y: number; w: number; h: number } | undefined): boolean {
+  return !!c && (c.x > 0.0005 || c.y > 0.0005 || c.w < 0.9995 || c.h < 0.9995);
 }
 
 /** Markup of a single layer, positioned in zone coordinates (cm). */
@@ -158,6 +219,17 @@ export function patternDef(config: DesignConfig, panel: PanelId, assets: AssetRe
   const id = `${idPrefix}-pat-${panel}`;
   const inner = svgInner(namespaceSvgIds(raw, id));
   return [`<pattern id="${id}" width="${n(tile)}" height="${n(tile)}" patternUnits="userSpaceOnUse"><svg width="${n(tile)}" height="${n(tile)}" viewBox="${dims.viewBox.join(" ")}" preserveAspectRatio="none" opacity="${n(ps.patternOpacity)}">${inner}</svg></pattern>`, `url(#${id})`];
+}
+
+/** Pattern fills for every panel that is visible on a flat garment drawing (front/back, sleeves, collar, yoke, pocket). */
+export function flatPatternFills(config: DesignConfig, assets: AssetResolver, idPrefix: string): { defs: string; fill: Record<string, string> } {
+  let defs = "";
+  const fill: Record<string, string> = {};
+  for (const panel of ["front", "back", "sleeveLeft", "sleeveRight", "collar", "yoke", "pocket"] as PanelId[]) {
+    const [d, f] = patternDef(config, panel, assets, idPrefix);
+    if (f) { defs += d; fill[panel] = `${idPrefix}-pat-${panel}`; }
+  }
+  return { defs, fill };
 }
 
 function stitchLine(points: Pt[], color: string, double: boolean, offset = 0): string {
@@ -235,8 +307,52 @@ function constructionOverlay(config: DesignConfig, zone: Zone, m: GarmentMeasure
   return { defs: defs.join(""), markup: out.join("") };
 }
 
+/**
+ * Fabric colour variation (3D only): yarn-level mottling that makes fabrics
+ * read differently — heather speckle on jersey, horizontal slubs, vertical
+ * denim warp streaks, crossed linen slubs, brushed flannel mottling.
+ * Frequencies are in cycles per cm. It is a visual representation, not a scan.
+ */
+const FABRIC_NOISE: Record<WeaveTexture, { f: [number, number][]; strength: number; octaves: number }> = {
+  jersey: { f: [[2.6, 1.9]], strength: 0.035, octaves: 2 },
+  slub: { f: [[0.06, 1.3], [1.6, 1.1]], strength: 0.08, octaves: 2 },
+  interlock: { f: [[1.8, 1.8]], strength: 0.03, octaves: 1 },
+  pique: { f: [[1.3, 1.3]], strength: 0.05, octaves: 2 },
+  fleece: { f: [[0.6, 0.6]], strength: 0.06, octaves: 3 },
+  plain: { f: [[2.2, 2.2]], strength: 0.025, octaves: 1 },
+  oxford: { f: [[2.4, 1.4]], strength: 0.075, octaves: 2 },
+  twill: { f: [[1.4, 0.6]], strength: 0.045, octaves: 2 },
+  denim: { f: [[1.7, 0.05], [0.25, 0.25]], strength: 0.12, octaves: 3 },
+  flannel: { f: [[0.35, 0.35]], strength: 0.07, octaves: 3 },
+  linen: { f: [[0.07, 1.4], [1.4, 0.07]], strength: 0.075, octaves: 2 },
+  chambray: { f: [[1.9, 0.25]], strength: 0.085, octaves: 2 },
+  satin: { f: [[0.15, 0.15]], strength: 0.03, octaves: 2 },
+};
+
+function fabricLook(config: DesignConfig, zone: Zone, canvas: Rect, idPrefix: string, base: string): { defs: string; markup: string } {
+  const weave = getFabric(panelFabricId(config, zone)).weave;
+  const spec = FABRIC_NOISE[weave];
+  // Light flecks read as dust on dark cloth and dark flecks as dirt on light cloth: weight by lightness.
+  const lum = Math.sqrt(relativeLuminance(base));
+  const defs: string[] = [];
+  const out: string[] = [];
+  const W = canvas.x1 - canvas.x0;
+  const H = canvas.y1 - canvas.y0;
+  spec.f.forEach(([fx, fy], i) => {
+    const a0 = spec.strength * 6 * (i === 0 ? 1 : 0.6);
+    for (const [kind, a] of [["hi", a0 * (0.35 + 0.65 * lum)], ["lo", a0 * (1 - 0.55 * lum)]] as const) {
+      const row = kind === "hi" ? `${n(a)} 0 0 0 ${n(-0.5 * a)}` : `${n(-a)} 0 0 0 ${n(0.5 * a)}`;
+      const id = `${idPrefix}-fl${i}${kind}`;
+      const rgb = kind === "hi" ? "0 0 0 0 1  0 0 0 0 1  0 0 0 0 1" : "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0";
+      defs.push(`<filter id="${id}" x="0" y="0" width="1" height="1" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="${n(fx)} ${n(fy)}" numOctaves="${spec.octaves}" seed="${7 + i * 13}"/><feColorMatrix type="matrix" values="${rgb}  ${row}"/></filter>`);
+      out.push(`<rect x="${n(canvas.x0)}" y="${n(canvas.y0)}" width="${n(W)}" height="${n(H)}" filter="url(#${id})"/>`);
+    }
+  });
+  return { defs: defs.join(""), markup: out.join("") };
+}
+
 /** Full texture SVG for one zone (px size derived from cm canvas). */
-export function zoneTextureSvg(config: DesignConfig, zone: Zone, m: GarmentMeasurements, assets: AssetResolver, opts: { pxPerCm?: number; fontCss?: string; includeLayers?: boolean } = {}): { svg: string; canvas: Rect; widthPx: number; heightPx: number } {
+export function zoneTextureSvg(config: DesignConfig, zone: Zone, m: GarmentMeasurements, assets: AssetResolver, opts: { pxPerCm?: number; fontCss?: string; includeLayers?: boolean; fabricLook?: boolean } = {}): { svg: string; canvas: Rect; widthPx: number; heightPx: number } {
   const canvas = zoneCanvas(m, zone);
   const pxPerCm = opts.pxPerCm ?? 14;
   const W = canvas.x1 - canvas.x0;
@@ -248,18 +364,110 @@ export function zoneTextureSvg(config: DesignConfig, zone: Zone, m: GarmentMeasu
   const base = panelColor(config, panel);
   const [patDefs, patFill] = patternDef(config, panel, assets, idPrefix);
   const overlay = constructionOverlay(config, zone, m, assets, idPrefix);
+  const look = opts.fabricLook ? fabricLook(config, zone, canvas, idPrefix, base) : { defs: "", markup: "" };
   const layers = opts.includeLayers === false ? "" : config.layers.filter((l) => l.zone === zone).map((l) => layerMarkup(l, assets, { forTexture: true })).join("");
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${widthPx}" height="${heightPx}" viewBox="${n(canvas.x0)} ${n(canvas.y0)} ${n(W)} ${n(H)}" preserveAspectRatio="none">`,
     opts.fontCss ? `<style>${opts.fontCss}</style>` : "",
-    `<defs>${patDefs}${overlay.defs}</defs>`,
-    `<rect x="${n(canvas.x0)}" y="${n(canvas.y0)}" width="${n(W)}" height="${n(H)}" fill="${base}"/>`,
+    `<defs>${patDefs}${overlay.defs}${look.defs}</defs>`,
+    `<rect x="${n(canvas.x0)}" y="${n(canvas.y0)}" width="${n(W)}" height="${n(H)}" fill="${opts.fabricLook ? pbrAlbedo(base) : base}"/>`,
     patFill ? `<rect x="${n(canvas.x0)}" y="${n(canvas.y0)}" width="${n(W)}" height="${n(H)}" fill="${patFill}"/>` : "",
+    look.markup,
     overlay.markup,
     layers,
     `</svg>`,
   ].join("");
   return { svg, canvas, widthPx, heightPx };
+}
+
+/** Deterministic PRNG for procedural details. */
+function prng(seed: number) {
+  let x = seed >>> 0 || 1;
+  return () => {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return (x >>> 0) / 4294967296;
+  };
+}
+
+const hashStr = (str: string) => [...str].reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) | 0, 7);
+
+/**
+ * Height map (grey = flat) of construction relief for 3D normal maps, in the
+ * same cm coordinates as the panel texture: seam grooves, topstitch rows, hem
+ * turn-ups, yoke/pleat/dart seams and procedural fine creases (labelled as an
+ * approximation — not simulated wrinkles).
+ */
+export function zoneReliefSvg(config: DesignConfig, zone: "front" | "back" | "sleeveLeft" | "sleeveRight", m: GarmentMeasurements, crease: { density: number; sharpness: number; looseness: number }, pxPerCm = 7): { svg: string; widthPx: number; heightPx: number } {
+  const canvas = zoneCanvas(m, zone);
+  const W = canvas.x1 - canvas.x0;
+  const H = canvas.y1 - canvas.y0;
+  const widthPx = Math.round(Math.min(1024, W * pxPerCm));
+  const heightPx = Math.round(Math.min(1024, H * pxPerCm));
+  const c = config.construction;
+  const kids = config.audience === "kids";
+  const shirt = config.garmentType === "shirt";
+  const rnd = prng(hashStr(`${config.modelId}:${zone}:${config.fit}`));
+  const parts: string[] = [];
+  const groove = (d: string, w = 0.32) => parts.push(`<path d="${d}" fill="none" stroke="#3c3c3c" stroke-width="${n(w)}" stroke-linejoin="round" stroke-linecap="round" filter="url(#rb)"/>`);
+  const ridge = (d: string, w = 0.6, v = "#b4b4b4") => parts.push(`<path d="${d}" fill="none" stroke="${v}" stroke-width="${n(w)}" stroke-linecap="round" filter="url(#rbs)"/>`);
+  const stitch = (pts: Pt[]) => parts.push(`<path d="${polygonToPath(pts, false)}" fill="none" stroke="#e2e2e2" stroke-width="0.09" stroke-dasharray="0.3 0.18" stroke-linecap="round"/>`);
+  const offsetY = (pts: Pt[], dy: number) => pts.map(([x, y]) => [x, y + dy] as Pt);
+  // Fine creases: soft turbulence "crinkle" (stronger for linen/poplin, subtle for knits) instead of drawn strokes.
+  const crinkle = Math.round(3 + crease.density * 24);
+  const crinkleFreq = 0.18 + crease.sharpness * 0.22;
+  const seed = Math.floor(rnd() * 900);
+  const a = (crinkle / 128) * 1.6;
+  const crinkleDefs = (["hi", "lo"] as const).map((k) => `<filter id="rcr-${k}" x="0" y="0" width="1" height="1" primitiveUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency="${n(crinkleFreq * 0.6)} ${n(crinkleFreq)}" numOctaves="3" seed="${seed}"/><feColorMatrix type="matrix" values="0 0 0 0 ${k === "hi" ? 1 : 0}  0 0 0 0 ${k === "hi" ? 1 : 0}  0 0 0 0 ${k === "hi" ? 1 : 0}  ${n(k === "hi" ? a : -a)} 0 0 0 ${n(k === "hi" ? -0.5 * a : 0.5 * a)}"/></filter>`).join("");
+  const crinkleRect = () => parts.push(crinkleDefs, ...(["hi", "lo"] as const).map((k) => `<rect x="${n(canvas.x0)}" y="${n(canvas.y0)}" width="${n(W)}" height="${n(H)}" filter="url(#rcr-${k})"/>`));
+  if (zone === "front" || zone === "back") {
+    const t = torsoShape(m, zone, c, kids);
+    crinkleRect();
+    groove(polygonToPath(t.outline), 0.42);
+    const hemPts = t.outline.filter(([, y]) => y > m.bodyLength - m.hemCurve - 0.6).sort((a, b) => a[0] - b[0]);
+    const turn = shirt ? 0.7 : 2.2;
+    ridge(polygonToPath(offsetY(hemPts, -turn / 2), false), turn * 0.9, "#9e9e9e");
+    stitch(offsetY(hemPts, -turn));
+    if (c.stitching.style === "double" || !shirt) stitch(offsetY(hemPts, -turn + 0.6));
+    stitch(offsetY(t.neckline, shirt ? 0.7 : m.collarHeight + 0.35));
+    if (!shirt) stitch(offsetY(t.neckline, m.collarHeight + 0.95));
+    if (c.backYoke !== "none" && (zone === "back" || c.backYoke === "western")) {
+      const Wd = m.chest / 2 + 6;
+      const yd = m.yokeDepth;
+      const d = zone === "back" ? (c.backYoke === "western" ? `M ${n(-Wd)} ${n(yd * 0.7)} L 0 ${n(yd)} L ${n(Wd)} ${n(yd * 0.7)}` : `M ${n(-Wd)} ${n(yd)} L ${n(Wd)} ${n(yd)}`) : [1, -1].map((sg) => `M ${n(sg * 1.6)} ${n(yd * 0.55)} L ${n(sg * m.shoulderWidth * 0.22)} ${n(yd * 0.75)}`).join(" ");
+      groove(d, 0.3);
+      if (zone === "back") stitch(c.backYoke === "western" ? [[-Wd, yd * 0.7 + 0.5], [0, yd + 0.5], [Wd, yd * 0.7 + 0.5]] : [[-Wd, yd + 0.5], [Wd, yd + 0.5]]);
+    }
+    if (zone === "back" && c.backPleat !== "none") {
+      const top = m.yokeDepth || 8;
+      const xs = c.backPleat === "box" ? [-1.6, 1.6] : [-m.shoulderWidth * 0.32, m.shoulderWidth * 0.32];
+      for (const x of xs) {
+        groove(`M ${n(x)} ${n(top)} L ${n(x)} ${n(top + 14)}`, 0.35);
+        ridge(`M ${n(x + Math.sign(x || 1) * 0.6)} ${n(top)} L ${n(x + Math.sign(x || 1) * 0.6)} ${n(top + 18)}`, 0.9);
+      }
+    }
+    if (zone === "back" && c.darts) for (const sg of [1, -1]) groove(`M ${n(sg * m.chest * 0.1)} ${n(m.armholeDepth + 2)} L ${n(sg * m.chest * 0.112)} ${n(t.waistY)} L ${n(sg * m.chest * 0.1)} ${n(m.bodyLength - 8)}`, 0.28);
+  } else {
+    const sl = sleeveShape(m, c);
+    crinkleRect();
+    groove(polygonToPath(sl.outline), 0.42);
+    const cuffed = !["hem", "none", "rib"].includes(c.cuff);
+    if (cuffed) groove(`M ${n(-sl.halfOpening - 1)} ${n(sl.length - 0.2)} L ${n(sl.halfOpening + 1)} ${n(sl.length - 0.2)}`, 0.4);
+    else {
+      const turn = shirt ? 0.8 : 2.2;
+      ridge(`M ${n(-sl.halfOpening)} ${n(sl.length - turn / 2)} L ${n(sl.halfOpening)} ${n(sl.length - turn / 2)}`, turn * 0.9, "#9e9e9e");
+      stitch([[-sl.halfOpening, sl.length - turn], [sl.halfOpening, sl.length - turn]]);
+    }
+  }
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="${n(canvas.x0)} ${n(canvas.y0)} ${n(W)} ${n(H)}" preserveAspectRatio="none">`,
+    `<defs><filter id="rb" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="0.12"/></filter><filter id="rbs" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="0.3"/></filter><filter id="rbc" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="0.6"/></filter></defs>`,
+    `<rect x="${n(canvas.x0)}" y="${n(canvas.y0)}" width="${n(W)}" height="${n(H)}" fill="#808080"/>`,
+    parts.join(""),
+    `</svg>`,
+  ].join("");
+  return { svg, widthPx, heightPx };
 }
 
 /** Print-ready artwork export for one zone: transparent background, artwork only, real-world size in cm. */

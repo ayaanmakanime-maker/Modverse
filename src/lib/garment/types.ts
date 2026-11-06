@@ -49,7 +49,7 @@ export const PANELS = ["front", "back", "sleeveLeft", "sleeveRight", "collar", "
 export type PanelId = (typeof PANELS)[number];
 
 /** Panels that can carry artwork / typography layers. */
-export const ZONES = ["front", "back", "sleeveLeft", "sleeveRight", "collar", "pocket", "yoke"] as const;
+export const ZONES = ["front", "back", "sleeveLeft", "sleeveRight", "collar", "cuffs", "pocket", "yoke"] as const;
 export type Zone = (typeof ZONES)[number];
 
 export const PANEL_LABELS: Record<PanelId, string> = {

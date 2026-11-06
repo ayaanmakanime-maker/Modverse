@@ -19,10 +19,10 @@ test("Men, Women and Kids navigation with distinct T-shirt and shirt models", as
 
 test("Creative Library browser uses the real library", async ({ page }) => {
   await page.goto("/library");
-  await expect(page.getByText("500 graphics")).toBeVisible();
+  await expect(page.getByText(/1232 graphics/)).toBeVisible();
   await expect(page.getByTestId("library-item").first()).toBeVisible();
   await page.getByRole("button", { name: /Space Astronomy/ }).click();
-  await expect(page.getByText("25 assets")).toBeVisible();
+  await expect(page.getByText(/^25 assets/)).toBeVisible();
   await page.getByTestId("library-item").first().click();
   await expect(page.getByText("01_Graphics/MVG_2")).toBeVisible();
 });

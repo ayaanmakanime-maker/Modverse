@@ -14,7 +14,7 @@ export interface CollectionMeta {
   mood: "dark" | "light" | "vivid";
 }
 
-export const COLLECTIONS: CollectionMeta[] = [
+const V01_COLLECTIONS: CollectionMeta[] = [
   { slug: "Cyberpunk_Futurism", name: "Cyberpunk Futurism", description: "Neon circuitry, digital horizons and night-city signals.", keywords: ["neon", "cyber", "tech", "future", "circuit", "digital", "sci-fi"], mood: "dark" },
   { slug: "Japanese_Streetwear", name: "Japanese Streetwear", description: "Rising-sun geometry, wave motifs and Tokyo street energy.", keywords: ["japan", "tokyo", "street", "wave", "sun", "kanji", "urban"], mood: "dark" },
   { slug: "Minimalist_Geometric", name: "Minimalist Geometric", description: "Quiet shapes, precise lines and restrained compositions.", keywords: ["minimal", "geometric", "clean", "lines", "shapes", "simple"], mood: "light" },
@@ -36,6 +36,11 @@ export const COLLECTIONS: CollectionMeta[] = [
   { slug: "Luxury_Ornamental", name: "Luxury Ornamental", description: "Gilded frames, crests and refined ornament.", keywords: ["luxury", "ornamental", "gold", "crest", "royal", "elegant"], mood: "dark" },
   { slug: "Experimental_Collage", name: "Experimental Collage", description: "Layered cut-outs and experimental compositions.", keywords: ["collage", "experimental", "cutout", "mixed", "layers", "art"], mood: "vivid" },
 ];
+
+import { STUDIO_COLLECTIONS } from "./studio-collections";
+
+/** v0.1 supplied collections first, then the ModVerse Studio Library collections. */
+export const COLLECTIONS: CollectionMeta[] = [...V01_COLLECTIONS, ...STUDIO_COLLECTIONS];
 
 export const COLLECTION_BY_SLUG = new Map(COLLECTIONS.map((c) => [c.slug, c]));
 

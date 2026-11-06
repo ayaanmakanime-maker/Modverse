@@ -185,6 +185,7 @@ function placementFrom(clause: string, kind: "graphic" | "text"): PlacementPrese
   if (/\bon (the )?pocket\b/.test(clause)) return "pocket";
   if (/\b(hem|bottom corner)\b/.test(clause)) return "hem";
   if (/\bon (the )?collar\b/.test(clause)) return "collar";
+  if (/\b(on|onto) (the )?(left |right )?cuffs?\b|\bcuff monogram\b/.test(clause)) return "cuff";
   if (/\bon (the )?yoke\b/.test(clause)) return "yoke";
   if (/\b(on|onto|to|across|at) (the )?back\b|\bback (print|graphic|design)\b/.test(clause)) return /\b(small|tiny|little)\b/.test(clause) ? "upper-back" : kind === "text" ? "upper-back" : "full-back";
   if (/\b(on|onto|to|across|at) (the )?(front|chest)\b|\bfront (print|graphic)\b|\bchest\b/.test(clause)) return /\b(large|big|huge|full|oversized)\b/.test(clause) ? "full-front" : "center-chest";
@@ -411,6 +412,23 @@ export function interpretInstruction(
   else if (/\bdtf\b/.test(text)) method = "dtf";
   else if (/\bdtg\b/.test(text)) method = "dtg";
   else if (/\bsublimat|all[- ]?over print\b/.test(text)) method = "sublimation";
+
+  // Proportions requested while creating a new garment ("…and wider sleeves").
+  // (Edit mode handles these per clause further below.)
+  if (mode === "create") {
+    const re = /\b(slightly |a bit |a little |much |way )?(wider|roomier|looser|broader|fuller|narrower|slimmer|tighter|longer|shorter)\s+(sleeves?|body|shoulders?|torso)\b/g;
+    for (const mm of text.matchAll(re)) {
+      const amt = amountIn(text) ?? defaultAmount(mm[1] ?? "");
+      const adj = mm[2];
+      const part = mm[3].startsWith("sleeve") ? "sleeve" : mm[3].startsWith("shoulder") ? "shoulder" : "body";
+      const widen = /wider|roomier|looser|broader|fuller/.test(adj);
+      const narrow = /narrower|slimmer|tighter/.test(adj);
+      const delta = widen ? amt : narrow ? -amt : adj === "longer" ? amt * 1.5 : -amt * 1.5;
+      const path = part === "sleeve" ? (widen || narrow ? "adjustments.sleeveWidth" : "adjustments.sleeveLength") : part === "shoulder" ? "adjustments.shoulderWidth" : widen || narrow ? "adjustments.bodyWidth" : "adjustments.bodyLength";
+      ops.push({ op: "adjust", path, delta: +delta.toFixed(1) });
+      understood.push(`${part[0].toUpperCase()}${part.slice(1)}${part === "body" ? "" : "s"} ${adj} (${delta > 0 ? "+" : ""}${delta.toFixed(1)} cm)`);
+    }
+  }
 
   // ── Clause-level parsing ──────────────────────────────────────
   const clauses = splitClauses(text);

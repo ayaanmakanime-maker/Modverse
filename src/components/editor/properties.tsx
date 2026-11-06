@@ -1,17 +1,21 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, Copy, Trash2, FlipHorizontal, FlipVertical, Lock, Unlock, ArrowUpToLine, ArrowDownToLine, AlertTriangle } from "lucide-react";
+import { AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, Copy, Trash2, FlipHorizontal, FlipVertical, Lock, Unlock, ArrowUpToLine, ArrowDownToLine, AlertTriangle, Upload, Crop as CropIcon } from "lucide-react";
 import { useEditor, selectedLayer } from "@/lib/editor/store";
 import { FONTS, FONT_BY_FAMILY, nearestWeight, type FontCategory } from "@/lib/typography/fonts";
 import { validateTextLayer } from "@/lib/garment/validation";
-import { layerMethod, panelColor } from "@/lib/garment/design";
+import { availableZones, layerMethod, panelColor } from "@/lib/garment/design";
 import { PRINT_METHOD_INFO } from "@/lib/garment/fabrics";
 import { computeMeasurements } from "@/lib/garment/sizing";
 import { fitToPlacement, placementPreset, PLACEMENT_LABELS, type PlacementPreset } from "@/lib/garment/panels";
 import { PRINT_METHODS, ZONES } from "@/lib/garment/types";
-import type { GraphicLayer, ImageLayer, Layer, TextLayer } from "@/lib/garment/schema";
-import { ColorPicker, Segmented, Slider, Select } from "@/components/ui";
+import type { Crop, GraphicLayer, ImageLayer, Layer, TextEffect, TextLayer } from "@/lib/garment/schema";
+import { Button, ColorPicker, Segmented, Slider, Select, toast } from "@/components/ui";
+import { FONT_ACCEPT, useCustomFonts } from "@/lib/typography/custom-fonts";
+import { useSession } from "@/components/session";
+import { api, errorMessage } from "@/lib/client/api";
+import { paletteSwapMap } from "@/lib/library/palette-swap";
 import { getSvg } from "@/lib/render/assets";
 import { extractSvgColors } from "@/lib/svg/sanitize";
 import { ZONE_LABELS } from "./Canvas2D";
@@ -20,15 +24,68 @@ const CATS: { value: FontCategory | "all"; label: string }[] = [
   { value: "all", label: "All" }, { value: "sans", label: "Sans" }, { value: "serif", label: "Serif" }, { value: "display", label: "Display" }, { value: "script", label: "Script" }, { value: "mono", label: "Mono" }, { value: "indic", label: "Indian scripts" },
 ];
 
-export function FontPicker({ value, onChange, sample }: { value: string; onChange: (f: string) => void; sample: string }) {
+/** Upload a customer font (requires a rights confirmation) — used in the font picker and the Text panel. */
+export function CustomFontUpload({ onUploaded }: { onUploaded?: (f: { family: string; id: string }) => void }) {
+  const upload = useCustomFonts((s) => s.upload);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [name, setName] = useState("");
+  const [rights, setRights] = useState(false);
+  const [busy, setBusy] = useState(false);
+  async function go() {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const f = await upload(file, name || file.name.replace(/\.[a-z0-9]+$/i, ""));
+      toast(`Font "${f.displayName}" added to your fonts`);
+      onUploaded?.(f);
+      setFile(null);
+      setName("");
+      setRights(false);
+      if (fileRef.current) fileRef.current.value = "";
+    } catch (e) {
+      toast(errorMessage(e), "bad");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="space-y-2 rounded-lg border border-line p-2.5" data-testid="font-upload">
+      <input ref={fileRef} type="file" accept={FONT_ACCEPT} className="block w-full text-[0.68rem] text-mute file:mr-2 file:rounded-full file:border-0 file:bg-surface-3 file:px-2.5 file:py-1 file:text-bone" onChange={(e) => setFile(e.target.files?.[0] ?? null)} aria-label="Font file" data-testid="font-file" />
+      <input className="mv-input !py-1 !text-xs" placeholder="Display name (optional)" value={name} onChange={(e) => setName(e.target.value)} aria-label="Font display name" />
+      <label className="flex items-start gap-2 text-[0.65rem] text-bone-2"><input type="checkbox" className="mt-0.5" checked={rights} onChange={(e) => setRights(e.target.checked)} data-testid="font-rights" /> I own this font or its licence permits use on printed products I order.</label>
+      <Button size="sm" disabled={!file || !rights} loading={busy} onClick={go} data-testid="font-upload-btn"><Upload className="size-3.5" /> Upload TTF / OTF / WOFF</Button>
+      <p className="text-[0.6rem] text-mute">Private to your account. Max 6 MB. Glyph coverage isn&apos;t verified automatically — check the preview.</p>
+    </div>
+  );
+}
+
+export function FontPicker({ value, onChange, sample }: { value: string; onChange: (f: string, assetId?: string | null) => void; sample: string }) {
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState<FontCategory | "all">("all");
-  const list = FONTS.filter((f) => (cat === "all" || f.category === cat) && (!q || f.family.toLowerCase().includes(q.toLowerCase()) || f.description.toLowerCase().includes(q.toLowerCase())));
+  const [cat, setCat] = useState<FontCategory | "all" | "mine">("all");
+  const { user } = useSession();
+  const custom = useCustomFonts((s) => s.fonts);
+  const loadCustom = useCustomFonts((s) => s.load);
+  useEffect(() => {
+    if (user) loadCustom();
+  }, [user, loadCustom]);
+  const list = cat === "mine" ? [] : FONTS.filter((f) => (cat === "all" || f.category === cat) && (!q || f.family.toLowerCase().includes(q.toLowerCase()) || f.description.toLowerCase().includes(q.toLowerCase())));
+  const mine = custom.filter((f) => (cat === "all" || cat === "mine") && (!q || f.displayName.toLowerCase().includes(q.toLowerCase())));
   return (
     <div className="space-y-2">
       <input className="mv-input !py-1.5 !text-xs" placeholder="Search 34 licensed fonts…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search fonts" />
-      <div className="flex flex-wrap gap-1">{CATS.map((c) => <button key={c.value} onClick={() => setCat(c.value)} data-active={cat === c.value} className="mv-chip !px-2 !py-0.5 !text-[0.65rem]">{c.label}</button>)}</div>
+      <div className="flex flex-wrap gap-1">
+        {CATS.map((c) => <button key={c.value} onClick={() => setCat(c.value)} data-active={cat === c.value} className="mv-chip !px-2 !py-0.5 !text-[0.65rem]">{c.label}</button>)}
+        {user && <button onClick={() => setCat("mine")} data-active={cat === "mine"} className="mv-chip !px-2 !py-0.5 !text-[0.65rem]" data-testid="font-cat-mine">Your fonts</button>}
+      </div>
+      {cat === "mine" && <CustomFontUpload onUploaded={(f) => onChange(f.family, f.id)} />}
       <div className="max-h-56 space-y-1 overflow-auto pr-1 mv-scroll" role="listbox" aria-label="Fonts">
+        {mine.map((f) => (
+          <button key={f.id} role="option" aria-selected={value === f.family} onClick={() => onChange(f.family, f.id)} className={clsx("flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left", value === f.family ? "border-bone bg-surface-3" : "border-transparent hover:bg-surface-2")}>
+            <span className="truncate text-lg leading-tight" style={{ fontFamily: `'${f.family}'` }}>{(sample || f.displayName).slice(0, 18)}</span>
+            <span className="shrink-0 text-[0.62rem] text-champagne">{f.displayName} · yours</span>
+          </button>
+        ))}
         {list.map((f) => (
           <button key={f.family} role="option" aria-selected={value === f.family} onClick={() => onChange(f.family)} className={clsx("flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left", value === f.family ? "border-bone bg-surface-3" : "border-transparent hover:bg-surface-2")}>
             <span className="truncate text-lg leading-tight" style={{ fontFamily: `'${f.family}'` }}>{(sample || f.family).slice(0, 18)}</span>
@@ -71,7 +128,7 @@ function CommonControls({ layer }: { layer: Layer }) {
   const m = useMemo(() => computeMeasurements(config), [config]);
   const presets = (Object.keys(PLACEMENT_LABELS) as PlacementPreset[]).filter((p) => {
     const z = placementPreset(m, p).zone;
-    return config.layers && (z !== "pocket" || config.construction.pocketCount > 0) && (z !== "yoke" || config.construction.backYoke !== "none");
+    return availableZones(config).includes(z);
   });
   const method = layerMethod(config, layer);
   const place = (p: PlacementPreset) => {
@@ -107,7 +164,7 @@ function CommonControls({ layer }: { layer: Layer }) {
         <label className="block">
           <span className="mv-label !text-[0.62rem]">Zone</span>
           <Select value={layer.zone} onChange={(e) => { update(layer.id, { zone: e.target.value as Layer["zone"] }, { label: "Move to zone" }); setZone(e.target.value as Layer["zone"]); select(layer.id); }} className="!py-1 !text-xs">
-            {ZONES.map((z) => <option key={z} value={z}>{ZONE_LABELS[z]}</option>)}
+            {ZONES.filter((z) => availableZones(config).includes(z)).map((z) => <option key={z} value={z}>{ZONE_LABELS[z]}</option>)}
           </Select>
         </label>
       </Section>
@@ -152,7 +209,8 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
         </ul>
       )}
       <Section title="Font">
-        <FontPicker value={layer.fontFamily} sample={layer.text} onChange={(f) => { const def = FONT_BY_FAMILY.get(f); set({ fontFamily: f, fontWeight: def ? nearestWeight(def, layer.fontWeight) : layer.fontWeight }, "Change font"); }} />
+        <FontPicker value={layer.fontFamily} sample={layer.text} onChange={(f, assetId) => { const def = FONT_BY_FAMILY.get(f); set({ fontFamily: f, fontAssetId: assetId ?? null, fontWeight: def ? nearestWeight(def, layer.fontWeight) : assetId ? 400 : layer.fontWeight }, "Change font"); }} />
+        {layer.fontAssetId && <p className="text-[0.65rem] text-champagne">Customer-uploaded font — embedded in 3D and print exports.</p>}
         <div className="flex flex-wrap items-center gap-1">
           <Select aria-label="Font weight" value={layer.fontWeight} onChange={(e) => set({ fontWeight: Number(e.target.value) }, "Font weight")} className="!w-28 !py-1 !text-xs">
             {(font?.weights ?? [400, 700]).map((w) => <option key={w} value={w}>{w}</option>)}
@@ -160,7 +218,7 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
           <button aria-pressed={layer.fontWeight >= 700} title="Bold" onClick={() => set({ fontWeight: layer.fontWeight >= 700 ? 400 : nearestWeight(font ?? FONTS[0], 800) }, "Bold")} className={clsx("rounded-lg border p-1.5", layer.fontWeight >= 700 ? "border-bone" : "border-line")}><Bold className="size-3.5" /></button>
           <button aria-pressed={layer.italic} title="Italic" onClick={() => set({ italic: !layer.italic }, "Italic")} className={clsx("rounded-lg border p-1.5", layer.italic ? "border-bone" : "border-line")}><Italic className="size-3.5" /></button>
           <button aria-pressed={layer.underline} title="Underline" onClick={() => set({ underline: !layer.underline }, "Underline")} className={clsx("rounded-lg border p-1.5", layer.underline ? "border-bone" : "border-line")}><Underline className="size-3.5" /></button>
-          <Segmented size="sm" label="Case" value={layer.textTransform} onChange={(v) => set({ textTransform: v }, "Text case")} options={[{ value: "none", label: "Aa" }, { value: "uppercase", label: "AA" }, { value: "lowercase", label: "aa" }, { value: "capitalize", label: "Ab" }]} />
+          <Segmented size="sm" label="Case" value={layer.textTransform} onChange={(v) => set({ textTransform: v }, "Text case")} options={[{ value: "none", label: "Aa" }, { value: "uppercase", label: "AA" }, { value: "lowercase", label: "aa" }, { value: "title", label: "Tt" }, { value: "capitalize", label: "Ab" }]} />
         </div>
         {font && !font.italic.includes(nearestWeight(font, layer.fontWeight)) && layer.italic && <p className="text-[0.65rem] text-warn">{font.family} has no true italic at this weight — the browser will slant it.</p>}
       </Section>
@@ -198,6 +256,7 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
             <ColorPicker value={layer.shadow.color} onChange={(c) => set({ shadow: { ...layer.shadow, color: c } }, "Shadow colour")} />
           </div>
         )}
+        <EffectsEditor layer={layer} />
         <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={layer.background.enabled} onChange={(e) => set({ background: { ...layer.background, enabled: e.target.checked } }, "Text background")} /> Text background</label>
         {layer.background.enabled && (
           <div className="space-y-2 pl-5">
@@ -210,6 +269,124 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
         )}
       </Section>
       <CommonControls layer={layer} />
+    </div>
+  );
+}
+
+const EFFECT_DEFAULTS: Record<TextEffect["kind"], TextEffect> = {
+  stroke: { kind: "stroke", color: "#C9B896", width: 0.25, offsetX: 0, offsetY: 0, blur: 0, opacity: 1 },
+  shadow: { kind: "shadow", color: "#000000", width: 0, offsetX: 0.3, offsetY: 0.3, blur: 0, opacity: 0.9 },
+  extrude: { kind: "extrude", color: "#7C2D12", width: 0, offsetX: 0.45, offsetY: 0.45, blur: 0, opacity: 1 },
+  glow: { kind: "glow", color: "#FDE68A", width: 0.25, offsetX: 0, offsetY: 0, blur: 0.25, opacity: 0.8 },
+};
+const EFFECT_LABEL: Record<TextEffect["kind"], string> = { stroke: "Outer stroke", shadow: "Hard / soft shadow", extrude: "3D extrude", glow: "Glow" };
+
+/** Up to four stacked effects behind the text (layered typography). */
+function EffectsEditor({ layer }: { layer: TextLayer }) {
+  const update = useEditor((s) => s.updateLayer);
+  const checkpoint = useEditor((s) => s.checkpoint);
+  const set = (effects: TextEffect[], label = "Text effect") => update(layer.id, { effects }, { label });
+  const live = (effects: TextEffect[]) => update(layer.id, { effects }, { transient: true });
+  const patch = (i: number, p: Partial<TextEffect>) => layer.effects.map((fx, k) => (k === i ? { ...fx, ...p } : fx));
+  return (
+    <div className="space-y-2" data-testid="text-effects">
+      <div className="flex items-center justify-between">
+        <span className="text-xs">Layered effects <span className="text-mute">({layer.effects.length}/4)</span></span>
+        <Select aria-label="Add text effect" value="" disabled={layer.effects.length >= 4} onChange={(e) => e.target.value && set([...layer.effects, EFFECT_DEFAULTS[e.target.value as TextEffect["kind"]]], "Add text effect")} className="!w-36 !py-1 !text-xs" data-testid="add-effect">
+          <option value="">+ Add effect…</option>
+          {(Object.keys(EFFECT_LABEL) as TextEffect["kind"][]).map((k) => <option key={k} value={k}>{EFFECT_LABEL[k]}</option>)}
+        </Select>
+      </div>
+      {layer.effects.map((fx, i) => (
+        <div key={i} className="space-y-2 rounded-lg border border-line p-2">
+          <div className="flex items-center justify-between text-[0.68rem]">
+            <span>{i + 1}. {EFFECT_LABEL[fx.kind]}</span>
+            <span className="flex gap-1">
+              {i > 0 && <button className="mv-chip !px-1.5 !py-0" aria-label="Move effect forward" onClick={() => { const a = layer.effects.slice(); [a[i - 1], a[i]] = [a[i], a[i - 1]]; set(a, "Reorder effect"); }}>↑</button>}
+              <button className="mv-chip !px-1.5 !py-0 text-bad" aria-label="Remove effect" onClick={() => set(layer.effects.filter((_, k) => k !== i), "Remove effect")}><Trash2 className="size-3" /></button>
+            </span>
+          </div>
+          <ColorPicker value={fx.color} onChange={(c) => set(patch(i, { color: c }))} />
+          {(fx.kind === "stroke" || fx.kind === "glow") && <Slider label={fx.kind === "glow" ? "Glow size" : "Stroke width"} unit="mm" step={0.1} min={0.5} max={30} value={+(fx.width * 10).toFixed(1)} onChange={(v) => live(patch(i, { width: v / 10 }))} onCommit={() => checkpoint("Effect width")} />}
+          {(fx.kind === "shadow" || fx.kind === "extrude") && (
+            <div className="grid grid-cols-2 gap-2">
+              <Slider label="Offset X" unit="cm" step={0.05} min={-5} max={5} value={fx.offsetX} onChange={(v) => live(patch(i, { offsetX: v }))} onCommit={() => checkpoint("Effect offset")} />
+              <Slider label="Offset Y" unit="cm" step={0.05} min={-5} max={5} value={fx.offsetY} onChange={(v) => live(patch(i, { offsetY: v }))} onCommit={() => checkpoint("Effect offset")} />
+            </div>
+          )}
+          {fx.kind !== "extrude" && <Slider label="Blur" unit="cm" step={0.05} min={0} max={3} value={fx.blur} onChange={(v) => live(patch(i, { blur: v }))} onCommit={() => checkpoint("Effect blur")} />}
+          <Slider label="Opacity" unit="%" step={1} min={0} max={100} value={Math.round(fx.opacity * 100)} onChange={(v) => live(patch(i, { opacity: v / 100 }))} onCommit={() => checkpoint("Effect opacity")} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Crop for graphics and images. The visible region stays where it is on the
+ * garment and keeps its print scale (cm per source unit), so cropping never
+ * silently enlarges artwork.
+ */
+function CropControls({ layer }: { layer: GraphicLayer | ImageLayer }) {
+  const update = useEditor((s) => s.updateLayer);
+  const checkpoint = useEditor((s) => s.checkpoint);
+  const c = layer.crop;
+  const srcAspect = layer.type === "image" ? layer.pixelWidth / layer.pixelHeight : layer.aspect;
+  const apply = (next: Crop, transient: boolean) => {
+    next = { x: Math.max(0, Math.min(0.95, next.x)), y: Math.max(0, Math.min(0.95, next.y)), w: Math.max(0.05, Math.min(1 - Math.max(0, next.x), next.w)), h: Math.max(0.05, Math.min(1 - Math.max(0, next.y), next.h)) };
+    // cm per unit of source (full width = 1)
+    const fullW = layer.width / c.w;
+    const fullH = layer.type === "image" ? layer.height / c.h : fullW / srcAspect;
+    const width = fullW * next.w;
+    const height = layer.type === "image" ? fullH * next.h : width / ((srcAspect * next.w) / next.h);
+    // keep the remaining content in place: shift centre by the crop-window centre delta (rotated)
+    const dxl = (next.x + next.w / 2 - (c.x + c.w / 2)) * fullW * (layer.flipX ? -1 : 1);
+    const dyl = (next.y + next.h / 2 - (c.y + c.h / 2)) * fullH * (layer.flipY ? -1 : 1);
+    const r = (layer.rotation * Math.PI) / 180;
+    const patch = { crop: next, width: +width.toFixed(2), height: +height.toFixed(2), x: +(layer.x + dxl * Math.cos(r) - dyl * Math.sin(r)).toFixed(2), y: +(layer.y + dxl * Math.sin(r) + dyl * Math.cos(r)).toFixed(2) } as Partial<Layer>;
+    update(layer.id, patch, transient ? { transient: true } : { label: "Crop" });
+  };
+  const pct = (v: number) => Math.round(v * 100);
+  return (
+    <Section title="Crop">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1" data-testid="crop-controls">
+        <Slider label="Left" unit="%" step={1} min={0} max={90} value={pct(c.x)} onChange={(v) => apply({ ...c, x: v / 100, w: c.w + c.x - v / 100 }, true)} onCommit={() => checkpoint("Crop")} />
+        <Slider label="Right" unit="%" step={1} min={0} max={90} value={pct(1 - c.x - c.w)} onChange={(v) => apply({ ...c, w: 1 - c.x - v / 100 }, true)} onCommit={() => checkpoint("Crop")} />
+        <Slider label="Top" unit="%" step={1} min={0} max={90} value={pct(c.y)} onChange={(v) => apply({ ...c, y: v / 100, h: c.h + c.y - v / 100 }, true)} onCommit={() => checkpoint("Crop")} />
+        <Slider label="Bottom" unit="%" step={1} min={0} max={90} value={pct(1 - c.y - c.h)} onChange={(v) => apply({ ...c, h: 1 - c.y - v / 100 }, true)} onCommit={() => checkpoint("Crop")} />
+      </div>
+      {(c.x > 0 || c.y > 0 || c.w < 1 || c.h < 1) && <button className="mv-chip" onClick={() => apply({ x: 0, y: 0, w: 1, h: 1 }, false)}><CropIcon className="size-3" /> Reset crop</button>}
+    </Section>
+  );
+}
+
+function PaletteSwap({ layer, colors }: { layer: GraphicLayer; colors: string[] }) {
+  const update = useEditor((s) => s.updateLayer);
+  const [palettes, setPalettes] = useState<{ id: string; name: string; colors: string[] }[]>([]);
+  const [shift, setShift] = useState(0);
+  useEffect(() => {
+    let live = true;
+    // Studio palettes first (they match the Studio artwork's colour roles), then the supplied v0.1 palettes.
+    Promise.all([api<{ items: { id: string; name: string; colors: string[] }[] }>("/api/library?kind=palette&q=studio&limit=40"), api<{ items: { id: string; name: string; colors: string[] }[] }>("/api/library?kind=palette&limit=24")])
+      .then(([a, b]) => live && setPalettes([...a.items, ...b.items.filter((x) => !a.items.some((y) => y.id === x.id))])).catch(() => undefined);
+    return () => { live = false; };
+  }, []);
+  if (!palettes.length) return null;
+  const apply = (p: { name: string; colors: string[] }, s = shift) => update(layer.id, { colorMap: paletteSwapMap(colors, p.colors, s) }, { label: `Palette → ${p.name}` });
+  return (
+    <div className="space-y-1.5" data-testid="palette-swap">
+      <p className="mv-label !text-[0.62rem]">Recolour with a palette</p>
+      <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto pr-1 mv-scroll">
+        {palettes.slice(0, 40).map((p) => (
+          <button key={p.id} title={p.name} aria-label={`Palette ${p.name}`} onClick={() => apply(p)} className="flex h-6 w-14 overflow-hidden rounded-md border border-line hover:border-bone" data-testid={`swap-${p.id}`}>
+            {p.colors.map((c) => <span key={c} className="h-full flex-1" style={{ background: c }} />)}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-1.5">
+        <button className="mv-chip" onClick={() => apply(palettes[Math.floor(Math.random() * palettes.length)])} data-testid="swap-random">Shuffle palette</button>
+        <button className="mv-chip" onClick={() => { const s = (shift + 1) % 5; setShift(s); const cur = palettes.find((p) => paletteSwapMap(colors, p.colors, shift)[colors[0]] === layer.colorMap[colors[0]]) ?? palettes[0]; apply(cur, s); }} title="Rotate which colour goes where">Rotate roles</button>
+      </div>
     </div>
   );
 }
@@ -237,23 +414,26 @@ export function GraphicProperties({ layer }: { layer: GraphicLayer }) {
               );
             })}
           </div>
+          <PaletteSwap layer={layer} colors={colors} />
           {editing && <ColorPicker value={layer.colorMap[editing] ?? editing} onChange={(hex) => update(layer.id, { colorMap: { ...layer.colorMap, [editing]: hex } }, { label: "Recolour graphic" })} />}
           {Object.keys(layer.colorMap).length > 0 && <button className="mv-chip" onClick={() => update(layer.id, { colorMap: {} }, { label: "Reset colours" })}>Reset colours</button>}
         </Section>
       )}
+      <CropControls layer={layer} />
       <CommonControls layer={layer} />
     </div>
   );
 }
 
 export function ImageProperties({ layer }: { layer: ImageLayer }) {
-  const dpi = Math.round(layer.pixelWidth / (layer.width / 2.54));
+  const dpi = Math.round((layer.pixelWidth * layer.crop.w) / (layer.width / 2.54));
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="image-properties">
       <div>
         <p className="font-medium">{layer.name}</p>
-        <p className="text-[0.68rem] text-mute">{layer.pixelWidth}×{layer.pixelHeight}px · <span className={dpi < 120 ? "text-bad" : dpi < 200 ? "text-warn" : "text-ok"}>{dpi} DPI at this size</span></p>
+        <p className="text-[0.68rem] text-mute">{layer.pixelWidth}×{layer.pixelHeight}px · <span className={dpi < 120 ? "text-bad" : dpi < 200 ? "text-warn" : "text-ok"} data-testid="image-dpi">{dpi} DPI at this size</span></p>
       </div>
+      <CropControls layer={layer} />
       <CommonControls layer={layer} />
     </div>
   );

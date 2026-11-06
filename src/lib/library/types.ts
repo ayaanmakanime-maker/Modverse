@@ -39,7 +39,7 @@ export interface LibraryIndex {
   brand: string;
   version: string;
   generatedAt: string;
-  source: { archive: string; archiveSha256: string; directory: string };
+  source: { archive: string; archiveSha256: string; directory: string; studio?: { directory: string; version: string } | null };
   counts: Record<LibraryAssetKind, number>;
   collections: { slug: string; name: string; counts: Record<LibraryAssetKind, number>; palette: string[] }[];
   assets: LibraryAsset[];

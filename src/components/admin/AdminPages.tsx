@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
 import { api, errorMessage } from "@/lib/client/api";
 import { formatINR } from "@/lib/garment/pricing";
-import { GarmentFlat } from "@/components/garment/GarmentFlat";
+import { DesignFlat } from "@/components/garment/DesignFlat";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { Badge, Button, EmptyState, Input, Modal, Notice, Select, Spinner, toast } from "@/components/ui";
 import { COLLECTIONS } from "@/lib/library/collections";
+import { OrderFulfilmentPanel } from "./AdminPartners";
 
 function useApi<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
@@ -100,7 +101,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
         <p className="mv-eyebrow">Items — production approval required before manufacturing</p>
         {data.items.map((it) => (
           <div key={it.id} className="mv-card flex flex-wrap items-center gap-4 p-3">
-            <div className="w-24"><GarmentFlat config={it.designSnapshot} view="front" className="h-24 w-full" /></div>
+            <div className="grid w-40 grid-cols-2 gap-1"><DesignFlat config={it.designSnapshot} view="front" className="h-24 w-full" /><DesignFlat config={it.designSnapshot} view="back" className="h-24 w-full" /></div>
             <div className="min-w-0 flex-1 text-sm">
               <p>{it.designName} · v{it.version} snapshot · size {it.size} · qty {it.quantity}</p>
               <p className="text-xs text-mute">Automated checks: {it.specSnapshot.validation?.status ?? "n/a"} ({it.specSnapshot.validation?.counts?.error ?? 0} errors, {it.specSnapshot.validation?.counts?.warning ?? 0} warnings) · review: {it.reviewStatus.replace("_", " ")}</p>
@@ -120,14 +121,15 @@ export function AdminOrderDetail({ id }: { id: string }) {
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="!w-64" />
           <Button size="sm" disabled={!status} onClick={() => run(() => api(`/api/admin/orders/${id}`, { method: "PATCH", body: { status, note: note || undefined } }), "Status updated")} data-testid="update-status">Update</Button>
         </div>
-        <p className="text-xs text-mute">No manufacturer is connected in the local release — production status is managed by staff. Real refunds must be issued in the payment provider dashboard.</p>
+        <p className="text-xs text-mute">Partner events (quote approval, QC, packing, pickup, delivery) advance the status automatically; manual updates remain available for orders fulfilled outside the partner portals. Real refunds must be issued in the payment provider dashboard.</p>
         <div className="flex flex-wrap gap-2">
           <Input value={track.courier} onChange={(e) => setTrack({ ...track, courier: e.target.value })} placeholder="Courier" className="!w-40" />
           <Input value={track.awb} onChange={(e) => setTrack({ ...track, awb: e.target.value })} placeholder="AWB / tracking no." className="!w-48" />
           <Button size="sm" variant="ghost" disabled={!track.courier || !track.awb} onClick={() => run(() => api(`/api/admin/orders/${id}`, { method: "PATCH", body: { tracking: track } }), "Tracking added")}>Add tracking</Button>
         </div>
       </section>
-      <section><p className="mv-eyebrow">Ship to</p><p className="text-sm">{Object.values(o.shippingAddress).filter(Boolean).join(", ")}</p>{o.notes && <p className="text-sm text-mute">Notes: {o.notes}</p>}</section>
+      <OrderFulfilmentPanel orderId={id} orderStatus={o.status} onChange={reload} />
+      <section><p className="mv-eyebrow">Ship to</p><p className="text-sm">{[o.shippingAddress.fullName, o.shippingAddress.line1, o.shippingAddress.line2, o.shippingAddress.city, `${o.shippingAddress.state ?? ""} ${o.shippingAddress.pincode ?? ""}`.trim(), o.shippingAddress.phone && `phone ${o.shippingAddress.phone}`].filter(Boolean).join(", ")}</p>{o.notes && <p className="text-sm text-mute">Notes: {o.notes}</p>}</section>
       <section><p className="mv-eyebrow">Timeline</p><ul className="mt-2 space-y-1 text-xs">{data.events.map((e) => <li key={e.id}><span className="text-mute">{new Date(e.createdAt).toLocaleString("en-IN")}</span> — {e.status.replace(/_/g, " ")}{e.note ? `: ${e.note}` : ""}</li>)}</ul></section>
     </div>
   );
@@ -154,7 +156,7 @@ export function AdminDesigns() {
         ))}</div>
       )}
       <Modal open={!!preview} onClose={() => setPreview(null)} title={preview?.name ?? ""} wide>
-        {preview && <div className="grid grid-cols-2 gap-3"><GarmentFlat config={preview.config} view="front" className="w-full" /><GarmentFlat config={preview.config} view="back" className="w-full" /></div>}
+        {preview && <div className="grid grid-cols-2 gap-3"><DesignFlat config={preview.config} view="front" className="w-full" /><DesignFlat config={preview.config} view="back" className="w-full" /></div>}
       </Modal>
     </div>
   );
@@ -211,7 +213,7 @@ export function AdminLibrary() {
   return (
     <div>
       <H1>Creative Library</H1>
-      <p className="mb-4 text-sm text-mute">All 1,000 assets were imported from the original manifest. Deactivating hides an asset from customers; original files are never modified.</p>
+      <p className="mb-4 text-sm text-mute">The supplied v0.1 library and the ModVerse Studio Library were imported from their manifests. Deactivating hides an asset from customers; original files are never modified.</p>
       <div className="mb-4 flex flex-wrap gap-2">
         <Select value={kind} onChange={(e) => setKind(e.target.value)} className="!w-40">{["graphic", "element", "template", "pattern", "palette"].map((k) => <option key={k}>{k}</option>)}</Select>
         <Select value={collection} onChange={(e) => setCollection(e.target.value)} className="!w-60">{COLLECTIONS.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select>
@@ -324,11 +326,8 @@ export function AdminAudit() {
 
 export function AdminSettings() {
   const { data, reload } = useApi<{ settings: { key: string; value: unknown }[] }>("/api/admin/settings");
-  const [shipping, setShipping] = useState({ flatRate: 79, freeAbove: 1999 });
   const [sim, setSim] = useState(true);
   useEffect(() => {
-    const s = data?.settings.find((x) => x.key === "shipping")?.value as { flatRate: number; freeAbove: number } | undefined;
-    if (s) setShipping({ flatRate: s.flatRate, freeAbove: s.freeAbove });
     const c = data?.settings.find((x) => x.key === "checkout")?.value as { simulatedPaymentsEnabled: boolean } | undefined;
     if (c) setSim(c.simulatedPaymentsEnabled);
   }, [data]);
@@ -337,17 +336,13 @@ export function AdminSettings() {
   return (
     <div className="max-w-xl space-y-6">
       <H1>Platform settings</H1>
-      <div className="mv-card space-y-3 p-4">
-        <p className="font-medium">Shipping (local estimate)</p>
-        <div className="grid grid-cols-2 gap-2"><label className="text-sm">Flat rate (₹)<Input type="number" value={shipping.flatRate} onChange={(e) => setShipping({ ...shipping, flatRate: Number(e.target.value) })} /></label><label className="text-sm">Free above (₹)<Input type="number" value={shipping.freeAbove} onChange={(e) => setShipping({ ...shipping, freeAbove: Number(e.target.value) })} /></label></div>
-        <Button size="sm" onClick={() => save("shipping", { ...shipping, currency: "INR" })}>Save shipping</Button>
-      </div>
+      <Notice tone="info">Shipping, GST, margins, cost tables and discount codes are managed in <Link className="underline" href="/admin/pricing">Pricing &amp; discounts</Link>.</Notice>
       <div className="mv-card space-y-3 p-4">
         <p className="font-medium">Checkout</p>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={sim} onChange={(e) => setSim(e.target.checked)} /> Allow clearly-labelled simulated payments (local testing)</label>
         <Button size="sm" onClick={() => save("checkout", { simulatedPaymentsEnabled: sim })}>Save checkout</Button>
       </div>
-      <p className="text-xs text-mute">Pricing rules (GST estimate, print rates) live in src/lib/garment/pricing.ts and are mirrored in the &quot;pricing&quot; setting.</p>
+
     </div>
   );
 }

@@ -9,11 +9,15 @@ import { buildTechSpec } from "@/lib/garment/techspec";
 import { torsoShape, sleeveShape, printableArea } from "@/lib/garment/panels";
 import { availableZones } from "@/lib/garment/design";
 import type { DesignConfig } from "@/lib/garment/schema";
-import { formatINR, priceDesign } from "@/lib/garment/pricing";
+import { formatINR } from "@/lib/garment/pricing";
+import { useDesignPrice } from "@/lib/client/pricing";
+import { PriceBreakdownView } from "@/components/pricing/PriceBreakdownView";
 import { zoneArtworkSvg } from "@/lib/render/compose";
 import { embeddedFontCss, ensureDesignAssets, fontNeeds, getDataUrl, getPatternUrl, getSvg } from "@/lib/render/assets";
 import { extractSvgColors } from "@/lib/svg/sanitize";
 import { api, errorMessage } from "@/lib/client/api";
+import { configHash } from "@/lib/ai/compiler";
+import { onDeviceAvailability, onDeviceProposal } from "@/lib/ai/on-device";
 import { Badge, Button, Notice, Spinner, toast } from "@/components/ui";
 import { ZONE_LABELS } from "./Canvas2D";
 
@@ -176,7 +180,7 @@ async function svgToPng(svg: string, w: number, h: number): Promise<Blob> {
   }
 }
 
-export function TechPackPanel({ capture3d }: { capture3d: () => string | null }) {
+export function TechPackPanel({ capture3d, exportGlb }: { capture3d: () => string | null; exportGlb?: () => Promise<Blob | null> }) {
   const config = useEditor((s) => s.config);
   const name = useEditor((s) => s.name);
   const version = useEditor((s) => s.version);
@@ -228,7 +232,7 @@ export function TechPackPanel({ capture3d }: { capture3d: () => string | null })
   }
 
   const zones = [...new Set(config.layers.map((l) => l.zone))];
-  const price = priceDesign(config);
+  const price = useDesignPrice(config);
   return (
     <div className="space-y-4 text-xs" data-testid="techpack-panel">
       <Notice tone="warn" title="Design-intent documents">Generated specs, BOM and PDFs are not factory-ready patterns. A qualified pattern maker and the manufacturer must review them.</Notice>
@@ -239,6 +243,7 @@ export function TechPackPanel({ capture3d }: { capture3d: () => string | null })
         ) : <Button size="sm" variant="ghost" disabled title="Save the design first"><FileText className="size-3.5" /> PDF (save first)</Button>}
         <Button size="sm" variant="ghost" onClick={cadExchange}><Box className="size-3.5" /> CAD exchange</Button>
         <Button size="sm" variant="ghost" onClick={() => { const d = capture3d(); if (d) fetch(d).then((r) => r.blob()).then((b) => download(`${slug}-3d-mockup.png`, b)); else toast("Open the 3D view first", "info"); }}><ImageIcon className="size-3.5" /> 3D mockup PNG</Button>
+        {exportGlb && <Button size="sm" variant="ghost" onClick={async () => { const b = await exportGlb(); if (b) download(`${slug}-3d.glb`, b); else toast("Open the 3D view first", "info"); }} title="Parametric visual model (glTF binary) for AR viewers — not a production pattern"><Box className="size-3.5" /> 3D model GLB</Button>}
       </div>
       {zones.length > 0 && (
         <div className="space-y-1">
@@ -263,44 +268,170 @@ export function TechPackPanel({ capture3d }: { capture3d: () => string | null })
         <table className="w-full"><tbody>{spec.bom.map((b, i) => <tr key={i} className="border-b border-line/40"><td className="py-0.5">{b.item}<span className="block text-[0.6rem] text-mute">{b.description}</span></td><td className="py-0.5 text-right tabular-nums">{b.quantity} {b.unit}</td></tr>)}</tbody></table>
       </div>
       <div>
-        <p className="mv-eyebrow mb-1 !text-[0.6rem]">Price estimate</p>
-        <table className="w-full"><tbody>{price.lines.map((l, i) => <tr key={i} className="border-b border-line/40"><td className="py-0.5 text-mute">{l.label}</td><td className="py-0.5 text-right tabular-nums">{formatINR(l.amount)}</td></tr>)}<tr><td className="py-1">GST {Math.round(price.gstRate * 100)}% (estimate)</td><td className="text-right tabular-nums">{formatINR(price.gst)}</td></tr><tr className="font-medium"><td>Total per unit</td><td className="text-right tabular-nums">{formatINR(price.unitTotal)}</td></tr></tbody></table>
+        <p className="mv-eyebrow mb-1 !text-[0.6rem]">Price estimate · manufacturing cost of customisation ≈ {formatINR(price.customisationCost)}</p>
+        <PriceBreakdownView price={price} />
       </div>
     </div>
   );
 }
 
-interface ChatMsg { role: "user" | "muse"; text: string; source?: string; understood?: string[]; unsupported?: string[]; suggestions?: { id: string; kind: string; title: string; detail: string; ops?: DesignOp[]; assets?: Record<string, ResolvedAsset>; swatches?: string[] }[] }
+interface Suggestion { id: string; kind: string; title: string; detail: string; ops?: DesignOp[]; assets?: Record<string, ResolvedAsset>; swatches?: string[] }
+
+/** A compiled design transaction from the AI pipeline (Director → artwork → compiler). */
+interface MuseTransaction {
+  ok: boolean;
+  summary: string;
+  ops: DesignOp[];
+  assets: Record<string, ResolvedAsset>;
+  preview: { area: string; label: string; before?: string; after?: string }[];
+  conflicts: { issue: string; resolution: string }[];
+  rejected: { item: string; reason: string }[];
+  corrections: string[];
+  validation: { status: string; newIssues: { code: string; severity: string; message: string }[] };
+  price: { before: number | null; after: number; delta: number | null };
+  artwork: { ref: string; status: string; source?: string; name?: string; license?: string; format?: string; note?: string }[];
+  baseHash: string;
+}
+
+interface ChatMsg {
+  role: "user" | "muse";
+  text: string;
+  source?: string;
+  providerLabel?: string;
+  understood?: string[];
+  unsupported?: string[];
+  suggestions?: Suggestion[];
+  fallbackReason?: string | null;
+  transaction?: MuseTransaction;
+  state?: "pending" | "applied" | "discarded";
+}
+
+interface MuseApiReply {
+  kind?: "proposal";
+  source: string;
+  providerLabel?: string;
+  message: string;
+  understood?: string[];
+  fallbackReason?: string | null;
+  transaction?: MuseTransaction;
+  suggestions?: Suggestion[];
+}
 
 const QUICK = ["Make the sleeves navy", "Add 'MUMBAI' in bold on the back", "Suggest a fabric for summer?", "Critique my design", "Make it oversized with dropped shoulders", "Move the design to the left chest and reduce its size by 20 percent"];
+const PREF_KEY = "mv-muse-prefs";
+
+function readPrefs(): { preview: boolean; onDevice: boolean } {
+  try {
+    return { preview: true, onDevice: false, ...JSON.parse(localStorage.getItem(PREF_KEY) ?? "{}") };
+  } catch {
+    return { preview: true, onDevice: false };
+  }
+}
+
+const AREA_LABEL: Record<string, string> = { garment: "Garment", fabric: "Fabric", construction: "Construction", proportions: "Proportions", panels: "Panels", artwork: "Artwork", typography: "Typography", layers: "Layers" };
+
+function TransactionCard({ m, onApply, onDiscard, onUndo }: { m: ChatMsg; onApply: () => void; onDiscard: () => void; onUndo: () => void }) {
+  const t = m.transaction!;
+  const config = useEditor((s) => s.config);
+  const stale = m.state === "pending" && configHash(config) !== t.baseHash;
+  const groups = Object.entries(t.preview.reduce<Record<string, MuseTransaction["preview"]>>((acc, p) => ((acc[p.area] ??= []).push(p), acc), {}));
+  return (
+    <div className="mt-2 space-y-2 rounded-xl border border-line bg-ink p-2.5" data-testid="muse-proposal">
+      <p className="text-[0.62rem] uppercase tracking-wider text-mute">Proposed transaction · {t.preview.length} change{t.preview.length === 1 ? "" : "s"}</p>
+      {groups.map(([area, items]) => (
+        <div key={area}>
+          <p className="text-[0.6rem] uppercase tracking-wider text-champagne">{AREA_LABEL[area] ?? area}</p>
+          <ul className="space-y-0.5">
+            {items.map((p, i) => (
+              <li key={i} className="text-[0.68rem] text-bone-2">
+                {p.label}{p.before !== undefined || p.after !== undefined ? ": " : ""}
+                {p.before !== undefined && <span className="text-mute line-through">{p.before}</span>}
+                {p.before !== undefined && p.after !== undefined && " → "}
+                {p.after !== undefined && <span className="text-bone">{p.after}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {t.artwork.filter((a) => a.status === "resolved").map((a) => <p key={a.ref} className="text-[0.62rem] text-mute">Artwork “{a.name}” · {a.source} · {a.format}{a.license ? ` · ${a.license}` : ""}{a.note ? ` — ${a.note}` : ""}</p>)}
+      {t.conflicts.map((c, i) => <p key={`c${i}`} className="flex gap-1 text-[0.66rem] text-warn"><AlertTriangle className="mt-0.5 size-3 shrink-0" />{c.issue} → {c.resolution}</p>)}
+      {t.rejected.map((r, i) => <p key={`r${i}`} className="flex gap-1 text-[0.66rem] text-bad"><Info className="mt-0.5 size-3 shrink-0" />{r.item}: {r.reason}</p>)}
+      {t.corrections.map((c, i) => <p key={`k${i}`} className="flex gap-1 text-[0.66rem] text-info"><Info className="mt-0.5 size-3 shrink-0" />Adjusted: {c}</p>)}
+      {t.validation.newIssues.slice(0, 4).map((v, i) => <p key={`v${i}`} className={clsx("flex gap-1 text-[0.66rem]", v.severity === "error" ? "text-bad" : v.severity === "warning" ? "text-warn" : "text-mute")}><AlertTriangle className="mt-0.5 size-3 shrink-0" />{v.message}</p>)}
+      <p className="text-[0.66rem] text-bone-2">Estimated price: {t.price.before !== null ? <>{formatINR(t.price.before)} → </> : null}<span className="text-bone">{formatINR(t.price.after)}</span>{t.price.delta ? <span className={t.price.delta > 0 ? "text-warn" : "text-ok"}> ({t.price.delta > 0 ? "+" : ""}{formatINR(t.price.delta)})</span> : null}</p>
+      {stale && <p className="text-[0.62rem] text-warn">The design changed since this proposal — applying re-validates every operation against the current design.</p>}
+      {m.state === "pending" ? (
+        <div className="flex gap-1.5">
+          <Button size="sm" onClick={onApply} disabled={!t.ok} data-testid="muse-apply"><CheckCircle2 className="size-3.5" /> Apply (one undo step)</Button>
+          <Button size="sm" variant="ghost" onClick={onDiscard} data-testid="muse-discard">Discard</Button>
+        </div>
+      ) : m.state === "applied" ? (
+        <p className="flex items-center gap-2 text-[0.68rem] text-ok"><CheckCircle2 className="size-3.5" /> Applied <button className="mv-chip !py-0 !text-[0.62rem]" onClick={onUndo} data-testid="muse-undo">Undo</button></p>
+      ) : <p className="text-[0.68rem] text-mute">Discarded — nothing was changed.</p>}
+    </div>
+  );
+}
 
 export function MusePanel() {
   const config = useEditor((s) => s.config);
   const selectedId = useEditor((s) => s.selectedId);
   const applyOps = useEditor((s) => s.applyOps);
-  const [msgs, setMsgs] = useState<ChatMsg[]>([{ role: "muse", text: "I'm The Muse — describe a garment or a change in plain words and I'll apply it to the real design. Ask me for colours, fabrics, fonts, critique or fit.", source: "local-rules" }]);
+  const undo = useEditor((s) => s.undo);
+  const [msgs, setMsgs] = useState<ChatMsg[]>([{ role: "muse", text: "I'm The Muse — describe a garment or a change in plain words. I'll propose a structured design change, show you exactly what will change (and the price impact), and apply it as one undoable step. Ask me for colours, fabrics, fonts, critique or fit.", source: "local-rules" }]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [prefs, setPrefs] = useState({ preview: true, onDevice: false });
+  const [nano, setNano] = useState<"available" | "downloadable" | "downloading" | "unavailable">("unavailable");
   const end = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setPrefs(readPrefs());
+    onDeviceAvailability().then(setNano).catch(() => setNano("unavailable"));
+  }, []);
+  const savePrefs = (p: typeof prefs) => {
+    setPrefs(p);
+    try {
+      localStorage.setItem(PREF_KEY, JSON.stringify(p));
+    } catch {
+      /* ignore */
+    }
+  };
   useEffect(() => {
     // scrollIntoView returns a Promise in newer browsers — never return it from an effect
     void end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [msgs]);
+  function applyTransaction(index: number, t: MuseTransaction, label: string) {
+    const res = applyOps(t.ops, t.assets, `The Muse: ${label.slice(0, 48)}`);
+    const unsupported = res.rejected.map((x) => `Couldn't apply: ${x.reason}`);
+    setMsgs((all) => all.map((m, i) => (i === index ? { ...m, state: "applied", unsupported: [...(m.unsupported ?? []), ...unsupported] } : m)));
+  }
   async function send(text: string) {
     if (!text.trim()) return;
     setMsgs((m) => [...m, { role: "user", text }]);
     setInput("");
     setBusy(true);
     try {
-      const r = await api<{ source: string; message: string; applied?: { ops: DesignOp[]; understood: string[]; unsupported: string[]; assets: Record<string, ResolvedAsset>; mode: string }; suggestions: ChatMsg["suggestions"] }>("/api/muse", { body: { message: text, config, selectedLayerId: selectedId, audience: config.audience } });
-      let understood = r.applied?.understood ?? [];
-      const unsupported = [...(r.applied?.unsupported ?? [])];
-      if (r.applied?.ops.length) {
-        const res = applyOps(r.applied.ops, r.applied.assets, `Muse: ${text.slice(0, 40)}`);
-        if (res.rejected.length) unsupported.push(...res.rejected.map((x) => `Couldn't apply: ${x.reason}`));
-        if (res.corrections.length) understood = [...understood, ...res.corrections.map((c) => `Adjusted: ${c}`)];
+      let r: MuseApiReply;
+      const isQuestion = /\?$/.test(text.trim());
+      if (prefs.onDevice && nano === "available" && !isQuestion) {
+        try {
+          const { proposal, latencyMs } = await onDeviceProposal(text, config);
+          r = await api<MuseApiReply>("/api/muse/compile", { body: { proposal, config, provider: "on-device", label: "Gemini Nano (on-device)", latencyMs, audience: config.audience } });
+        } catch (e) {
+          r = await api<MuseApiReply>("/api/muse", { body: { message: text, config, selectedLayerId: selectedId, audience: config.audience } });
+          r.fallbackReason = `On-device model unavailable (${errorMessage(e)}) — answered on the server`;
+        }
+      } else {
+        r = await api<MuseApiReply>("/api/muse", { body: { message: text, config, selectedLayerId: selectedId, audience: config.audience } });
       }
-      setMsgs((m) => [...m, { role: "muse", text: r.message, source: r.source, understood, unsupported, suggestions: r.suggestions }]);
+      const msg: ChatMsg = { role: "muse", text: r.message, source: r.source, providerLabel: r.providerLabel, understood: r.understood, suggestions: r.suggestions, fallbackReason: r.fallbackReason, transaction: r.transaction, state: r.transaction ? "pending" : undefined };
+      setMsgs((m) => {
+        const next = [...m, msg];
+        if (r.transaction && r.transaction.ok && !prefs.preview) {
+          const idx = next.length - 1;
+          queueMicrotask(() => applyTransaction(idx, r.transaction!, text));
+        }
+        return next;
+      });
     } catch (e) {
       setMsgs((m) => [...m, { role: "muse", text: errorMessage(e), source: "error" }]);
     } finally {
@@ -312,10 +443,12 @@ export function MusePanel() {
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 mv-scroll" aria-live="polite">
         {msgs.map((m, i) => (
           <div key={i} className={clsx("rounded-2xl px-3 py-2 text-xs", m.role === "user" ? "ml-6 bg-surface-3" : "mr-2 border border-line bg-ink-2")}>
-            {m.role === "muse" && <p className="mb-1 flex items-center gap-1 text-[0.6rem] uppercase tracking-wider text-champagne"><Sparkles className="size-3" /> The Muse {m.source && <Badge tone={m.source === "local-rules" ? "neutral" : "accent"} className="!text-[0.55rem]">{m.source === "local-rules" ? "local rules" : m.source}</Badge>}</p>}
+            {m.role === "muse" && <p className="mb-1 flex items-center gap-1 text-[0.6rem] uppercase tracking-wider text-champagne"><Sparkles className="size-3" /> The Muse {m.source && <Badge tone={m.source === "local-rules" ? "neutral" : "accent"} className="!text-[0.55rem]">{m.source === "local-rules" ? "local rules" : (m.providerLabel ?? m.source)}</Badge>}</p>}
             <p className="whitespace-pre-wrap text-bone-2">{m.text}</p>
+            {m.fallbackReason && <p className="mt-1 text-[0.62rem] text-warn">{m.fallbackReason}</p>}
             {m.understood && m.understood.length > 0 && <ul className="mt-1.5 space-y-0.5">{m.understood.map((u) => <li key={u} className="flex gap-1 text-ok"><CheckCircle2 className="mt-0.5 size-3 shrink-0" />{u}</li>)}</ul>}
             {m.unsupported && m.unsupported.length > 0 && <ul className="mt-1.5 space-y-0.5">{m.unsupported.map((u) => <li key={u} className="flex gap-1 text-warn"><Info className="mt-0.5 size-3 shrink-0" />{u}</li>)}</ul>}
+            {m.transaction && <TransactionCard m={m} onApply={() => applyTransaction(i, m.transaction!, m.transaction!.summary || m.text)} onDiscard={() => setMsgs((all) => all.map((x, k) => (k === i ? { ...x, state: "discarded" } : x)))} onUndo={() => { undo(); setMsgs((all) => all.map((x, k) => (k === i ? { ...x, state: "discarded" } : x))); }} />}
             {m.suggestions && m.suggestions.length > 0 && (
               <ul className="mt-2 space-y-1.5">
                 {m.suggestions.map((s) => (
@@ -334,6 +467,12 @@ export function MusePanel() {
         <div ref={end} />
       </div>
       <div className="mt-2 flex gap-1 overflow-x-auto pb-1 mv-scroll">{QUICK.map((q) => <button key={q} className="mv-chip shrink-0 !text-[0.62rem]" onClick={() => send(q)} disabled={busy}>{q}</button>)}</div>
+      <div className="mt-1 flex flex-wrap items-center gap-3 text-[0.62rem] text-mute">
+        <label className="flex items-center gap-1"><input type="checkbox" checked={prefs.preview} onChange={(e) => savePrefs({ ...prefs, preview: e.target.checked })} data-testid="muse-preview-toggle" /> Preview before applying</label>
+        <label className={clsx("flex items-center gap-1", nano === "unavailable" && "opacity-50")} title={nano === "unavailable" ? "Chrome's built-in AI (Gemini Nano) isn't available in this browser" : nano === "available" ? "Runs privately on this device" : "The on-device model needs a one-time download in Chrome"}>
+          <input type="checkbox" disabled={nano !== "available"} checked={prefs.onDevice && nano === "available"} onChange={(e) => savePrefs({ ...prefs, onDevice: e.target.checked })} /> On-device AI (Gemini Nano, experimental){nano === "unavailable" ? " — not available here" : nano !== "available" ? ` — ${nano}` : ""}
+        </label>
+      </div>
       <form className="mt-1 flex gap-1.5" onSubmit={(e) => { e.preventDefault(); send(input); }}>
         <input className="mv-input !py-2 !text-xs" placeholder="Describe a design or change…" value={input} onChange={(e) => setInput(e.target.value)} aria-label="Message The Muse" data-testid="muse-input" />
         <button type="submit" className="mv-btn mv-btn-primary !px-3" disabled={busy || !input.trim()} aria-label="Send"><Send className="size-3.5" /></button>

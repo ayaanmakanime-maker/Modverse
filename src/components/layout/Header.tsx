@@ -3,10 +3,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { Menu, ShoppingBag, User, X, LogOut, LayoutDashboard, Shield, Palette, Camera, Library } from "lucide-react";
+import { Menu, ShoppingBag, User, X, LogOut, LayoutDashboard, Shield, Palette, Camera, Library, Search } from "lucide-react";
 import { HeaderLogo, Logo } from "@/components/brand/Logo";
 import { useSession } from "@/components/session";
 import { api } from "@/lib/client/api";
+import { ThemeToggle } from "@/components/theme";
 
 const NAV = [
   { href: "/shop/men", label: "Men" },
@@ -46,6 +47,8 @@ export function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
+          <Link href="/search" className="rounded-full p-2 text-bone-2 hover:bg-surface-2" aria-label="Search the catalogue" data-testid="header-search"><Search className="size-5" /></Link>
           <Link href="/cart" className="relative rounded-full p-2 text-bone-2 hover:bg-surface-2" aria-label={`Cart (${cartCount} items)`}>
             <ShoppingBag className="size-5" />
             {cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 grid size-4 place-items-center rounded-full bg-bone text-[0.6rem] font-semibold text-ink">{cartCount}</span>}

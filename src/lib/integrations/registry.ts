@@ -55,6 +55,16 @@ export const INTEGRATIONS: IntegrationDef[] = [
     localFallback: "Local rule-based Muse; artwork generation unavailable (clearly indicated).",
   },
   {
+    id: "gemini", category: "ai", name: "Google Gemini API", envPrefix: "GEMINI",
+    description: "Optional hosted Gemini models as The Muse's Fashion Director (structured JSON design proposals). Free and paid tiers exist — check quotas, pricing and data-use terms before enabling. Gemini Nano (on-device, Chrome built-in AI) needs no key and is offered separately in the editor where the browser supports it.",
+    docsUrl: "https://ai.google.dev/gemini-api/docs", billable: true, testable: true,
+    fields: [
+      { key: "apiKey", label: "API key", secret: true, required: true, placeholder: "AIza…", pattern: "^AIza" },
+      { key: "model", label: "Model", secret: false, required: true, placeholder: "gemini-2.5-flash" },
+    ],
+    localFallback: "Local rule-based Fashion Director (deterministic, offline).",
+  },
+  {
     id: "comfyui", category: "ai", name: "ComfyUI (local image generation)", envPrefix: "COMFYUI",
     description: "Local Stable-Diffusion-family workflows for artwork generation where hardware and model licences permit.",
     docsUrl: "https://github.com/comfyanonymous/ComfyUI", billable: false, testable: true,
@@ -107,14 +117,16 @@ export const INTEGRATIONS: IntegrationDef[] = [
   },
   {
     id: "shiprocket", category: "shipping", name: "Shiprocket", envPrefix: "SHIPROCKET",
-    description: "Shipping rates, label creation and courier tracking across India.",
+    description: "Courier rates, AWB + label booking, pickups and tracking (sync + webhook at /api/webhooks/shiprocket) on ModVerse's own Shiprocket account. Bookings are billed to the Shiprocket wallet.",
     docsUrl: "https://apidocs.shiprocket.in/", billable: true, testable: true,
     fields: [
       { key: "email", label: "API user email", secret: false, required: true },
       { key: "password", label: "API user password", secret: true, required: true },
       { key: "pickupPincode", label: "Pickup pincode", secret: false, required: true, pattern: "^[1-9][0-9]{5}$" },
+      { key: "pickupLocation", label: "Pickup location nickname (as set up in Shiprocket)", secret: false, required: false },
+      { key: "webhookToken", label: "Tracking webhook token (sent by Shiprocket as x-api-key)", secret: true, required: false },
     ],
-    localFallback: "Flat-rate shipping estimate and manual tracking entry by staff.",
+    localFallback: "Shipping rules from Admin → Pricing; logistics partners issue ModVerse AWBs/labels and post tracking in the partner portal (or staff enter tracking manually).",
   },
   {
     id: "cloudinary", category: "storage", name: "Cloudinary", envPrefix: "CLOUDINARY",
@@ -222,7 +234,7 @@ export const INTEGRATIONS: IntegrationDef[] = [
     description: "Generic production-partner webhook: approved orders and tech packs are posted for production.",
     docsUrl: "https://example.invalid/manufacturer-api", billable: true, testable: false,
     fields: [{ key: "endpoint", label: "Order endpoint", secret: false, required: true, pattern: "^https://" }, { key: "apiKey", label: "API key", secret: true, required: true }],
-    localFallback: "Orders remain in ModVerse for staff review; no manufacturer is connected.",
+    localFallback: "Approved manufacturers fulfil orders through the ModVerse partner portal (no machine-to-machine API yet).",
   },
 ];
 
