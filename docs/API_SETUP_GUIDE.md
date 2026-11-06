@@ -16,5 +16,5 @@ Credentials are normally entered in **Admin → Integration Manager** (encrypted
 * **Razorpay:** use `rzp_test_…` keys; add a webhook to `https://<your-domain>/api/webhooks/razorpay` with events `payment.captured`, `payment.failed` and paste its secret. Payments are confirmed only by signature verification.
 * **Google OAuth:** create a Web client, authorised redirect `http://localhost:3000/api/auth/oauth/google/callback` (and your domain). The button appears only after a passing test and enablement.
 * **Resend:** verify your sending domain; From like `ModVerse <hello@yourdomain.in>`.
-* **Shiprocket:** create an API user; pickup PIN code required. Label/rate APIs are prepared for a later milestone (tracking is manual today).
+* **Shiprocket:** create an API user (Settings → API) and a pickup location; enter the API email/password, pickup PIN code, the pickup location nickname and (optional) a webhook token. In Shiprocket, point the tracking webhook to `https://<your-domain>/api/webhooks/shiprocket` with that token as the `x-api-key` header. Test the connection, enable it (billable confirmation), then use **Get courier quotes → Book** on an order. Shiprocket has no sandbox — the first real booking is a real, billed pickup.
 * **MediaPipe:** no key; run `npm run models:fetch` for offline models.

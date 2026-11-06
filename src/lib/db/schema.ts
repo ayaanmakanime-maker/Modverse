@@ -577,6 +577,8 @@ export const shipments = pgTable(
     podUploadId: uuid("pod_upload_id"),
     /** Agreed shipping rate payable to the logistics partner (INR), if any (V2.1). */
     rateAmount: integer("rate_amount"),
+    /** Courier-integration references (e.g. Shiprocket order/shipment ids, label URL) (V2.1). */
+    providerRef: jsonb("provider_ref").$type<Record<string, string | number | null>>(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

@@ -1,0 +1,1 @@
+ALTER TABLE "shipments" ADD COLUMN "provider_ref" jsonb;

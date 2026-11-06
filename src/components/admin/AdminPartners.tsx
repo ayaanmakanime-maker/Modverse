@@ -145,7 +145,7 @@ export function AdminShipping() {
             <span className="font-mono text-xs">{s.awb ?? "AWB pending"}</span>
             <Badge tone={tone(s.status)}>{human(s.status)}</Badge>
             {s.direction === "return" && <Badge tone="warn">return</Badge>}
-            <span className="text-xs text-mute">{s.courier} · {s.org ?? (s.provider === "manual" ? "manual entry" : "—")}{s.failedAttempts ? ` · ${s.failedAttempts} failed attempt(s)` : ""} · updated {when(s.updatedAt)}</span>
+            <span className="text-xs text-mute">{s.courier} · {s.org ?? (s.provider === "shiprocket" ? "Shiprocket" : s.provider === "manual" ? "manual entry" : "—")}{s.failedAttempts ? ` · ${s.failedAttempts} failed attempt(s)` : ""} · updated {when(s.updatedAt)}</span>
             {s.org && ["assigned", "label_created", "pickup_scheduled"].includes(s.status) && <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setReassign(s)}>Reassign</Button>}
           </div>
         ))}</div>
@@ -220,11 +220,12 @@ export function AdminDisputes() {
 // ── Order fulfilment panel (admin order page) ─────────────────────
 interface Fulfil {
   jobs: { id: string; org: string; status: string; stage: string | null; dueAt: string | null; rejectionReason: string | null; quotations: { id: string; amount: number; leadTimeDays: number; status: string; notes: string | null; breakdown: Record<string, number> }[]; events: { id: string; kind: string; payload: Record<string, unknown>; createdAt: string }[] }[];
-  shipments: { id: string; org: string | null; courier: string | null; awb: string | null; status: string; direction: string; events: { at: string; status: string; location?: string | null; note?: string | null }[]; podName: string | null; podUploadId: string | null; failedAttempts: number }[];
+  shipments: { id: string; org: string | null; provider: string; courier: string | null; awb: string | null; status: string; direction: string; trackingUrl: string | null; providerRef: { labelUrl?: string | null } | null; events: { at: string; status: string; location?: string | null; note?: string | null }[]; podName: string | null; podUploadId: string | null; failedAttempts: number }[];
   manufacturers: { id: string; name: string; match: { ok: boolean; reasons: string[] } }[];
   logistics: LogisticsOpt[];
   disputes: { id: string; kind: string; status: string; description: string }[];
   settlements: { id: string; kind: string; amount: number; status: string; reference: string | null }[];
+  courier: { shiprocket: { active: boolean; environment: string | null } };
 }
 
 export function OrderFulfilmentPanel({ orderId, orderStatus, onChange }: { orderId: string; orderStatus: string; onChange: () => void }) {
@@ -265,9 +266,15 @@ export function OrderFulfilmentPanel({ orderId, orderStatus, onChange }: { order
         <p className="text-sm font-medium">Shipping</p>
         {!["packed", "quality_inspection", "manufacturing", "shipped", "delivered"].includes(orderStatus) && !data.shipments.length && <p className="text-xs text-mute">Book a shipment once production has started (forward) — returns can be booked after shipping.</p>}
         {(["packed", "quality_inspection", "manufacturing"].includes(orderStatus) || ["shipped", "delivered"].includes(orderStatus)) && <ShipmentForm partners={data.logistics} submitLabel="Create shipment" allowReturn={["shipped", "delivered"].includes(orderStatus)} onSubmit={(v) => post({ action: "shipment", shipment: v }, "Shipment created")} />}
+        {data.courier.shiprocket.active && ["packed", "quality_inspection", "manufacturing"].includes(orderStatus) && !data.shipments.some((x) => x.direction === "forward" && !["cancelled", "returned"].includes(x.status)) && <ShiprocketBooking orderId={orderId} onBooked={() => { reload(); onChange(); }} />}
+        {!data.courier.shiprocket.active && <p className="text-[0.68rem] text-mute">Courier aggregator: Shiprocket not enabled (Integrations) — shipments go through logistics partners.</p>}
         {data.shipments.map((s) => (
           <div key={s.id} className="rounded-lg border border-line p-2 text-xs" data-testid="fulfil-shipment">
-            <p className="flex flex-wrap items-center gap-2 text-sm"><span className="font-mono">{s.awb ?? "AWB pending"}</span><Badge tone={tone(s.status)}>{human(s.status)}</Badge>{s.direction === "return" && <Badge tone="warn">return</Badge>}<span className="text-mute">{s.courier} · {s.org ?? "manual"}</span>{s.podName && <span>POD: {s.podName}</span>}</p>
+            <p className="flex flex-wrap items-center gap-2 text-sm"><span className="font-mono">{s.awb ?? "AWB pending"}</span><Badge tone={tone(s.status)}>{human(s.status)}</Badge>{s.direction === "return" && <Badge tone="warn">return</Badge>}<span className="text-mute">{s.courier} · {s.org ?? (s.provider === "shiprocket" ? "Shiprocket" : "manual")}</span>{s.podName && <span>POD: {s.podName}</span>}
+              {s.providerRef?.labelUrl && <a className="underline" href={s.providerRef.labelUrl} target="_blank" rel="noopener noreferrer">label</a>}
+              {s.trackingUrl && <a className="underline" href={s.trackingUrl} target="_blank" rel="noopener noreferrer">courier tracking</a>}
+              {s.provider === "shiprocket" && !["delivered", "returned", "cancelled"].includes(s.status) && <Button size="sm" variant="ghost" onClick={() => run(() => api<{ applied: number }>(`/api/admin/shipments/${s.id}/sync`, { method: "POST" }).then((r) => toast(`${r.applied} tracking update(s) applied`, "info")), "Tracking synced", () => { reload(); onChange(); })}>Sync tracking</Button>}
+            </p>
             <ul className="mt-1 space-y-0.5 text-mute">{(s.events ?? []).slice(-5).map((e, i) => <li key={i}>{when(e.at)} — {human(e.status)}{e.location ? ` · ${e.location}` : ""}{e.note ? ` — ${e.note}` : ""}</li>)}</ul>
           </div>
         ))}
@@ -324,6 +331,50 @@ export function AdminPayouts() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+interface Quote { courierId: number; name: string; rate: number; etdDays: number | null; etd: string | null; rating: number | null }
+
+/** Courier quotes + BILLABLE booking on ModVerse's Shiprocket account (admin only server-side). */
+function ShiprocketBooking({ orderId, onBooked }: { orderId: string; onBooked: () => void }) {
+  const [quotes, setQuotes] = useState<{ parcel: { weightKg: number }; quotes: Quote[] } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pick, setPick] = useState<Quote | null>(null);
+  const [confirm, setConfirm] = useState(false);
+  const load = async () => {
+    setBusy(true);
+    try {
+      setQuotes(await api(`/api/admin/orders/${orderId}/courier`));
+    } catch (e) {
+      toast(errorMessage(e), "bad");
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!quotes) return <Button size="sm" variant="ghost" loading={busy} onClick={load} data-testid="courier-quotes">Get courier quotes (Shiprocket)</Button>;
+  return (
+    <div className="space-y-2 rounded-lg border border-line p-2 text-xs" data-testid="courier-booking">
+      <p className="text-mute">Parcel estimate {quotes.parcel.weightKg.toFixed(2)} kg · prepaid · {quotes.quotes.length} courier option(s)</p>
+      <ul className="space-y-1">{quotes.quotes.slice(0, 8).map((q) => (
+        <li key={q.courierId}><label className="flex items-center gap-2"><input type="radio" name="courier" checked={pick?.courierId === q.courierId} onChange={() => setPick(q)} />{q.name} — ₹{q.rate}{q.etdDays !== null ? ` · ${q.etdDays} day(s)` : ""}{q.rating !== null ? ` · rating ${q.rating}` : ""}</label></li>
+      ))}</ul>
+      {!quotes.quotes.length && <p>No courier serves this pincode for this parcel.</p>}
+      <label className="flex items-start gap-2"><input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} data-testid="courier-confirm" />I understand this books a real courier pickup billed to ModVerse&apos;s Shiprocket wallet (Shiprocket has no test mode).</label>
+      <Button size="sm" disabled={!pick || !confirm} loading={busy} onClick={async () => {
+        if (!pick) return;
+        setBusy(true);
+        try {
+          await api(`/api/admin/orders/${orderId}/courier`, { body: { courierId: pick.courierId, courierName: pick.name, expectedRate: pick.rate, confirmBillable: true } });
+          toast(`Booked with ${pick.name}`);
+          onBooked();
+        } catch (e) {
+          toast(errorMessage(e), "bad");
+        } finally {
+          setBusy(false);
+        }
+      }} data-testid="courier-book">Book {pick ? `${pick.name} · ₹${pick.rate}` : "courier"}</Button>
     </div>
   );
 }

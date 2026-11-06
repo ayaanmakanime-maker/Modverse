@@ -1,8 +1,8 @@
 # Manufacturer & logistics portals (V2)
 
-Status: **Locally implemented** — every workflow below runs end-to-end in the local app and is covered by tests. Courier booking is **Simulated** (AWBs and labels are ModVerse-issued until a courier API is connected — see "Not yet connected").
+Status: **Locally implemented** — every workflow below runs end-to-end in the local app and is covered by tests. Partner-issued AWBs/labels are **Simulated** (ModVerse-issued); ModVerse can alternatively book couriers on its own **Shiprocket** account (**Awaiting credentials**, see "Courier aggregator").
 
-Code: `src/lib/services/partners.ts` (all rules and access checks) · `src/lib/partners/constants.ts` (shared states) · `src/components/partners/*` (portal UI) · `src/components/admin/AdminPartners.tsx` (admin UI) · migration `drizzle/0004_v2_partner_portals.sql` (additive only).
+Code: `src/lib/services/partners.ts` (all rules and access checks) · `src/lib/partners/constants.ts` (shared states) · `src/components/partners/*` (portal UI) · `src/components/admin/AdminPartners.tsx` (admin UI) · migrations `drizzle/0004_v2_partner_portals.sql`, `0005_v21_settlements.sql`, `0006_v21_courier_ref.sql` (additive only) · `src/lib/services/{partner-access,settlements,notify,courier}.ts` · `src/lib/integrations/shiprocket.ts`.
 
 ## Who sees what
 | | Customer | Manufacturer member | Logistics member | Staff | Admin |
@@ -63,10 +63,29 @@ Partner (`auth: user`, organisation-scoped): `GET/PATCH /api/partner/me`, `POST 
 Admin: `GET /api/admin/partners`, `PATCH /api/admin/partners/:id` (admin), `GET /api/admin/production`, `POST /api/admin/production/:id`, `POST /api/admin/quotations/:id` (admin), `GET/POST /api/admin/orders/:id/fulfilment`, `GET /api/admin/shipments`, `PATCH /api/admin/shipments/:id`, `GET /api/admin/disputes`, `PATCH /api/admin/disputes/:id`.
 All writes are rate-limited, CSRF-protected by the origin middleware, validated with Zod and audited.
 
+## Notifications (V2.1)
+Every step notifies the people who must act, through the email layer (`src/lib/services/notify.ts`): the **simulated mailbox** (Account → Mailbox, linked as *Messages* in the portal) by default, Resend once enabled. Partner organisations: application received/approved/suspended, new offer, quotation approved/rejected, rework requested, new or reassigned shipment, payout due/paid/adjusted. ModVerse admins: new applications and quotations to approve. Operations (staff + admins): declined jobs, production issues, QC failures, orders ready for pickup, failed deliveries, new disputes. Customers: shipped (with tracking number), out for delivery, delivery failed, delivered (with a prompt to verify fit), dispute resolved. Notifications never block the action that triggered them. SMS (MSG91) is not connected.
+
+## Payouts — settlements ledger (V2.1)
+* **Production:** when a job is dispatched (courier pickup), a payable for the **approved quotation** is created for the manufacturer.
+* **Shipping:** when a shipment is delivered or returned, a payable for the **agreed rate** entered when ModVerse booked it is created for the logistics partner (no rate → nothing accrues).
+* Admin → **Payouts**: per-partner totals, adjust (with a reason shared with the partner), cancel, or **record a payment made outside ModVerse** with its bank/UPI reference; CSV export for accounting (spreadsheet formulas neutralised). Partner → **Payouts** shows only its own organisation's entries. Unique per job/shipment (idempotent), audited. **No money is moved by ModVerse** — status: **Locally implemented** (ledger); bank payouts: **Not implemented**.
+
+## GSTIN checks (V2.1)
+Applications validate the GSTIN format, state code and **mod-36 check character** (`src/lib/partners/gstin.ts`), with specific messages. This proves a number is well-formed, not that it is registered: an online GST lookup needs a GSP/API account (**Not implemented**) — admins verify before approving.
+
+## Courier aggregator — Shiprocket (V2.1, Awaiting credentials)
+An alternative to a logistics partner: ModVerse books on its **own** Shiprocket account (`src/lib/integrations/shiprocket.ts`, `src/lib/services/courier.ts`).
+* **Quotes** (free): couriers, prices, delivery estimate for the parcel (≈250 g per garment + 100 g packaging) to the customer's PIN code.
+* **Booking** (admin only, **billable**): an explicit "this books a real pickup billed to the Shiprocket wallet" confirmation is required every time (Shiprocket has no sandbox). Creates the order, assigns the AWB, requests the pickup and the label; the shipment stores the AWB, label link and courier tracking link.
+* **Tracking**: "Sync tracking" pulls scans; the webhook `POST /api/webhooks/shiprocket` (authenticated with the token Shiprocket sends as `x-api-key`, compared in constant time) applies status pushes. Courier feeds may skip scans, so any forward move is accepted, exceptions (undelivered, RTO) are mapped, and stale or backward scans are ignored. Order progression, notifications and audit are shared with the partner workflow.
+* Written against the public API docs and tested against a **simulated** Shiprocket API (`tests/stubs/shiprocket-sim.ts`); it has **not** been run against a live account. Verify with a real account before relying on it.
+
 ## Not yet connected
 | Capability | Status |
 |---|---|
-| Courier APIs (Shiprocket, Delhivery, …): real AWB, rates, pickup booking, tracking webhooks | **Awaiting credentials** — the portal workflow is the integration point; today AWBs/labels are ModVerse-issued (**Simulated**) |
-| Partner payouts / invoices against approved quotations | **Not implemented** (quotation amounts are recorded for reconciliation) |
-| Partner email/SMS notifications | **Not implemented** — partners see new work on their dashboards; every event is on the job/shipment and order timelines |
-| Self-service partner sign-up verification (GSTIN lookup, KYC) | **Not implemented** — admins verify manually before approving |
+| Shiprocket live account | **Awaiting credentials** (adapter, booking, sync and webhook implemented; tested against a simulated API) |
+| Courier APIs used by logistics partners themselves | **Not implemented** — partners post tracking in the portal (ModVerse-issued AWB/label = **Simulated**) |
+| Bank payouts / invoices | **Not implemented** — the settlements ledger records payments made outside ModVerse |
+| SMS / WhatsApp notifications | **Not implemented** (email + simulated mailbox only) |
+| Online GSTIN lookup / KYC | **Not implemented** — format + check character only; admins verify manually |

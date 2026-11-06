@@ -41,7 +41,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | **V2: AI pipeline** | Fashion Director (local rules, or Ollama / Gemini / OpenAI / on-device Gemini Nano when enabled) → artwork resolution → design compiler (validated, previewed, priced) → applied as one undoable transaction. |
 | **V2: fit & try-on** | Live trial room with tracking-loss guidance, live colour changes, consented camera measurement; fit analysis keeps *estimated*, *simulated* and customer-*verified* fit separate. |
 | **V2: dynamic pricing** | Itemised, manufacturing-aware prices (fabric consumption from real panel areas, colours, stitches, placements), admin rules and discount codes, server-verified totals and price snapshots. |
-| **V2: partner portals** | Manufacturers (jobs, quotations, stages, QC, photos, production tech pack) and logistics partners (labels, pickups, tracking, proof of delivery), admin approval, disputes — each organisation sees only its own work. |
+| **V2: partner portals** | Manufacturers (jobs, quotations, stages, QC, photos, production tech pack) and logistics partners (labels, pickups, tracking, proof of delivery), admin approval, disputes, notifications, a payouts ledger and optional Shiprocket courier booking — each organisation sees only its own work. |
 
 ## Scripts
 

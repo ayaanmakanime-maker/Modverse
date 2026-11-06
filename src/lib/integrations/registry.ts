@@ -117,12 +117,14 @@ export const INTEGRATIONS: IntegrationDef[] = [
   },
   {
     id: "shiprocket", category: "shipping", name: "Shiprocket", envPrefix: "SHIPROCKET",
-    description: "Shipping rates, label creation and courier tracking across India.",
+    description: "Courier rates, AWB + label booking, pickups and tracking (sync + webhook at /api/webhooks/shiprocket) on ModVerse's own Shiprocket account. Bookings are billed to the Shiprocket wallet.",
     docsUrl: "https://apidocs.shiprocket.in/", billable: true, testable: true,
     fields: [
       { key: "email", label: "API user email", secret: false, required: true },
       { key: "password", label: "API user password", secret: true, required: true },
       { key: "pickupPincode", label: "Pickup pincode", secret: false, required: true, pattern: "^[1-9][0-9]{5}$" },
+      { key: "pickupLocation", label: "Pickup location nickname (as set up in Shiprocket)", secret: false, required: false },
+      { key: "webhookToken", label: "Tracking webhook token (sent by Shiprocket as x-api-key)", secret: true, required: false },
     ],
     localFallback: "Shipping rules from Admin → Pricing; logistics partners issue ModVerse AWBs/labels and post tracking in the partner portal (or staff enter tracking manually).",
   },

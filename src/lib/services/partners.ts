@@ -16,7 +16,7 @@ import { storeUpload } from "./uploads";
 import { getMembership, requirePartner } from "./partner-access";
 import { accrueProductionSettlement, accrueShippingSettlement } from "./settlements";
 import { link, notifyCustomer, notifyOrg, notifyTeam, notifyUser } from "./notify";
-import { SHIPMENT_NEXT, SHIPMENT_STATUSES, STAGES, type ShipmentStatus } from "../partners/constants";
+import { SHIPMENT_FLOW, SHIPMENT_NEXT, SHIPMENT_STATUSES, STAGES, type ShipmentStatus } from "../partners/constants";
 import { GSTIN_MESSAGE, validateGstin } from "../partners/gstin";
 
 export { STAGES, SHIPMENT_STATUSES };
@@ -502,9 +502,18 @@ export async function addTrackingEvent(user: SessionUser, id: string, raw: unkno
   if (input.status === "pickup_scheduled" && !input.pickupAt) throw badRequest("Choose a pickup date");
   if (input.status === "delivered" && sh.direction === "forward" && !input.podName && !sh.podUploadId) throw badRequest("Proof of delivery is required (receiver name or photo)");
   if (input.status === "failed_delivery" && !input.reason) throw badRequest("Give the reason for the failed delivery");
+  return applyShipmentStatus(db, sh, input, user.id);
+}
+
+/**
+ * Applies a validated shipment status change and all of its consequences — order
+ * progression (forward only), job dispatch, payouts, timeline, audit and customer /
+ * team notifications. Used by logistics partners and by courier integrations.
+ */
+export async function applyShipmentStatus(db: Db, sh: typeof s.shipments.$inferSelect, input: z.infer<typeof trackingSchema> & { at?: string }, actorId: string | null) {
   const finalStatus: ShipStatus = input.status === "delivered" && sh.direction === "return" ? "returned" : input.status;
-  const patch: Partial<typeof s.shipments.$inferInsert> = { status: finalStatus, updatedAt: new Date(), events: [...(sh.events as unknown[]), { at: new Date().toISOString(), status: finalStatus, location: input.location ?? null, note: input.reason ?? input.note ?? null }] };
-  if (input.status === "pickup_scheduled") Object.assign(patch, { pickupAt: input.pickupAt, pickupWindow: input.pickupWindow ?? null });
+  const patch: Partial<typeof s.shipments.$inferInsert> = { status: finalStatus, updatedAt: new Date(), events: [...(sh.events as unknown[]), { at: input.at ?? new Date().toISOString(), status: finalStatus, location: input.location ?? null, note: input.reason ?? input.note ?? null }] };
+  if (input.status === "pickup_scheduled") Object.assign(patch, { pickupAt: input.pickupAt ?? null, pickupWindow: input.pickupWindow ?? null });
   if (input.status === "failed_delivery") patch.failedAttempts = sh.failedAttempts + 1;
   if (input.status === "delivered") Object.assign(patch, { deliveredAt: new Date(), podName: input.podName ?? sh.podName });
   await db.update(s.shipments).set(patch).where(eq(s.shipments.id, sh.id));
@@ -512,23 +521,42 @@ export async function addTrackingEvent(user: SessionUser, id: string, raw: unkno
   let advanced = false; // the order timeline already records this step
   if (sh.direction === "forward") {
     if (input.status === "picked_up") {
-      advanced = await progressOrder(db, sh.orderId, "shipped", `Picked up by ${sh.courier} — AWB ${sh.awb ?? "pending"}${input.location ? ` — ${input.location}` : ""}`, user.id);
+      advanced = await progressOrder(db, sh.orderId, "shipped", `Picked up by ${sh.courier} — AWB ${sh.awb ?? "pending"}${input.location ? ` — ${input.location}` : ""}`, actorId);
       const dispatched = await db.update(s.productionJobs).set({ status: "dispatched", updatedAt: new Date() }).where(and(eq(s.productionJobs.orderId, sh.orderId), eq(s.productionJobs.status, "ready_to_dispatch"))).returning({ id: s.productionJobs.id });
       for (const j of dispatched) await accrueProductionSettlement(db, j.id);
     }
-    if (input.status === "delivered") advanced = await progressOrder(db, sh.orderId, "delivered", `Delivered${input.podName ? ` — received by ${input.podName}` : ""}`, user.id);
+    if (input.status === "delivered") advanced = await progressOrder(db, sh.orderId, "delivered", `Delivered${input.podName ? ` — received by ${input.podName}` : ""}`, actorId);
   }
-  if (!advanced) await db.insert(s.orderEvents).values({ orderId: sh.orderId, status: `shipment_${finalStatus}`, note: `${sh.direction === "return" ? "Return" : "Shipment"} ${finalStatus.replace(/_/g, " ")}${input.location ? ` — ${input.location}` : ""}${input.reason ? ` — ${input.reason}` : ""}`, actorUserId: user.id });
-  await audit({ actorUserId: user.id, action: `shipment.${finalStatus}`, entityType: "shipment", entityId: sh.id });
+  if (!advanced) await db.insert(s.orderEvents).values({ orderId: sh.orderId, status: `shipment_${finalStatus}`, note: `${sh.direction === "return" ? "Return" : "Shipment"} ${finalStatus.replace(/_/g, " ")}${input.location ? ` — ${input.location}` : ""}${input.reason ? ` — ${input.reason}` : ""}`, actorUserId: actorId });
+  await audit({ actorUserId: actorId, action: `shipment.${finalStatus}`, entityType: "shipment", entityId: sh.id, details: actorId ? undefined : { source: sh.provider } });
   const orderLink = link(`/account/orders/${sh.orderId}`);
   if (sh.direction === "forward" && input.status === "picked_up") await notifyCustomer(sh.orderId, (n) => ({ subject: `Your ModVerse order ${n} has shipped`, body: `Your order is on its way with ${sh.courier}${sh.awb ? ` (tracking number ${sh.awb})` : ""}.\n\nTrack it: ${orderLink}` }));
   if (sh.direction === "forward" && input.status === "out_for_delivery") await notifyCustomer(sh.orderId, (n) => ({ subject: `Order ${n} is out for delivery`, body: `Your order will be delivered today. Please keep your phone reachable.\n\n${orderLink}` }));
   if (sh.direction === "forward" && input.status === "delivered") await notifyCustomer(sh.orderId, (n) => ({ subject: `Order ${n} was delivered`, body: `Your order was delivered${input.podName ? ` (received by ${input.podName})` : ""}. Once you've worn it, tell us how it fitted — it improves your future size recommendations.\n\n${orderLink}` }));
   if (input.status === "failed_delivery") {
-    await notifyCustomer(sh.orderId, (n) => ({ subject: `We couldn't deliver order ${n}`, body: `The courier couldn't deliver your order: ${input.reason}. They will try again; if your address or phone needs a correction, report it on the order page.\n\n${orderLink}` }));
-    await notifyTeam({ subject: `Failed delivery (attempt ${sh.failedAttempts + 1})`, body: `${input.reason}\n\n${link(`/admin/orders/${sh.orderId}`)}` });
+    await notifyCustomer(sh.orderId, (n) => ({ subject: `We couldn't deliver order ${n}`, body: `The courier couldn't deliver your order${input.reason ? `: ${input.reason}` : ""}. They will try again; if your address or phone needs a correction, report it on the order page.\n\n${orderLink}` }));
+    await notifyTeam({ subject: `Failed delivery (attempt ${sh.failedAttempts + 1})`, body: `${input.reason ?? "Reported by the courier"}\n\n${link(`/admin/orders/${sh.orderId}`)}` });
   }
   return { ...sh, ...patch };
+}
+
+/**
+ * Courier feeds can skip intermediate scans: accept any forward move along the
+ * normal flow, plus the exception paths; never move backwards or out of a final state.
+ */
+export function courierTransitionAllowed(current: string, next: ShipStatus): boolean {
+  if (["delivered", "returned", "cancelled"].includes(current) || current === next) return false;
+  const flow = SHIPMENT_FLOW as readonly string[];
+  const from = flow.indexOf(current);
+  const to = flow.indexOf(next);
+  if (to !== -1 && from !== -1) return to > from;
+  if (next === "failed_delivery") return ["picked_up", "in_transit", "out_for_delivery"].includes(current);
+  if (next === "out_for_delivery" || next === "in_transit") return current === "failed_delivery";
+  if (next === "delivered") return current === "failed_delivery";
+  if (next === "rto_initiated") return ["picked_up", "in_transit", "out_for_delivery", "failed_delivery"].includes(current);
+  if (next === "returned") return current === "rto_initiated";
+  if (next === "cancelled") return ["assigned", "label_created", "pickup_scheduled"].includes(current);
+  return false;
 }
 
 export async function addPodPhoto(user: SessionUser, id: string, file: { name: string; bytes: Buffer }) {

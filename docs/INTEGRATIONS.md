@@ -16,7 +16,7 @@ All external services are **planned integration targets**, not active connection
 | Auth | Google OAuth | `/api/auth/oauth/google` (+ callback) | OpenID config reachability (secret verified at sign-in) | Email + password |
 | Auth | Apple Sign In | Registry only | — | Email + password |
 | Payments | Razorpay (UPI/cards/net banking) | Order creation, Checkout.js, signature verify, webhook | `/v1/payments?count=1` | Simulated checkout |
-| Shipping | Shiprocket | Registry + login test | `auth/login` | Logistics partner portal: ModVerse-issued AWB + PDF label, pickup scheduling, tracking events, POD (**simulated** courier booking) |
+| Shipping | Shiprocket | Quotes, booking (order + AWB + pickup + label), tracking sync, webhook `/api/webhooks/shiprocket` (`x-api-key` token) | `auth/login` | Logistics partner portal: ModVerse-issued AWB + PDF label, pickup scheduling, tracking events, POD (**simulated** courier booking) |
 | Storage | Cloudinary / S3 | `StorageProvider` interface | — | Local private storage |
 | Email | Resend | `sendEmail()` | `/domains` | Simulated mailbox |
 | SMS | MSG91 | Registry only | — | Email only |
