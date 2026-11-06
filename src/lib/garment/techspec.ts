@@ -4,7 +4,9 @@ import { getFabric, PRINT_METHOD_INFO } from "./fabrics";
 import { availablePanels, layerMethod, panelColor, panelFabricId } from "./design";
 import { getModel } from "./models";
 import { computeMeasurements, SIZE_CHARTS } from "./sizing";
-import { priceDesign } from "./pricing";
+import { DEFAULT_PRICING, estimateStitches, layerColours, priceDesign, type PricingRules } from "./pricing";
+import { fabricConsumption } from "./consumption";
+import { printableArea, rotatedBounds } from "./panels";
 import { validateDesign, type ValidationContext, type ValidationReport } from "./validation";
 import type { DesignConfig } from "./schema";
 import { FIT_LABELS, PANEL_LABELS, type GarmentMeasurements } from "./types";
@@ -37,10 +39,32 @@ export interface TechSpec {
   measurements: { label: string; value: number; tolerance: number }[];
   gradedChart: { size: string; chest: number; length: number; shoulder: number; sleeve: number }[];
   artwork: { id: string; type: string; name: string; zone: string; method: string; positionCm: string; sizeCm: string; rotation: number; detail: string }[];
+  /** Artwork placement sheet: measured from factory reference points, per placement. */
+  placements: PlacementSpec[];
   bom: BomLine[];
   validation: ValidationReport;
   price: ReturnType<typeof priceDesign>;
   disclaimers: string[];
+}
+
+export interface PlacementSpec {
+  index: number;
+  layerId: string;
+  name: string;
+  zone: string;
+  method: string;
+  widthCm: number;
+  heightCm: number;
+  rotation: number;
+  /** Reference point and offsets a printer/embroiderer uses to position the artwork. */
+  reference: string;
+  /** Horizontal offset of the artwork centre from the zone centre line (+ = wearer's left on the front). */
+  fromCentreCm: number;
+  /** Distance from the reference edge (HPS / collar seam / sleeve cap / cuff edge) to the top of the artwork. */
+  fromTopCm: number;
+  colours: number | null;
+  stitches: number | null;
+  insidePrintArea: boolean;
 }
 
 const TOL: Partial<Record<keyof GarmentMeasurements, number>> = { chest: 2, waist: 2, hem: 2, bodyLength: 1.5, shoulderWidth: 1, sleeveLength: 1, bicep: 1, sleeveOpening: 0.5, armholeDepth: 1, neckWidth: 0.5, frontNeckDrop: 0.5, collarSize: 0.5 };
@@ -51,7 +75,7 @@ const LABELS: Partial<Record<keyof GarmentMeasurements, string>> = {
   collarHeight: "Collar / rib height", cuffHeight: "Cuff height", hemCurve: "Hem curve depth", collarSize: "Collar size",
 };
 
-export function buildTechSpec(config: DesignConfig, meta: { name: string; version: number; id?: string }, ctx: ValidationContext = {}): TechSpec {
+export function buildTechSpec(config: DesignConfig, meta: { name: string; version: number; id?: string }, ctx: ValidationContext = {}, pricing: PricingRules = DEFAULT_PRICING): TechSpec {
   const model = getModel(config.modelId);
   const fabric = getFabric(config.fabric.id);
   const m = computeMeasurements(config);
@@ -107,11 +131,29 @@ export function buildTechSpec(config: DesignConfig, meta: { name: string; versio
     };
   });
 
-  // Bill of Materials (estimated consumption)
-  const area = (m.chest / 2) * m.bodyLength * 2 + m.bicep * m.sleeveLength * 2;
-  const fabricMetres = +((area / 10000) * 1.45 / 1.5).toFixed(2); // 150 cm cuttable width, 45% wastage/marker allowance
+  const REF: Record<string, string> = {
+    front: "HPS (high point shoulder) / centre front", back: "HPS / centre back", sleeveLeft: "Sleeve cap top / sleeve centre line", sleeveRight: "Sleeve cap top / sleeve centre line",
+    collar: "Collar seam / centre back", cuffs: "Cuff top edge / outer face centre", pocket: "Pocket mouth / pocket centre", yoke: "Yoke seam (top) / centre back",
+  };
+  const placements: PlacementSpec[] = config.layers.filter((l) => l.visible).map((l, i) => {
+    const method = layerMethod(config, l);
+    const b = rotatedBounds(l.x, l.y, l.width, l.height, l.rotation);
+    const area = printableArea(m, l.zone, config.garmentType, c);
+    const cols = layerColours(l, { assetColors: ctx.assetColors });
+    return {
+      index: i + 1, layerId: l.id, name: l.type === "text" ? `"${l.text.slice(0, 40)}"` : l.name, zone: l.zone, method: PRINT_METHOD_INFO[method].name,
+      widthCm: +l.width.toFixed(1), heightCm: +l.height.toFixed(1), rotation: l.rotation, reference: REF[l.zone] ?? "Zone top / centre",
+      fromCentreCm: +l.x.toFixed(1), fromTopCm: +b.y0.toFixed(1),
+      colours: cols.some((x) => x.startsWith("unknown")) ? null : cols.length,
+      stitches: method === "embroidery" ? estimateStitches(l, pricing) : null,
+      insidePrintArea: b.x0 >= area.x0 - 0.05 && b.x1 <= area.x1 + 0.05 && b.y0 >= area.y0 - 0.05 && b.y1 <= area.y1 + 0.05,
+    };
+  });
+
+  // Bill of Materials (estimated consumption from the actual panel outlines)
+  const fabricMetres = fabricConsumption(config).metres;
   const bom: BomLine[] = [
-    { item: "Shell fabric", description: `${fabric.name} — ${fabric.composition}, ${config.fabric.gsm} GSM`, quantity: fabricMetres, unit: "m (150 cm width, est.)", colour: config.fabric.color },
+    { item: "Shell fabric", description: `${fabric.name} — ${fabric.composition}, ${config.fabric.gsm} GSM`, quantity: fabricMetres, unit: "m (150 cm width, incl. seam allowance & marker wastage, est.)", colour: config.fabric.color },
     { item: "Sewing thread", description: `${c.stitching.style}-needle, ${c.stitching.spi} SPI`, quantity: shirt ? 160 : 120, unit: "m (est.)", colour: c.stitching.color },
   ];
   if (!shirt && c.ribTrim) bom.push({ item: "1×1 rib", description: "Neck rib trim", quantity: +(m.neckWidth * 2.6 / 100).toFixed(2), unit: "m", colour: panelColor(config, "collar") });
@@ -143,9 +185,10 @@ export function buildTechSpec(config: DesignConfig, meta: { name: string; versio
     measurements,
     gradedChart,
     artwork,
+    placements,
     bom,
     validation: validateDesign(config, ctx),
-    price: priceDesign(config),
+    price: priceDesign(config, pricing, { assetColors: ctx.assetColors }),
     disclaimers: [
       "Design-intent document generated by ModVerse. Not a graded pattern, marker, CAD/DXF cutting file or embroidery stitch file.",
       "Measurements are parametric estimates; the manufacturer must confirm pattern blocks, grading and tolerances.",

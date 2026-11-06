@@ -430,6 +430,8 @@ export const wishlistItems = pgTable(
 export const carts = pgTable("carts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  /** V2: discount code applied to the cart (re-validated server-side at every read and at checkout). */
+  discountCode: text("discount_code"),
   updatedAt: updatedAt(),
 });
 
@@ -462,6 +464,9 @@ export const orders = pgTable(
     childProfileId: uuid("child_profile_id").references(() => childProfiles.id, { onDelete: "set null" }),
     status: text("status", { enum: ORDER_STATUSES }).notNull(),
     subtotal: integer("subtotal").notNull(),
+    /** V2: discount applied (INR) and its code. GST is charged on the discounted value. */
+    discount: integer("discount").notNull().default(0),
+    discountCode: text("discount_code"),
     gst: integer("gst").notNull(),
     shipping: integer("shipping").notNull(),
     total: integer("total").notNull(),
@@ -599,6 +604,28 @@ export const auditLogs = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("audit_created_idx").on(t.createdAt), index("audit_actor_idx").on(t.actorUserId)],
+);
+
+/** V2 discount codes (admin-managed). Usage is counted from paid/placed orders. */
+export const discountCodes = pgTable(
+  "discount_codes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: text("code").notNull(),
+    kind: text("kind", { enum: ["percent", "fixed"] }).notNull(),
+    value: integer("value").notNull(),
+    minSubtotal: integer("min_subtotal").notNull().default(0),
+    maxDiscount: integer("max_discount"),
+    active: boolean("active").notNull().default(true),
+    startsAt: ts("starts_at"),
+    endsAt: ts("ends_at"),
+    usageLimit: integer("usage_limit"),
+    perUserLimit: integer("per_user_limit").notNull().default(1),
+    description: text("description"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("discount_codes_code_uq").on(t.code)],
 );
 
 export const platformSettings = pgTable("platform_settings", {

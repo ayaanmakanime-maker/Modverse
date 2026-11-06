@@ -8,6 +8,7 @@ import { designConfigSchema } from "@/lib/garment/schema";
 import { renderTechPackPdf } from "@/lib/techpack-pdf";
 import { storeUpload } from "@/lib/services/uploads";
 import { LIMITS } from "@/lib/security/rate-limit";
+import { getPricingRules } from "@/lib/services/pricing";
 
 const q = z.object({ format: z.enum(["pdf", "json"]).default("pdf"), version: z.coerce.number().int().positive().optional() });
 
@@ -18,7 +19,7 @@ export const GET = route<{ id: string }>({ auth: "user", rate: { name: "techpack
   const config = designConfigSchema.parse(v.config);
   const db = await getDb();
   const body = await loadBodyForProfile(db, project.userId, config.measurementProfileId);
-  const spec = buildTechSpec(config, { name: project.name, version: v.version, id: project.id }, validationContext(config, body));
+  const spec = buildTechSpec(config, { name: project.name, version: v.version, id: project.id }, validationContext(config, body), await getPricingRules(db));
   await db.insert(manufacturingSpecs).values({ versionId: v.id, spec });
   const slug = project.name.replace(/[^\w-]+/g, "-").toLowerCase();
   if (format === "json") {

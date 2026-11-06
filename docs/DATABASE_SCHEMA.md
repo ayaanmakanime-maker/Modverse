@@ -17,6 +17,7 @@ PostgreSQL via Drizzle ORM (`src/lib/db/schema.ts`), **43 tables**, versioned SQ
 |---|---|
 | `0001_v2_upload_meta` | `uploaded_assets.meta` (jsonb) — e.g. customer-font family + rights confirmation; `kind` gains `font` |
 | `0002_v2_fit_intelligence` | `measurement_profiles.provenance` (jsonb, default `{}`) — per-field source user/camera/derived, confidence, ± tolerance; new `fit_feedback` table (user, order item [unique], model, size, fit, overall, per-area ratings, notes) for **verified fit** |
+| `0003_v2_pricing_discounts` | `discount_codes` table (code [unique], percent/fixed, value, minimum subtotal, max discount, active, start/end, usage limit, per-customer limit); `carts.discount_code`; `orders.discount`, `orders.discount_code`. Pricing rules v2 live in `platform_settings.pricing` |
 Design documents inside `design_versions.config` are versioned by `schemaVersion` (V2 = 2) and upgraded on read.
 
 ## Ownership rules

@@ -324,11 +324,8 @@ export function AdminAudit() {
 
 export function AdminSettings() {
   const { data, reload } = useApi<{ settings: { key: string; value: unknown }[] }>("/api/admin/settings");
-  const [shipping, setShipping] = useState({ flatRate: 79, freeAbove: 1999 });
   const [sim, setSim] = useState(true);
   useEffect(() => {
-    const s = data?.settings.find((x) => x.key === "shipping")?.value as { flatRate: number; freeAbove: number } | undefined;
-    if (s) setShipping({ flatRate: s.flatRate, freeAbove: s.freeAbove });
     const c = data?.settings.find((x) => x.key === "checkout")?.value as { simulatedPaymentsEnabled: boolean } | undefined;
     if (c) setSim(c.simulatedPaymentsEnabled);
   }, [data]);
@@ -337,17 +334,13 @@ export function AdminSettings() {
   return (
     <div className="max-w-xl space-y-6">
       <H1>Platform settings</H1>
-      <div className="mv-card space-y-3 p-4">
-        <p className="font-medium">Shipping (local estimate)</p>
-        <div className="grid grid-cols-2 gap-2"><label className="text-sm">Flat rate (₹)<Input type="number" value={shipping.flatRate} onChange={(e) => setShipping({ ...shipping, flatRate: Number(e.target.value) })} /></label><label className="text-sm">Free above (₹)<Input type="number" value={shipping.freeAbove} onChange={(e) => setShipping({ ...shipping, freeAbove: Number(e.target.value) })} /></label></div>
-        <Button size="sm" onClick={() => save("shipping", { ...shipping, currency: "INR" })}>Save shipping</Button>
-      </div>
+      <Notice tone="info">Shipping, GST, margins, cost tables and discount codes are managed in <Link className="underline" href="/admin/pricing">Pricing &amp; discounts</Link>.</Notice>
       <div className="mv-card space-y-3 p-4">
         <p className="font-medium">Checkout</p>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={sim} onChange={(e) => setSim(e.target.checked)} /> Allow clearly-labelled simulated payments (local testing)</label>
         <Button size="sm" onClick={() => save("checkout", { simulatedPaymentsEnabled: sim })}>Save checkout</Button>
       </div>
-      <p className="text-xs text-mute">Pricing rules (GST estimate, print rates) live in src/lib/garment/pricing.ts and are mirrored in the &quot;pricing&quot; setting.</p>
+
     </div>
   );
 }

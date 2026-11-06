@@ -15,7 +15,7 @@ import { applyOperations, fixToOp, LAYER_SETTABLE, type DesignOp, type ResolvedA
 import { createDesign, designSummary } from "../garment/design";
 import { getModel, MODEL_BY_ID } from "../garment/models";
 import { FABRIC_BY_ID, getFabric } from "../garment/fabrics";
-import { priceDesign } from "../garment/pricing";
+import { DEFAULT_PRICING, priceDesign, type PricingRules } from "../garment/pricing";
 import { validateDesign, type ValidationContext } from "../garment/validation";
 import type { DesignConfig, Layer } from "../garment/schema";
 import { colorName } from "../color";
@@ -133,6 +133,8 @@ export function diffDesigns(before: DesignConfig | null, after: DesignConfig): P
 export interface CompileOptions {
   defaultAudience?: Audience;
   validation?: ValidationContext;
+  /** Server pricing rules (admin-configured) for the price preview. */
+  pricing?: PricingRules;
 }
 
 export function compileProposal(base: DesignConfig | null, rawProposal: unknown, artwork: ResolvedArtwork[], opts: CompileOptions = {}): CompileResult {
@@ -266,8 +268,10 @@ export function compileProposal(base: DesignConfig | null, rawProposal: unknown,
   const after = validateDesign(final, opts.validation);
   const seen = new Set((before?.issues ?? []).map((i) => `${i.code}:${i.layerId ?? ""}`));
   const newIssues = after.issues.filter((i) => !seen.has(`${i.code}:${i.layerId ?? ""}`)).map((i) => ({ code: i.code, severity: i.severity, message: i.message }));
-  const priceAfter = priceDesign(final).unitTotal;
-  const priceBefore = start ? priceDesign(start).unitTotal : null;
+  const rules = opts.pricing ?? DEFAULT_PRICING;
+  const pctx = { assetColors: opts.validation?.assetColors };
+  const priceAfter = priceDesign(final, rules, pctx).unitTotal;
+  const priceBefore = start ? priceDesign(start, rules, pctx).unitTotal : null;
   return {
     version: COMPILE_VERSION,
     ok: res.applied.length > 0,

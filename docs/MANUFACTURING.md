@@ -6,6 +6,13 @@ Categories: fabric (garment suitability, GSM range, season, panel fabric mixes/s
 ## Tech pack (`src/lib/garment/techspec.ts`, `src/lib/techpack-pdf.ts`)
 Structured spec per design version: garment, fabric, construction, panels, measurement sheet with tolerances, graded chart (parametric), artwork & typography placements, **Bill of Materials** (fabric metres estimate, thread, rib, interlining, buttons incl. spares, labels, print/embroidery placements), validation report, price estimate and disclaimers. Outputs: JSON and **PDF** (logo, placement diagram from real flat geometry, tables) via `GET /api/designs/:id/techpack?format=pdf|json`; each generation is recorded in `manufacturing_specs` / `tech_packs` and the PDF stored privately.
 
+### V2 additions
+* **Artwork placement sheet** (PDF page + `spec.placements`): one diagram per decorated surface (front/back flats, sleeve pattern, collar/cuff/pocket/yoke bands) with the safe print area, centre line, artwork bounding boxes including rotation, and **dimension callouts from factory reference points** — HPS/centre front, HPS/centre back, sleeve cap/centre line, collar seam, cuff top edge, pocket mouth, yoke seam — giving distance from the reference edge to the artwork top and offset from the centre line.
+* **Print & embroidery specification** table: zone, method, size, number of ink colours (from the real artwork), estimated **stitch count** for embroidery, and whether the artwork is inside the print area.
+* **Fabric consumption** from the actual panel outline areas (front, back, sleeves, collar plies, cuffs, placket, yoke, pockets) + seam allowance + marker wastage (`src/lib/garment/consumption.ts`) — the same figure feeds the BOM and pricing.
+* **Price estimate** table (itemised, illustrative) and the estimated customisation manufacturing cost; order snapshots keep the price breakdown, rules version and placements.
+* Manufacturing validation report remains part of every tech pack. Still **design intent**, not graded patterns, markers or stitch files.
+
 ## Exports
 * Print-ready **SVG** per zone in real centimetres with embedded fonts (transparent), and **300 DPI PNG**.
 * **CAD exchange JSON** (`modverse.design-intent.v1`): measurements, construction, flat outlines, print areas and placements for future CLO 3D / Gerber AccuMark bridges.

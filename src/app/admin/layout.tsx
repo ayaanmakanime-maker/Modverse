@@ -8,7 +8,7 @@ export const metadata = { title: { default: "Admin", template: "%s · ModVerse A
 
 const NAV: [string, string, boolean][] = [
   ["/admin", "Overview", false], ["/admin/orders", "Orders", false], ["/admin/designs", "Design reviews", false], ["/admin/users", "Customers & staff", true],
-  ["/admin/catalogue", "Catalogue", false], ["/admin/library", "Creative Library", false], ["/admin/integrations", "Integrations", true], ["/admin/audit", "Audit log", true], ["/admin/settings", "Settings", true],
+  ["/admin/catalogue", "Catalogue", false], ["/admin/library", "Creative Library", false], ["/admin/pricing", "Pricing & discounts", true], ["/admin/integrations", "Integrations", true], ["/admin/audit", "Audit log", true], ["/admin/settings", "Settings", true],
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

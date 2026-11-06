@@ -15,6 +15,9 @@ import type { SessionUser } from "@/lib/auth/session";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createProject, saveProject, listVersions, revertProject, duplicateProject, getProjectWithVersion, deleteProject, listProjects } from "@/lib/services/designs";
 import { addToCart, checkout, confirmSimulatedPayment, getCart, getOrder, staffUpdateOrder, reviewOrderItem, cancelOrder } from "@/lib/services/commerce";
+import { getPricingRules, savePricingRules, upsertDiscount, setCartDiscount, resetPricingRules } from "@/lib/services/pricing";
+import { reorder, redesignFromOrder } from "@/lib/services/commerce";
+import { DEFAULT_PRICING } from "@/lib/garment/pricing";
 import { createChild, upsertMeasurementProfile, deleteChild, listMeasurementProfiles, deleteAccount, submitFitFeedback, listFitFeedback } from "@/lib/services/account";
 import { saveCredentials, setEnabled, getActiveIntegration, listIntegrations, recordTest } from "@/lib/integrations/config";
 import { createDesign, createTextLayer } from "@/lib/garment/design";
@@ -160,6 +163,61 @@ describe("commerce: cart → simulated checkout → production approval", () => 
     cfg.fabric.id = "pure-linen";
     await saveProject(alice, project.id, { config: cfg });
     await expect(addToCart(alice, { projectId: project.id, quantity: 1 })).rejects.toMatchObject({ code: "design_invalid" });
+  });
+});
+
+describe("dynamic pricing, discounts, reorder", () => {
+  it("applies admin rules server-side, validates discounts, refuses stale totals and snapshots prices", async () => {
+    const adminRow = (await (await getDb()).select().from(s.users).where(eq(s.users.role, "admin")))[0];
+    const admin: SessionUser = { id: adminRow.id, email: adminRow.email, name: adminRow.name, role: "admin", emailVerified: true, sessionId: "t" };
+    const dana = await makeUser("dana@example.com");
+    const { project } = await createProject(dana, { modelId: "tee-classic-crew", audience: "men" });
+    const cfg = createDesign("tee-classic-crew", "men");
+    cfg.layers = [createTextLayer(cfg, "PRICE", "center-chest")];
+    await saveProject(dana, project.id, { config: cfg });
+    const before = await addToCart(dana, { projectId: project.id, quantity: 1 });
+    await savePricingRules(admin, { ...DEFAULT_PRICING, margins: { ...DEFAULT_PRICING.margins, decoration: 3 } });
+    expect((await getPricingRules()).margins.decoration).toBe(3);
+    const after = await getCart(dana);
+    expect(after.lines[0].unitPrice).toBeGreaterThan(before.lines[0].unitPrice);
+    expect(after.lines[0].priceChanged).toBe(true);
+    await expect(savePricingRules(admin, { ...DEFAULT_PRICING, tax: { ...DEFAULT_PRICING.tax, gstLowRate: 2 } })).rejects.toBeTruthy();
+
+    await upsertDiscount(admin, { code: "WELCOME10", kind: "percent", value: 10, perUserLimit: 1 });
+    await upsertDiscount(admin, { code: "OLDCODE", kind: "fixed", value: 100, endsAt: "2020-01-01" });
+    await expect(upsertDiscount(admin, { code: "welcome10", kind: "fixed", value: 50 })).rejects.toMatchObject({ status: 409 });
+    await expect(upsertDiscount(admin, { code: "TOOMUCH", kind: "percent", value: 95 })).rejects.toBeTruthy();
+    await expect(setCartDiscount(dana, "OLDCODE")).rejects.toMatchObject({ message: expect.stringMatching(/expired/) });
+    await expect(setCartDiscount(dana, "NOPE")).rejects.toMatchObject({ status: 400 });
+    await setCartDiscount(dana, "welcome10");
+    const disc = await getCart(dana);
+    expect(disc.discount).toBe(Math.round(disc.subtotal * 0.1));
+    expect(disc.total).toBe(disc.subtotal - disc.discount + disc.gst + disc.shipping);
+
+    await expect(checkout(dana, { address, expectedTotal: disc.total + 1 })).rejects.toMatchObject({ code: "price_changed" });
+    const { order } = await checkout(dana, { address, expectedTotal: disc.total });
+    expect(order.discount).toBe(disc.discount);
+    expect(order.discountCode).toBe("WELCOME10");
+    const full = await getOrder(dana, order.id);
+    const snap = full.items[0].specSnapshot as { price: { unitPrice: number; lines: unknown[] }; pricingRulesVersion: number; placements: unknown[] };
+    expect(snap.price.unitPrice).toBe(disc.lines[0].unitPrice);
+    expect(snap.pricingRulesVersion).toBe(2);
+    expect(snap.placements).toHaveLength(1);
+
+    // Per-customer limit: the same code can't be used twice.
+    await addToCart(dana, { projectId: project.id, quantity: 1 });
+    await expect(setCartDiscount(dana, "WELCOME10")).rejects.toMatchObject({ message: expect.stringMatching(/already used/) });
+
+    // Reorder (current prices) and redesign (new editable copy); other customers cannot.
+    await resetPricingRules(admin);
+    const r = await reorder(dana, order.id);
+    expect(r.cart.lines.some((l) => l.projectId === project.id)).toBe(true);
+    await expect(reorder(bob, order.id)).rejects.toMatchObject({ status: 404 });
+    const { projectId } = await redesignFromOrder(dana, order.id, full.items[0].id);
+    expect(projectId).not.toBe(project.id);
+    const copy = await getProjectWithVersion(dana, projectId);
+    expect((copy.version.config as { layers: { text?: string }[] }).layers[0].text).toBe("PRICE");
+    await expect(redesignFromOrder(bob, order.id, full.items[0].id)).rejects.toMatchObject({ status: 404 });
   });
 });
 

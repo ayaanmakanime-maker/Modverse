@@ -6,6 +6,7 @@ import { getLibrary } from "@/lib/library/server";
 import { bodySchema } from "@/lib/services/account";
 import { validationContext } from "@/lib/services/designs";
 import { LIMITS } from "@/lib/security/rate-limit";
+import { getPricingRules } from "@/lib/services/pricing";
 import { modelDirector } from "@/lib/ai/providers";
 import { localDirector, runPipeline, type Direction } from "@/lib/ai/pipeline";
 import { artworkDeps, museResponse } from "@/lib/ai/server";
@@ -38,6 +39,6 @@ export const POST = route({ rate: { name: "muse", ...LIMITS.muse } }, async ({ b
     direction = localDirector(input.message, input.config, lib, { defaultAudience: input.audience, selectedLayerId: input.selectedLayerId ?? null });
     if (model) direction.fallbackReason = `${model.label} failed (${model.error ?? "invalid output"}) — answered with local rules`;
   }
-  const result = await runPipeline(direction, input.config, { ...(await artworkDeps(user)), defaultAudience: input.audience, validation: ctx });
+  const result = await runPipeline(direction, input.config, { ...(await artworkDeps(user)), defaultAudience: input.audience, validation: ctx, pricing: await getPricingRules() });
   return museResponse(result);
 });

@@ -7,7 +7,8 @@ import { getModel } from "@/lib/garment/models";
 import { formatINR } from "@/lib/garment/pricing";
 import { getDb } from "@/lib/db/client";
 import { categories, garmentModels, products } from "@/lib/db/schema";
-import { GARMENT_TYPE_LABELS } from "@/lib/garment/types";
+import { parseCatalogueQuery, searchCatalogue } from "@/lib/garment/catalogue-search";
+import { CatalogueFilters } from "@/components/shop/CatalogueFilters";
 
 export const dynamic = "force-dynamic";
 
@@ -16,25 +17,25 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   return { title: `${category[0]?.toUpperCase()}${category.slice(1)} — T-shirts & shirts` };
 }
 
-export default async function CategoryPage({ params, searchParams }: { params: Promise<{ category: string }>; searchParams: Promise<{ type?: string }> }) {
+export default async function CategoryPage({ params, searchParams }: { params: Promise<{ category: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { category } = await params;
-  const { type } = await searchParams;
+  const query = parseCatalogueQuery(await searchParams);
   const db = await getDb();
   const [cat] = await db.select().from(categories).where(eq(categories.id, category));
   if (!cat || !cat.active) notFound();
   const rows = await db.select({ p: products, active: garmentModels.active }).from(products).innerJoin(garmentModels, eq(garmentModels.id, products.garmentModelId)).where(eq(products.categoryId, category));
-  const items = rows.filter((r) => r.p.active && r.active).map((r) => ({ product: r.p, model: getModel(r.p.garmentModelId) })).filter((i) => !type || i.model.garmentType === type);
+  const active = rows.filter((r) => r.p.active && r.active);
+  const productByModel = new Map(active.map((r) => [r.p.garmentModelId, r.p]));
+  const models = searchCatalogue(query, active.map((r) => getModel(r.p.garmentModelId)), (m) => productByModel.get(m.id)?.basePrice ?? m.basePrice);
+  const items = models.map((model) => ({ product: productByModel.get(model.id)!, model }));
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:px-6">
       <p className="mv-eyebrow">ModVerse · {cat.name}</p>
       <h1 className="mv-display mt-2 text-5xl">{cat.name}</h1>
       <p className="mt-3 max-w-2xl text-bone-2">{cat.description}</p>
       {category === "kids" && <p className="mt-3 max-w-2xl text-sm text-mute">Kidswear designs can be linked to guardian-managed child profiles. Children&apos;s measurements and photos are never shared publicly by default.</p>}
-      <div className="mt-8 flex gap-2">
-        {[["", "All"], ["tshirt", GARMENT_TYPE_LABELS.tshirt], ["shirt", GARMENT_TYPE_LABELS.shirt]].map(([v, l]) => (
-          <Link key={v} href={v ? `/shop/${category}?type=${v}` : `/shop/${category}`} data-active={(type ?? "") === v} className="mv-chip">{l}</Link>
-        ))}
-      </div>
+      <CatalogueFilters action={`/shop/${category}`} query={query} count={items.length} />
+      {items.length === 0 && <p className="mt-8 text-sm text-mute">No models match these filters. <Link className="underline" href={`/shop/${category}`}>Clear filters</Link> or <Link className="underline" href="/design/new">start from scratch</Link>.</p>}
       <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         {items.map(({ product, model }) => {
           const d = createDesign(model.id, category as "men");

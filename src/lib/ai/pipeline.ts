@@ -14,6 +14,7 @@ import { proposalFromOps, type DesignProposal } from "./proposal";
 import { resolveArtwork, type ArtworkDeps } from "./artwork";
 import { compileProposal, type CompileResult } from "./compiler";
 import type { ValidationContext } from "../garment/validation";
+import type { PricingRules } from "../garment/pricing";
 
 export interface Direction {
   provider: string;
@@ -37,8 +38,8 @@ export interface PipelineResult {
   compiled: CompileResult;
 }
 
-export async function runPipeline(direction: Direction, config: DesignConfig | null, deps: ArtworkDeps & { defaultAudience?: Audience; validation?: ValidationContext }): Promise<PipelineResult> {
+export async function runPipeline(direction: Direction, config: DesignConfig | null, deps: ArtworkDeps & { defaultAudience?: Audience; validation?: ValidationContext; pricing?: PricingRules }): Promise<PipelineResult> {
   const artwork = await resolveArtwork(direction.proposal.artwork, deps);
-  const compiled = compileProposal(config, direction.proposal, artwork, { defaultAudience: deps.defaultAudience, validation: deps.validation });
+  const compiled = compileProposal(config, direction.proposal, artwork, { defaultAudience: deps.defaultAudience, validation: deps.validation, pricing: deps.pricing });
   return { direction, compiled };
 }

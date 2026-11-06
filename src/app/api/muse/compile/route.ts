@@ -6,6 +6,7 @@ import { runPipeline } from "@/lib/ai/pipeline";
 import { artworkDeps, museResponse } from "@/lib/ai/server";
 import { validationContext } from "@/lib/services/designs";
 import { LIMITS } from "@/lib/security/rate-limit";
+import { getPricingRules } from "@/lib/services/pricing";
 
 const schema = z.object({
   proposal: designProposalSchema,
@@ -21,6 +22,6 @@ const schema = z.object({
 export const POST = route({ rate: { name: "muse", ...LIMITS.muse } }, async ({ body, user }) => {
   const input = await body(schema);
   const ctx = input.config ? validationContext(input.config) : {};
-  const result = await runPipeline({ provider: input.provider, label: input.label, proposal: input.proposal, understood: input.proposal.rationale, latencyMs: input.latencyMs }, input.config, { ...(await artworkDeps(user)), defaultAudience: input.audience, validation: ctx });
+  const result = await runPipeline({ provider: input.provider, label: input.label, proposal: input.proposal, understood: input.proposal.rationale, latencyMs: input.latencyMs }, input.config, { ...(await artworkDeps(user)), defaultAudience: input.audience, validation: ctx, pricing: await getPricingRules() });
   return museResponse(result);
 });

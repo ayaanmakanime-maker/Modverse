@@ -9,6 +9,7 @@ import { formatINR } from "@/lib/garment/pricing";
 import { Logo } from "@/components/brand/Logo";
 import { Badge, Button, Notice, Select, toast } from "@/components/ui";
 import { FIT_FEEDBACK_LABEL, FIT_FEEDBACK_SCALE, type FitFeedbackValue } from "@/lib/garment/fit";
+import { useSession } from "@/components/session";
 
 /** "Verified fit": only the customer, after wearing the delivered garment, can verify fit. */
 function FitFeedbackForm({ itemId, existing }: { itemId: string; existing?: { overall: FitFeedbackValue; areas: Record<string, FitFeedbackValue> } }) {
@@ -50,7 +51,7 @@ function FitFeedbackForm({ itemId, existing }: { itemId: string; existing?: { ov
 const FLOW = ["pending_payment", "payment_confirmed", "design_validation", "awaiting_production_approval", "manufacturing", "quality_inspection", "packed", "shipped", "delivered"];
 
 interface Data {
-  order: { id: string; orderNumber: string; status: string; subtotal: number; gst: number; shipping: number; total: number; isSimulated: boolean; paymentStatus: string; createdAt: string; shippingAddress: Record<string, string> };
+  order: { id: string; orderNumber: string; status: string; subtotal: number; discount?: number; discountCode?: string | null; gst: number; shipping: number; total: number; isSimulated: boolean; paymentStatus: string; createdAt: string; shippingAddress: Record<string, string> };
   items: { id: string; designName: string; size: string; quantity: number; unitPrice: number; version: number; reviewStatus: string; projectId: string | null; specSnapshot: { validation?: { status: string } } }[];
   events: { id: string; status: string; note: string | null; createdAt: string }[];
   payments: { provider: string; environment: string; status: string; amount: number; signatureVerified: boolean; providerPaymentId: string | null }[];
@@ -59,6 +60,7 @@ interface Data {
 
 export function OrderDetail({ data, confirmation }: { data: Data; confirmation?: boolean }) {
   const router = useRouter();
+  const { setCartCount } = useSession();
   const [busy, setBusy] = useState(false);
   const o = data.order;
   const step = FLOW.indexOf(o.status);
@@ -108,11 +110,16 @@ export function OrderDetail({ data, confirmation }: { data: Data; confirmation?:
                 <div><p>{it.designName} <span className="text-mute">· v{it.version} snapshot</span></p><p className="text-xs text-mute">Size {it.size} · qty {it.quantity} · review {it.reviewStatus.replace("_", " ")} · checks {it.specSnapshot.validation?.status ?? "-"}</p></div>
                 <span className="tabular-nums">{formatINR(it.unitPrice * it.quantity)}</span>
               </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <button className="mv-chip !text-[0.65rem]" data-testid="reorder-item" onClick={async () => { try { const r = await api<{ cart: { lines: { quantity: number }[] }; restored: number }>(`/api/orders/${o.id}/reorder`, { body: { itemId: it.id } }); setCartCount(r.cart.lines.reduce((a, l) => a + l.quantity, 0)); toast(r.restored ? "Restored the ordered design and added it to your cart" : "Added to your cart at today's price"); } catch (e) { toast(errorMessage(e), "bad"); } }}>Reorder</button>
+                <button className="mv-chip !text-[0.65rem]" data-testid="redesign-item" onClick={async () => { try { const r = await api<{ projectId: string }>(`/api/orders/${o.id}/redesign`, { body: { itemId: it.id } }); router.push(`/design/${r.projectId}?mode=atelier`); } catch (e) { toast(errorMessage(e), "bad"); } }}>Redesign</button>
+              </div>
               {canVerify && <FitFeedbackForm key={feedback[it.id] ? "has" : "new"} itemId={it.id} existing={feedback[it.id]} />}
             </div>
           ))}
           <div className="space-y-1 p-3 text-sm">
             <p className="flex justify-between text-mute"><span>Subtotal</span><span>{formatINR(o.subtotal)}</span></p>
+            {!!o.discount && <p className="flex justify-between text-ok"><span>Discount {o.discountCode}</span><span>−{formatINR(o.discount)}</span></p>}
             <p className="flex justify-between text-mute"><span>GST (estimate)</span><span>{formatINR(o.gst)}</span></p>
             <p className="flex justify-between text-mute"><span>Shipping</span><span>{o.shipping ? formatINR(o.shipping) : "Free"}</span></p>
             <p className="flex justify-between font-medium"><span>Total</span><span>{formatINR(o.total)}</span></p>

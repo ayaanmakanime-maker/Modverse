@@ -5,7 +5,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf
 import type { TechSpec } from "./garment/techspec";
 import type { DesignConfig } from "./garment/schema";
 import { computeMeasurements } from "./garment/sizing";
-import { polygonToPath, printableArea, sleeveShape, torsoShape } from "./garment/panels";
+import { polygonToPath, printableArea, sleeveShape, torsoShape, zoneCanvas, rotatedBounds } from "./garment/panels";
 import { availableZones } from "./garment/design";
 import { hexToRgb } from "./color";
 
@@ -154,6 +154,56 @@ function placementDiagram(c: Ctx, config: DesignConfig) {
   para(c, "Red boxes = artwork placements (numbered per view, see Artwork table). Dashed = safe print area. Sleeves shown folded flat. Units: cm.", 7, MUTE);
 }
 
+/** One diagram per decorated surface with dimension callouts from the factory reference points. */
+function placementSheet(c: Ctx, spec: TechSpec, config: DesignConfig) {
+  const m = computeMeasurements(config);
+  const kids = config.audience === "kids";
+  const zones = [...new Set(spec.placements.map((p) => p.zone))];
+  const RED = rgb(0.75, 0.2, 0.2);
+  const GOLD = rgb(0.6, 0.5, 0.3);
+  for (const zone of zones) {
+    const items = spec.placements.filter((p) => p.zone === zone);
+    const canvas = zoneCanvas(m, zone as Parameters<typeof zoneCanvas>[1]);
+    const cw = canvas.x1 - canvas.x0;
+    const ch = canvas.y1 - canvas.y0;
+    const boxW = W - 2 * M - 180;
+    const boxH = 220;
+    const scale = Math.min(boxW / cw, boxH / ch);
+    ensure(c, boxH + 40);
+    c.page.drawText(t(`${zone.toUpperCase()} - reference: ${items[0].reference}`), { x: M, y: c.y, size: 7.5, font: c.bold, color: MUTE });
+    const ox = M + (boxW - cw * scale) / 2 - canvas.x0 * scale;
+    const oy = c.y - 12 - (-canvas.y0) * scale;
+    if (zone === "front" || zone === "back") c.page.drawSvgPath(polygonToPath(torsoShape(m, zone, config.construction, kids).outline), { x: ox, y: oy, scale, borderColor: INK, borderWidth: 0.6 });
+    else if (zone === "sleeveLeft" || zone === "sleeveRight") c.page.drawSvgPath(polygonToPath(sleeveShape(m, config.construction).outline), { x: ox, y: oy, scale, borderColor: INK, borderWidth: 0.6 });
+    else c.page.drawSvgPath(`M ${canvas.x0} ${canvas.y0} L ${canvas.x1} ${canvas.y0} L ${canvas.x1} ${canvas.y1} L ${canvas.x0} ${canvas.y1} Z`, { x: ox, y: oy, scale, borderColor: INK, borderWidth: 0.6 });
+    const a = printableArea(m, zone as Parameters<typeof printableArea>[1], config.garmentType, config.construction);
+    c.page.drawSvgPath(`M ${a.x0} ${a.y0} L ${a.x1} ${a.y0} L ${a.x1} ${a.y1} L ${a.x0} ${a.y1} Z`, { x: ox, y: oy, scale, borderColor: GOLD, borderWidth: 0.4, borderDashArray: [2, 2] });
+    c.page.drawSvgPath(`M 0 ${canvas.y0} L 0 ${canvas.y1}`, { x: ox, y: oy, scale, borderColor: MUTE, borderWidth: 0.3, borderDashArray: [1, 2] });
+    for (const p of items) {
+      const l = config.layers.find((x) => x.id === p.layerId);
+      if (!l) continue;
+      const b = rotatedBounds(l.x, l.y, l.width, l.height, l.rotation);
+      c.page.drawSvgPath(`M ${b.x0} ${b.y0} L ${b.x1} ${b.y0} L ${b.x1} ${b.y1} L ${b.x0} ${b.y1} Z`, { x: ox, y: oy, scale, borderColor: RED, borderWidth: 0.8 });
+      // vertical dimension: reference edge (y = 0) → artwork top
+      c.page.drawSvgPath(`M ${b.x1 + 1} 0 L ${b.x1 + 1} ${b.y0}`, { x: ox, y: oy, scale, borderColor: RED, borderWidth: 0.4 });
+      c.page.drawText(t(`${p.fromTopCm} cm`), { x: ox + (b.x1 + 1.4) * scale, y: oy - (b.y0 / 2) * scale, size: 6, font: c.font, color: RED });
+      c.page.drawText(String(p.index), { x: ox + b.x0 * scale + 2, y: oy - b.y0 * scale - 8, size: 7, font: c.bold, color: RED });
+    }
+    // callout list to the right of the diagram
+    let ly = c.y - 14;
+    for (const p of items) {
+      const lines = [`${p.index}. ${p.name}`, `${p.method} - ${p.widthCm} x ${p.heightCm} cm${p.rotation ? ` - rot ${p.rotation} deg` : ""}`, `centre ${p.fromCentreCm >= 0 ? "+" : ""}${p.fromCentreCm} cm from centre line`, `top ${p.fromTopCm} cm below reference`, `${p.colours !== null ? `${p.colours} colour(s)` : "colours: per artwork file"}${p.stitches ? ` - ~${p.stitches} stitches` : ""}${p.insidePrintArea ? "" : " - OUTSIDE PRINT AREA"}`];
+      for (const [k, ln] of lines.entries()) {
+        c.page.drawText(t(ln).slice(0, 52), { x: W - M - 170, y: ly, size: k === 0 ? 7 : 6.5, font: k === 0 ? c.bold : c.font, color: k === 0 ? INK : MUTE });
+        ly -= 9;
+      }
+      ly -= 4;
+    }
+    c.y -= Math.max(boxH + 24, c.y - ly + 6);
+  }
+  para(c, "Dimensions in cm from the stated reference point (HPS = high point shoulder). Red = artwork bounding box incl. rotation; dashed gold = safe print area; dotted = centre line. Confirm with a physical strike-off before bulk production.", 7, MUTE);
+}
+
 export async function renderTechPackPdf(spec: TechSpec, config: DesignConfig): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`ModVerse Tech Pack — ${spec.design.name}`);
@@ -198,8 +248,20 @@ export async function renderTechPackPdf(spec: TechSpec, config: DesignConfig): P
   if (spec.artwork.length) table(c, ["#", "Type", "Zone", "Method", "Position", "Size (cm)", "Detail"], spec.artwork.map((a, i) => [String(i + 1), a.type, a.zone, a.method, a.positionCm, a.sizeCm, a.detail]), [4, 8, 10, 16, 20, 10, 32]);
   else para(c, "No artwork placements.", 8.5, MUTE);
 
+  if (spec.placements.length) {
+    newPage(c);
+    heading(c, "Artwork placement sheet");
+    placementSheet(c, spec, config);
+    heading(c, "Print & embroidery specification");
+    table(c, ["#", "Zone", "Method", "Size (cm)", "Colours", "Stitches (est.)", "In print area"], spec.placements.map((p) => [String(p.index), p.zone, p.method, `${p.widthCm} x ${p.heightCm}`, p.colours === null ? "per file" : String(p.colours), p.stitches ? String(p.stitches) : "-", p.insidePrintArea ? "yes" : "NO"]), [5, 12, 18, 14, 12, 16, 12]);
+  }
+
   heading(c, "Bill of materials (estimated consumption)");
   table(c, ["Item", "Description", "Qty", "Unit", "Colour / notes"], spec.bom.map((b) => [b.item, b.description, String(b.quantity), b.unit, [b.colour, b.notes].filter(Boolean).join(" ")]), [16, 38, 8, 16, 22]);
+
+  heading(c, "Price estimate (illustrative until supplier rates are verified)");
+  table(c, ["Component", "Category", "Detail", "INR"], spec.price.lines.map((l) => [l.label, l.category, l.detail ?? "", String(l.amount)]), [36, 14, 36, 14]);
+  para(c, `Unit price ${spec.price.unitPrice} INR + GST ${spec.price.gst} INR (${Math.round(spec.price.gstRate * 100)}%) = ${spec.price.unitTotal} INR. Estimated customisation manufacturing cost ${spec.price.customisationCost} INR.`, 7.5, MUTE);
 
   heading(c, "Manufacturing validation");
   if (spec.validation.issues.length) table(c, ["Severity", "Issue", "Suggestion"], spec.validation.issues.map((i) => [i.severity, i.message, i.suggestion]), [12, 48, 40]);

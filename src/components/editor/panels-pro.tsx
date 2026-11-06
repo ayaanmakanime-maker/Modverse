@@ -9,7 +9,9 @@ import { buildTechSpec } from "@/lib/garment/techspec";
 import { torsoShape, sleeveShape, printableArea } from "@/lib/garment/panels";
 import { availableZones } from "@/lib/garment/design";
 import type { DesignConfig } from "@/lib/garment/schema";
-import { formatINR, priceDesign } from "@/lib/garment/pricing";
+import { formatINR } from "@/lib/garment/pricing";
+import { useDesignPrice } from "@/lib/client/pricing";
+import { PriceBreakdownView } from "@/components/pricing/PriceBreakdownView";
 import { zoneArtworkSvg } from "@/lib/render/compose";
 import { embeddedFontCss, ensureDesignAssets, fontNeeds, getDataUrl, getPatternUrl, getSvg } from "@/lib/render/assets";
 import { extractSvgColors } from "@/lib/svg/sanitize";
@@ -230,7 +232,7 @@ export function TechPackPanel({ capture3d, exportGlb }: { capture3d: () => strin
   }
 
   const zones = [...new Set(config.layers.map((l) => l.zone))];
-  const price = priceDesign(config);
+  const price = useDesignPrice(config);
   return (
     <div className="space-y-4 text-xs" data-testid="techpack-panel">
       <Notice tone="warn" title="Design-intent documents">Generated specs, BOM and PDFs are not factory-ready patterns. A qualified pattern maker and the manufacturer must review them.</Notice>
@@ -266,8 +268,8 @@ export function TechPackPanel({ capture3d, exportGlb }: { capture3d: () => strin
         <table className="w-full"><tbody>{spec.bom.map((b, i) => <tr key={i} className="border-b border-line/40"><td className="py-0.5">{b.item}<span className="block text-[0.6rem] text-mute">{b.description}</span></td><td className="py-0.5 text-right tabular-nums">{b.quantity} {b.unit}</td></tr>)}</tbody></table>
       </div>
       <div>
-        <p className="mv-eyebrow mb-1 !text-[0.6rem]">Price estimate</p>
-        <table className="w-full"><tbody>{price.lines.map((l, i) => <tr key={i} className="border-b border-line/40"><td className="py-0.5 text-mute">{l.label}</td><td className="py-0.5 text-right tabular-nums">{formatINR(l.amount)}</td></tr>)}<tr><td className="py-1">GST {Math.round(price.gstRate * 100)}% (estimate)</td><td className="text-right tabular-nums">{formatINR(price.gst)}</td></tr><tr className="font-medium"><td>Total per unit</td><td className="text-right tabular-nums">{formatINR(price.unitTotal)}</td></tr></tbody></table>
+        <p className="mv-eyebrow mb-1 !text-[0.6rem]">Price estimate · manufacturing cost of customisation ≈ {formatINR(price.customisationCost)}</p>
+        <PriceBreakdownView price={price} />
       </div>
     </div>
   );

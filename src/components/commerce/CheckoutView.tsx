@@ -22,7 +22,7 @@ function loadRazorpay(): Promise<boolean> {
   });
 }
 
-export function CheckoutView({ total, subtotal, gst, shipping, count, addresses, provider, user }: { total: number; subtotal: number; gst: number; shipping: number; count: number; addresses: { id: string; label: string; fullName: string; line1: string; city: string; pincode: string; isDefault: boolean }[]; provider: string; user: { name: string; email: string } }) {
+export function CheckoutView({ total, subtotal, gst, shipping, count, addresses, provider, user, discount = 0, discountCode = null }: { total: number; subtotal: number; gst: number; shipping: number; count: number; discount?: number; discountCode?: string | null; addresses: { id: string; label: string; fullName: string; line1: string; city: string; pincode: string; isDefault: boolean }[]; provider: string; user: { name: string; email: string } }) {
   const router = useRouter();
   const { setCartCount } = useSession();
   const [addressId, setAddressId] = useState(addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id ?? "");
@@ -31,7 +31,8 @@ export function CheckoutView({ total, subtotal, gst, shipping, count, addresses,
   async function place() {
     setBusy(true);
     try {
-      const body = addressId ? { addressId } : { address: { fullName: form.fullName, phone: form.phone, line1: form.line1, line2: form.line2 || undefined, city: form.city, state: form.state, pincode: form.pincode } };
+      // The server recomputes everything; sending what the customer saw lets it refuse silently-changed totals.
+      const body = addressId ? { addressId, expectedTotal: total } : { expectedTotal: total, address: { fullName: form.fullName, phone: form.phone, line1: form.line1, line2: form.line2 || undefined, city: form.city, state: form.state, pincode: form.pincode } };
       const r = await api<{ order: { id: string }; provider: string; razorpayOrder: { id: string; keyId: string; amount: number } | null }>("/api/checkout", { body });
       setCartCount(0);
       if (r.provider === "razorpay" && r.razorpayOrder) {
@@ -75,6 +76,7 @@ export function CheckoutView({ total, subtotal, gst, shipping, count, addresses,
       <aside className="mv-card h-fit space-y-2 p-5 text-sm">
         <p className="text-mute">{count} item(s)</p>
         <p className="flex justify-between text-mute"><span>Subtotal</span><span>{formatINR(subtotal)}</span></p>
+        {discount > 0 && <p className="flex justify-between text-ok"><span>Discount {discountCode}</span><span>−{formatINR(discount)}</span></p>}
         <p className="flex justify-between text-mute"><span>GST (estimate)</span><span>{formatINR(gst)}</span></p>
         <p className="flex justify-between text-mute"><span>Shipping</span><span>{shipping ? formatINR(shipping) : "Free"}</span></p>
         <p className="flex justify-between border-t border-line pt-2 text-lg"><span>Total</span><span>{formatINR(total)}</span></p>

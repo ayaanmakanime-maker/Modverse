@@ -2,13 +2,15 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
 import { useEditor, type EditorMode } from "@/lib/editor/store";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { getModel } from "@/lib/garment/models";
-import { formatINR, priceDesign } from "@/lib/garment/pricing";
+import { formatINR } from "@/lib/garment/pricing";
+import { useDesignPrice } from "@/lib/client/pricing";
+import { PriceBreakdownView } from "@/components/pricing/PriceBreakdownView";
 import type { PanelId } from "@/lib/garment/types";
 import { api, errorMessage } from "@/lib/client/api";
 import { useSession } from "@/components/session";
@@ -284,7 +286,7 @@ function EditorLayout(p: {
   const config = useEditor((s) => s.config);
   const { user } = useSession();
   const report = useLiveValidation();
-  const price = useMemo(() => priceDesign(config), [config]);
+  const price = useDesignPrice(config);
   const model = getModel(config.modelId);
   const tabs = MODE_TABS[p.mode];
   const isXL = useIsXL(); // properties render once: sidebar on xl, bottom drawer below
@@ -311,6 +313,7 @@ function EditorLayout(p: {
             <p className="mv-eyebrow !text-[0.6rem]">Estimated price</p>
             <p className="mv-display mt-1 text-3xl">{formatINR(price.unitTotal)}</p>
             <p className="text-mute">{formatINR(price.unitPrice)} + GST {formatINR(price.gst)} (estimate) · size {config.size}</p>
+            <details className="mt-2"><summary className="cursor-pointer text-[0.68rem] text-bone-2" data-testid="price-details">Itemised breakdown</summary><div className="mt-2"><PriceBreakdownView price={price} /></div></details>
           </div>
           {config.audience === "kids" && !p.projectId && user && (
             <label className="block text-xs"><span className="mv-label">Link to child profile (optional)</span>
