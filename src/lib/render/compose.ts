@@ -378,6 +378,12 @@ function constructionOverlay(config: DesignConfig, zone: Zone, m: GarmentMeasure
     // armhole / side seams (subtle)
     const side = t.outline.filter(([x, y]) => x > 0 && y >= m.armholeDepth - 0.2 && y <= m.bodyLength - m.hemCurve);
     for (const s of [1, -1]) out.push(`<path d="${polygonToPath(side.map(([x, y]) => [s * x, y] as Pt), false)}" fill="none" stroke="${seam}" stroke-width="0.14"/>`);
+    // Side-seam gussets: small reinforcing triangles where a shirt's curved tail meets the side seam.
+    if (config.garmentType === "shirt" && c.hemShape === "curved" && m.hemCurve >= 3) {
+      const yG = m.bodyLength - m.hemCurve - 0.4;
+      const hw = m.hem / 4;
+      for (const s of [1, -1]) out.push(`<path d="M ${n(s * (hw - 0.05))} ${n(yG - 1.9)} L ${n(s * (hw - 1.2))} ${n(yG + 0.2)} L ${n(s * (hw - 0.05))} ${n(yG + 0.2)} Z" fill="${shade(body, isDark(body) ? 0.05 : -0.04)}" stroke="${stitch}" stroke-width="0.07" stroke-dasharray="0.22 0.16"/>`);
+    }
     if (c.sideSlits) for (const s of [1, -1]) out.push(`<line x1="${n(s * (m.hem / 4 - 0.1))}" x2="${n(s * (m.hem / 4 - 0.1))}" y1="${n(m.bodyLength - m.hemCurve - 6)}" y2="${n(m.bodyLength - m.hemCurve + 0.5)}" stroke="${shade(body, -0.35)}" stroke-width="0.35"/>`);
     // neckline stitching
     out.push(stitchLine(t.neckline, stitch, false, config.garmentType === "shirt" ? 0.7 : m.collarHeight + 0.4));

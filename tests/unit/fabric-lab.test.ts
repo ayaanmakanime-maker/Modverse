@@ -106,3 +106,28 @@ describe("garment-aware editing", () => {
     expect(zoneArtworkSvg(cfg, "front", m, NO_ASSETS)).not.toContain("pm-");
   });
 });
+
+describe("flagship garment construction (3D geometry)", () => {
+  it("adds sleeve plackets with buttons to long-sleeve cuffed shirts, not to tees", async () => {
+    const { buildGarmentGeometry } = await import("@/lib/three/garment-geometry");
+    const shirt = buildGarmentGeometry(createDesign("shirt-classic-formal", "men"), { resolution: 16, folds: false });
+    expect(shirt.sleevePlackets).toHaveLength(2);
+    expect(shirt.buttons.filter((b) => b.site === "cuff").length).toBeGreaterThanOrEqual(4);
+    const tee = buildGarmentGeometry(createDesign("tee-classic-crew", "men"), { resolution: 16, folds: false });
+    expect(tee.sleevePlackets).toHaveLength(0);
+    const over = buildGarmentGeometry(createDesign("tee-oversized", "men"), { resolution: 16, folds: false });
+    expect(over.measurements.chest).toBeGreaterThan(tee.measurements.chest + 15);
+  });
+  it("makes trims thicker for heavier cloth", async () => {
+    const { buildGarmentGeometry } = await import("@/lib/three/garment-geometry");
+    const base = createDesign("shirt-classic-formal", "men");
+    const thick = (id: string, gsm: number) => {
+      const g = buildGarmentGeometry({ ...base, fabric: { ...base.fabric, id, gsm } }, { resolution: 16, folds: false });
+      const p = g.placket!.positions;
+      let zMin = Infinity, zMax = -Infinity;
+      for (let i = 2; i < p.length; i += 3) { zMin = Math.min(zMin, p[i]); zMax = Math.max(zMax, p[i]); }
+      return zMax - zMin;
+    };
+    expect(thick("indigo-denim", 300)).toBeGreaterThan(thick("cotton-poplin", 110));
+  });
+});

@@ -285,10 +285,10 @@ export function Garment({ config, centered = true, relief = true, production = f
   const { maps, relief: reliefMaps } = useZoneTextures(config, geo, 14, relief, production, guides);
   const g = useMemo(() => ({
     front: toGeometry(geo.front), back: toGeometry(geo.back), sleeveLeft: toGeometry(geo.sleeveLeft), sleeveRight: toGeometry(geo.sleeveRight),
-    collar: geo.collar.map(toGeometry), cuffs: geo.cuffs.map(toGeometry), placket: geo.placket ? toGeometry(geo.placket) : null, pockets: geo.pockets.map(toGeometry),
+    collar: geo.collar.map(toGeometry), cuffs: geo.cuffs.map(toGeometry), placket: geo.placket ? toGeometry(geo.placket) : null, pockets: geo.pockets.map(toGeometry), sleevePlackets: geo.sleevePlackets.map(toGeometry),
   }), [geo]);
   useEffect(() => () => {
-    [g.front, g.back, g.sleeveLeft, g.sleeveRight, ...g.collar, ...g.cuffs, ...g.pockets, g.placket].forEach((x) => x?.dispose());
+    [g.front, g.back, g.sleeveLeft, g.sleeveRight, ...g.collar, ...g.cuffs, ...g.pockets, ...g.sleevePlackets, g.placket].forEach((x) => x?.dispose());
   }, [g]);
   const torsoRepeat: [number, number] = [m.chest / 2 + 6, m.bodyLength + 5];
   const sleeveRepeat: [number, number] = [m.bicep + 4, m.sleeveLength + 3];
@@ -311,6 +311,11 @@ export function Garment({ config, centered = true, relief = true, production = f
       {g.cuffs.map((cg, i) => (
         <mesh key={`cuff${i}`} geometry={cg} castShadow receiveShadow name="panel-cuffs">
           <FabricMaterial config={config} panel="cuffs" map={i === 0 ? maps.cuffs : maps.cuffsPlain} normalMap={relief ? (ribCuffs ? trimNormal("rib", Math.round(m.sleeveOpening * 2.2)) : trimNormal("cuff")) : undefined} repeat={[m.sleeveOpening, 6]} />
+        </mesh>
+      ))}
+      {g.sleevePlackets.map((sg, i) => (
+        <mesh key={`sp${i}`} geometry={sg} castShadow receiveShadow name="panel-sleeve-placket">
+          <FabricMaterial config={config} panel={i === 0 ? "sleeveLeft" : "sleeveRight"} normalMap={relief ? trimNormal("placket") : undefined} repeat={[3, 14]} />
         </mesh>
       ))}
       {g.placket && <mesh geometry={g.placket} castShadow receiveShadow name="panel-placket"><FabricMaterial config={config} panel="placket" color={panelColor(config, c.placket === "contrast" || config.panels.placket.color ? "placket" : "front")} normalMap={relief ? trimNormal("placket") : undefined} repeat={[3, m.bodyLength]} /></mesh>}

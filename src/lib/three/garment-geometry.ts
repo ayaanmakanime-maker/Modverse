@@ -50,6 +50,8 @@ export interface GarmentGeometry {
   cuffs: MeshData[];
   placket: MeshData | null;
   pockets: MeshData[];
+  /** Shirt sleeve (gauntlet) plackets above the cuffs, [left, right]. */
+  sleevePlackets: MeshData[];
   buttons: ButtonData[];
   buttonholes: ButtonholeData[];
   sleeveAngleDeg: number;
@@ -583,6 +585,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
 
   // ── Cuffs (rings at sleeve ends) ─────────────────────────────
   const cuffs: MeshData[] = [];
+  const sleevePlackets: MeshData[] = [];
   if (!["hem", "none"].includes(c.cuff)) {
     // UVs follow the unrolled cuff canvas (x along circumference, 0 = outer face; y from top edge),
     // so the "cuffs" artwork zone maps 1:1 from the 2D editor.
@@ -622,6 +625,26 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const p = rows[2][bi];
         const o = mul(axisAt(p), -1);
         if (c.cuff !== "french") buttons.push({ position: add(p, mul(o, 0.32)), normal: o, radius: c.buttons.sizeMm / 22, site: "cuff" });
+        // Gauntlet (sleeve) placket: the opening above the cuff on the back of the sleeve, with its own small button.
+        if (c.sleeveLength === "long") {
+          const top = rows[0][bi];
+          const out = mul(axisAt(top), -1);
+          const up = mul(s.dir, -1);
+          const across = norm([up[1] * out[2] - up[2] * out[1], up[2] * out[0] - up[0] * out[2], up[0] * out[1] - up[1] * out[0]]);
+          const L = kids ? 8.5 : 12.5;
+          const W = kids ? 1.8 : 2.3;
+          const steps = 6;
+          const prow: V3[][] = [];
+          for (let i = 0; i <= steps; i++) {
+            const d = (L * i) / steps;
+            // the sleeve widens above the cuff; sit just proud of the surface
+            const base = add(add(top, mul(up, d)), mul(out, 0.1 + 0.035 * d));
+            prow.push([-W / 2, 0, W / 2].map((u) => add(base, mul(across, u))));
+          }
+          sleevePlackets.push(shellMesh(prow, 0.12 * tk, () => axisAt(top), (i, j) => [j / 2, 1 - i / steps], { j0: true, j1: true, i1: true }));
+          const bd = L * 0.62;
+          buttons.push({ position: add(add(top, mul(up, bd)), mul(out, 0.1 + 0.035 * bd + 0.12 * tk + 0.12)), normal: out, radius: (c.buttons.sizeMm / 22) * 0.8, site: "cuff" });
+        }
         const nb = rows[2][(bi + 3) % rows[2].length];
         buttonholes.push({ position: add(nb, mul(o, 0.33)), normal: o, along: norm(sub(rows[2][(bi + 4) % rows[2].length], rows[2][(bi + 2) % rows[2].length])), length: c.buttons.sizeMm / 10 + 0.3, width: 0.32 });
       }
@@ -707,6 +730,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
     cuffs,
     placket,
     pockets,
+    sleevePlackets,
     buttons,
     buttonholes,
     sleeveAngleDeg: dropDeg,
