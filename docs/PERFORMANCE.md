@@ -50,5 +50,16 @@ At 1–2 FPS the CPU rasteriser is the bottleneck; these numbers say nothing abo
 
 The fake camera shows a test pattern (no person), so this verifies the pipeline, not tracking quality. On phones/laptops with WebGL-accelerated MediaPipe, pose inference is typically far faster; benchmark on target devices (see LIVE_TRY_ON.md).
 
+## After the Ultracode upgrade (same container, `npm run perf`, `docs/evaluation/performance.json`)
+| Metric | Before | After | Note |
+|---|---|---|---|
+| Editor page JS | 540 KB | 593 KB | Atelier Pro tools, panels, Fabric Lab, scanner UI |
+| 2D editor: add text / library graphic / undo | 98 / 70 / 46 ms | 104–133 / 87–176 / 39–42 ms | richer per-layer markup (effects pipeline) |
+| Split view (software GL): add text / graphic / undo | 2.25 / 2.52 / 1.78 s | 1.03–2.07 / 2.10–2.29 / 1.44–1.58 s | dominated by software 3D texture uploads |
+| 3D viewer, time to canvas (direct, fresh browser context) | 0.34–0.59 s | 0.57 s cold · 0.35 s warm | the probe's *first* viewer run reported 2.3–2.7 s, but a direct cold measurement with the same URL gives 0.57 s; later probe runs 0.35–0.95 s |
+| Trial room: tracking start / FPS / pose inference | 4.9 s / 23 / 252 ms | 5.0 s / 24 / 266 ms | unchanged within noise |
+
+Warp meshes (128–200 clipped copies) and stacked filters cost more to rasterise than plain layers; they are only generated for layers that use them. All figures are software-rendered in a GPU-less container — measure on real devices.
+
 ## Not measured here
 Real mobile devices, network throttling, GPU frame times, long-session memory growth. These need physical hardware.
