@@ -8,6 +8,7 @@ import { GarmentFlat } from "@/components/garment/GarmentFlat";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { Badge, Button, EmptyState, Input, Modal, Notice, Select, Spinner, toast } from "@/components/ui";
 import { COLLECTIONS } from "@/lib/library/collections";
+import { OrderFulfilmentPanel } from "./AdminPartners";
 
 function useApi<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
@@ -120,13 +121,14 @@ export function AdminOrderDetail({ id }: { id: string }) {
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="!w-64" />
           <Button size="sm" disabled={!status} onClick={() => run(() => api(`/api/admin/orders/${id}`, { method: "PATCH", body: { status, note: note || undefined } }), "Status updated")} data-testid="update-status">Update</Button>
         </div>
-        <p className="text-xs text-mute">No manufacturer is connected in the local release — production status is managed by staff. Real refunds must be issued in the payment provider dashboard.</p>
+        <p className="text-xs text-mute">Partner events (quote approval, QC, packing, pickup, delivery) advance the status automatically; manual updates remain available for orders fulfilled outside the partner portals. Real refunds must be issued in the payment provider dashboard.</p>
         <div className="flex flex-wrap gap-2">
           <Input value={track.courier} onChange={(e) => setTrack({ ...track, courier: e.target.value })} placeholder="Courier" className="!w-40" />
           <Input value={track.awb} onChange={(e) => setTrack({ ...track, awb: e.target.value })} placeholder="AWB / tracking no." className="!w-48" />
           <Button size="sm" variant="ghost" disabled={!track.courier || !track.awb} onClick={() => run(() => api(`/api/admin/orders/${id}`, { method: "PATCH", body: { tracking: track } }), "Tracking added")}>Add tracking</Button>
         </div>
       </section>
+      <OrderFulfilmentPanel orderId={id} orderStatus={o.status} onChange={reload} />
       <section><p className="mv-eyebrow">Ship to</p><p className="text-sm">{Object.values(o.shippingAddress).filter(Boolean).join(", ")}</p>{o.notes && <p className="text-sm text-mute">Notes: {o.notes}</p>}</section>
       <section><p className="mv-eyebrow">Timeline</p><ul className="mt-2 space-y-1 text-xs">{data.events.map((e) => <li key={e.id}><span className="text-mute">{new Date(e.createdAt).toLocaleString("en-IN")}</span> — {e.status.replace(/_/g, " ")}{e.note ? `: ${e.note}` : ""}</li>)}</ul></section>
     </div>

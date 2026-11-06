@@ -153,11 +153,17 @@ export async function deleteFont(user: SessionUser, id: string) {
   await getStorage().delete(row.storageKey);
 }
 
-export async function readUpload(user: SessionUser, id: string) {
+/**
+ * Owner or staff may read a private file. `extraAccess` lets a caller grant a
+ * narrowly-scoped additional reader (e.g. the partner organisation assigned to
+ * an order that uses this artwork) without widening the default rule.
+ */
+export async function readUpload(user: SessionUser, id: string, extraAccess?: (uploadId: string) => Promise<boolean>) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw notFound("File");
   const db = await getDb();
   const [row] = await db.select().from(s.uploadedAssets).where(eq(s.uploadedAssets.id, id));
-  if (!row || (row.userId !== user.id && user.role === "customer")) throw notFound("File");
+  if (!row) throw notFound("File");
+  if (row.userId !== user.id && user.role === "customer" && !(extraAccess && row.kind !== "export" && (await extraAccess(id)))) throw notFound("File");
   return { row, bytes: await getStorage().get(row.storageKey) };
 }
 

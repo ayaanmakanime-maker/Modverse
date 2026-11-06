@@ -204,7 +204,13 @@ function placementSheet(c: Ctx, spec: TechSpec, config: DesignConfig) {
   para(c, "Dimensions in cm from the stated reference point (HPS = high point shoulder). Red = artwork bounding box incl. rotation; dashed gold = safe print area; dotted = centre line. Confirm with a physical strike-off before bulk production.", 7, MUTE);
 }
 
-export async function renderTechPackPdf(spec: TechSpec, config: DesignConfig): Promise<Uint8Array> {
+export interface TechPackPdfOptions {
+  /** Production copy for a manufacturer: no retail prices, adds the order reference & quantity. */
+  production?: { orderNumber: string; quantity: number; size: string; partner: string };
+}
+
+export async function renderTechPackPdf(spec: TechSpec, config: DesignConfig, opts: TechPackPdfOptions = {}): Promise<Uint8Array> {
+  const prod = opts.production;
   const doc = await PDFDocument.create();
   doc.setTitle(`ModVerse Tech Pack — ${spec.design.name}`);
   doc.setAuthor("ModVerse");
@@ -224,7 +230,8 @@ export async function renderTechPackPdf(spec: TechSpec, config: DesignConfig): P
   c.page.drawText(t(spec.design.name), { x: M, y: c.y, size: 18, font: bold, color: INK });
   c.y -= 16;
   para(c, `${spec.garment.model} - ${spec.garment.type} - ${spec.garment.audience} - size ${spec.garment.size} - ${spec.garment.fit} fit - version ${spec.design.version} - generated ${new Date(spec.generatedAt).toLocaleString("en-IN")}`, 8.5, MUTE);
-  para(c, `Validation: ${spec.validation.status.toUpperCase()} (${spec.validation.counts.error} errors, ${spec.validation.counts.warning} warnings). Unit price estimate ${spec.price.unitTotal} INR incl. GST ${Math.round(spec.price.gstRate * 100)}% (estimate).`, 8.5);
+  if (prod) para(c, `PRODUCTION COPY - order ${prod.orderNumber} - quantity ${prod.quantity} x size ${prod.size} - issued to ${prod.partner}`, 9);
+  para(c, `Validation: ${spec.validation.status.toUpperCase()} (${spec.validation.counts.error} errors, ${spec.validation.counts.warning} warnings).${prod ? "" : ` Unit price estimate ${spec.price.unitTotal} INR incl. GST ${Math.round(spec.price.gstRate * 100)}% (estimate).`}`, 8.5);
 
   heading(c, "Placement diagram");
   placementDiagram(c, config);
@@ -259,9 +266,11 @@ export async function renderTechPackPdf(spec: TechSpec, config: DesignConfig): P
   heading(c, "Bill of materials (estimated consumption)");
   table(c, ["Item", "Description", "Qty", "Unit", "Colour / notes"], spec.bom.map((b) => [b.item, b.description, String(b.quantity), b.unit, [b.colour, b.notes].filter(Boolean).join(" ")]), [16, 38, 8, 16, 22]);
 
-  heading(c, "Price estimate (illustrative until supplier rates are verified)");
-  table(c, ["Component", "Category", "Detail", "INR"], spec.price.lines.map((l) => [l.label, l.category, l.detail ?? "", String(l.amount)]), [36, 14, 36, 14]);
-  para(c, `Unit price ${spec.price.unitPrice} INR + GST ${spec.price.gst} INR (${Math.round(spec.price.gstRate * 100)}%) = ${spec.price.unitTotal} INR. Estimated customisation manufacturing cost ${spec.price.customisationCost} INR.`, 7.5, MUTE);
+  if (!prod) {
+    heading(c, "Price estimate (illustrative until supplier rates are verified)");
+    table(c, ["Component", "Category", "Detail", "INR"], spec.price.lines.map((l) => [l.label, l.category, l.detail ?? "", String(l.amount)]), [36, 14, 36, 14]);
+    para(c, `Unit price ${spec.price.unitPrice} INR + GST ${spec.price.gst} INR (${Math.round(spec.price.gstRate * 100)}%) = ${spec.price.unitTotal} INR. Estimated customisation manufacturing cost ${spec.price.customisationCost} INR.`, 7.5, MUTE);
+  }
 
   heading(c, "Manufacturing validation");
   if (spec.validation.issues.length) table(c, ["Severity", "Issue", "Suggestion"], spec.validation.issues.map((i) => [i.severity, i.message, i.suggestion]), [12, 48, 40]);

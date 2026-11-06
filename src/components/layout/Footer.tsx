@@ -24,7 +24,7 @@ export function Footer() {
         <div>
           <p className="mv-eyebrow mb-4">ModVerse</p>
           <ul className="space-y-2 text-sm text-bone-2">
-            <li><Link href="/account">Account</Link></li><li><Link href="/about/honesty">How we label prototypes</Link></li><li><Link href="/about/privacy">Privacy &amp; children</Link></li>
+            <li><Link href="/account">Account</Link></li><li><Link href="/partners">Partner with us</Link></li><li><Link href="/about/honesty">How we label prototypes</Link></li><li><Link href="/about/privacy">Privacy &amp; children</Link></li>
           </ul>
         </div>
       </div>

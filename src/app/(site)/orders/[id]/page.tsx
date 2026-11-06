@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getOrder } from "@/lib/services/commerce";
 import { OrderDetail } from "@/components/commerce/OrderDetail";
+import { orderFulfilment } from "@/lib/services/partners";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Order confirmation" };
@@ -12,5 +13,5 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (!user) redirect(`/login?next=/orders/${id}`);
   const data = await getOrder(user, id).catch(() => null);
   if (!data || data.order.userId !== user.id) notFound();
-  return <div className="mx-auto max-w-5xl px-4 py-8 md:px-6"><OrderDetail data={JSON.parse(JSON.stringify(data))} confirmation /></div>;
+  return <div className="mx-auto max-w-5xl px-4 py-8 md:px-6"><OrderDetail data={JSON.parse(JSON.stringify({ ...data, fulfilment: await orderFulfilment(data.order.id) }))} confirmation /></div>;
 }

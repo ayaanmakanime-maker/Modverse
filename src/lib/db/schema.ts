@@ -563,10 +563,132 @@ export const shipments = pgTable(
     status: text("status").notNull().default("pending"),
     trackingUrl: text("tracking_url"),
     events: jsonb("events").notNull().default(sql`'[]'::jsonb`),
+    /** V2: logistics partner organisation handling this shipment (org-scoped access). */
+    organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "set null" }),
+    direction: text("direction", { enum: ["forward", "return"] }).notNull().default("forward"),
+    pickupAt: ts("pickup_at"),
+    pickupWindow: text("pickup_window"),
+    labelGeneratedAt: ts("label_generated_at"),
+    weightGrams: integer("weight_grams"),
+    cod: boolean("cod").notNull().default(false),
+    failedAttempts: integer("failed_attempts").notNull().default(0),
+    deliveredAt: ts("delivered_at"),
+    podName: text("pod_name"),
+    podUploadId: uuid("pod_upload_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("shipments_order_idx").on(t.orderId)],
+  (t) => [index("shipments_order_idx").on(t.orderId), index("shipments_org_idx").on(t.organizationId)],
+);
+
+// ───────────────────────── Partners (V2) ─────────────────────────
+/** Manufacturer or logistics partner. Every partner query is scoped to the caller's approved organisation. */
+export const organizations = pgTable(
+  "organizations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: text("type", { enum: ["manufacturer", "logistics"] }).notNull(),
+    name: text("name").notNull(),
+    legalName: text("legal_name"),
+    gstin: text("gstin"),
+    contactEmail: text("contact_email").notNull(),
+    phone: text("phone"),
+    city: text("city"),
+    state: text("state"),
+    status: text("status", { enum: ["pending", "approved", "rejected", "suspended"] }).notNull().default("pending"),
+    capabilities: jsonb("capabilities").notNull().default({}),
+    adminNotes: text("admin_notes"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: ts("reviewed_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("organizations_type_idx").on(t.type, t.status)],
+);
+
+export const organizationMembers = pgTable(
+  "organization_members",
+  {
+    organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["owner", "member"] }).notNull().default("member"),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.userId] }), index("org_members_user_idx").on(t.userId)],
+);
+
+export const PRODUCTION_JOB_STATUSES = ["offered", "accepted", "rejected", "quoted", "quote_approved", "in_production", "qc_passed", "rework", "ready_to_dispatch", "dispatched", "cancelled"] as const;
+
+/** An order assigned to a manufacturer (one active job per order; reassignment cancels the previous one). */
+export const productionJobs = pgTable(
+  "production_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "restrict" }),
+    status: text("status", { enum: PRODUCTION_JOB_STATUSES }).notNull().default("offered"),
+    stage: text("stage"),
+    rejectionReason: text("rejection_reason"),
+    dueAt: ts("due_at"),
+    assignedBy: uuid("assigned_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("jobs_org_idx").on(t.organizationId, t.status), index("jobs_order_idx").on(t.orderId)],
+);
+
+export const quotations = pgTable(
+  "quotations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id").notNull().references(() => productionJobs.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(),
+    leadTimeDays: integer("lead_time_days").notNull(),
+    breakdown: jsonb("breakdown").notNull().default({}),
+    notes: text("notes"),
+    status: text("status", { enum: ["submitted", "approved", "rejected"] }).notNull().default("submitted"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewNote: text("review_note"),
+    reviewedAt: ts("reviewed_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("quotations_job_idx").on(t.jobId)],
+);
+
+/** Production timeline: stages, issues, QC reports, photos, rework requests, dispatch. */
+export const productionEvents = pgTable(
+  "production_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id").notNull().references(() => productionJobs.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["stage", "issue", "issue_resolved", "qc", "photo", "rework", "note", "dispatch", "status"] }).notNull(),
+    payload: jsonb("payload").notNull().default({}),
+    actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("production_events_job_idx").on(t.jobId)],
+);
+
+export const disputes = pgTable(
+  "disputes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    jobId: uuid("job_id").references(() => productionJobs.id, { onDelete: "set null" }),
+    shipmentId: uuid("shipment_id").references(() => shipments.id, { onDelete: "set null" }),
+    raisedByUserId: uuid("raised_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    raisedByOrgId: uuid("raised_by_org_id").references(() => organizations.id, { onDelete: "set null" }),
+    kind: text("kind", { enum: ["quality", "delay", "damage", "delivery", "payment", "other"] }).notNull(),
+    description: text("description").notNull(),
+    status: text("status", { enum: ["open", "investigating", "resolved", "rejected"] }).notNull().default("open"),
+    resolution: text("resolution"),
+    resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: ts("resolved_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("disputes_order_idx").on(t.orderId), index("disputes_status_idx").on(t.status)],
 );
 
 // ───────────────────────── Platform ─────────────────────────
@@ -636,6 +758,9 @@ export const platformSettings = pgTable("platform_settings", {
 
 export type User = typeof users.$inferSelect;
 export type Order = typeof orders.$inferSelect;
+export type Organization = typeof organizations.$inferSelect;
+export type ProductionJob = typeof productionJobs.$inferSelect;
+export type Shipment = typeof shipments.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type DesignProject = typeof designProjects.$inferSelect;
 export type DesignVersion = typeof designVersions.$inferSelect;

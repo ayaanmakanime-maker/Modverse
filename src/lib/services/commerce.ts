@@ -229,6 +229,20 @@ export async function checkout(user: SessionUser, input: { addressId?: string; a
   return { order, provider, razorpayOrder };
 }
 
+/**
+ * Move an order FORWARD in the production flow (used by partner workflows).
+ * No-op if the order is already at or beyond the target, or closed.
+ */
+export async function progressOrder(db: Db, orderId: string, status: s.Order["status"], note: string, actor: string | null): Promise<boolean> {
+  const [o] = await db.select({ status: s.orders.status }).from(s.orders).where(eq(s.orders.id, orderId));
+  if (!o || o.status === "cancelled" || o.status === "refunded") return false;
+  const from = ORDER_FLOW.indexOf(o.status);
+  const to = ORDER_FLOW.indexOf(status);
+  if (to === -1 || (from !== -1 && to <= from)) return false;
+  await advance(db, orderId, status, note, actor);
+  return true;
+}
+
 async function advance(db: Db, orderId: string, status: s.Order["status"], note: string, actor: string | null) {
   await db.update(s.orders).set({ status, updatedAt: new Date() }).where(eq(s.orders.id, orderId));
   await db.insert(s.orderEvents).values({ orderId, status, note, actorUserId: actor });
@@ -290,13 +304,17 @@ export async function listOrders(user: SessionUser) {
   return db.select().from(s.orders).where(eq(s.orders.userId, user.id)).orderBy(desc(s.orders.createdAt));
 }
 
+const INTERNAL_EVENTS = new Set(["production_assignment", "partner_note"]);
+
 export async function getOrder(user: SessionUser, id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw notFound("Order");
   const db = await getDb();
   const [o] = await db.select().from(s.orders).where(eq(s.orders.id, id));
   if (!o || (o.userId !== user.id && user.role === "customer")) throw notFound("Order");
   const items = await db.select().from(s.orderItems).where(eq(s.orderItems.orderId, o.id));
-  const events = await db.select().from(s.orderEvents).where(eq(s.orderEvents.orderId, o.id)).orderBy(s.orderEvents.createdAt);
+  const allEvents = await db.select().from(s.orderEvents).where(eq(s.orderEvents.orderId, o.id)).orderBy(s.orderEvents.createdAt);
+  // Partner assignment notes are operational (they name partner organisations) — staff only.
+  const events = user.role === "customer" ? allEvents.filter((e) => !INTERNAL_EVENTS.has(e.status)) : allEvents;
   const payments = await db.select({ provider: s.payments.provider, environment: s.payments.environment, status: s.payments.status, amount: s.payments.amount, signatureVerified: s.payments.signatureVerified, providerPaymentId: s.payments.providerPaymentId }).from(s.payments).where(eq(s.payments.orderId, o.id));
   const shipments = await db.select().from(s.shipments).where(eq(s.shipments.orderId, o.id));
   return { order: o, items, events, payments, shipments };
