@@ -51,7 +51,7 @@ export function ProToolbar() {
   const tool = useEditor((s) => s.tool);
   const setTool = useEditor((s) => s.setTool);
   return (
-    <div className="pointer-events-auto absolute left-2 top-2 z-10 flex flex-col gap-0.5 rounded-lg border border-line bg-surface-2/95 p-1 shadow-lg" role="toolbar" aria-label="Atelier Pro tools" data-testid="pro-toolbar">
+    <div className="pointer-events-auto absolute left-1.5 top-1.5 z-10 flex max-h-[calc(100%-0.75rem)] flex-col gap-0.5 overflow-y-auto rounded-lg border border-line bg-surface-2/95 p-0.5 shadow-lg mv-scroll md:left-2 md:top-2 md:p-1" role="toolbar" aria-label="Atelier Pro tools" data-testid="pro-toolbar">
       {TOOL_INFO.map((t, i) => (
         <div key={t.id}>
           {i > 0 && TOOL_INFO[i - 1].group !== t.group && <div className="my-0.5 h-px bg-line" />}
@@ -61,7 +61,7 @@ export function ProToolbar() {
             aria-label={t.label}
             aria-pressed={tool === t.id}
             data-testid={`tool-${t.id}`}
-            className={clsx("grid size-7 place-items-center rounded-md transition", tool === t.id ? "bg-bone text-ink" : "text-bone-2 hover:bg-surface-3")}
+            className={clsx("grid size-6 shrink-0 place-items-center rounded-md transition md:size-7", tool === t.id ? "bg-bone text-ink" : "text-bone-2 hover:bg-surface-3")}
           >
             <t.icon className="size-3.5" />
           </button>
@@ -134,7 +134,7 @@ export function ToolOptionsBar({ assets }: { assets: AssetResolver }) {
   if (tool === "move" && !selection) return null;
   const paint = tool === "brush" || tool === "pencil" || tool === "eraser";
   return (
-    <div className="pointer-events-auto absolute left-12 right-2 top-2 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-line bg-surface-2/95 px-2.5 py-1.5 shadow-lg" data-testid="tool-options">
+    <div className="pointer-events-auto absolute left-10 right-1.5 top-1.5 z-10 flex flex-nowrap items-center gap-x-3 gap-y-1 overflow-x-auto rounded-lg border border-line bg-surface-2/95 px-2 py-1 shadow-lg mv-scroll md:left-12 md:right-2 md:top-2 md:flex-wrap md:px-2.5 md:py-1.5 [&>*]:shrink-0" data-testid="tool-options">
       <span className="text-[0.65rem] font-medium uppercase tracking-wider text-champagne">{TOOL_INFO.find((t) => t.id === tool)?.label.split(" (")[0]}</span>
       {paint && (
         <>
