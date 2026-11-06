@@ -22,6 +22,7 @@ import { SelectedProperties } from "./properties";
 import { ConstructionPanel, FabricPanel, FitPanel, GarmentPanel, MeasurementsPanel, PanelsPanel } from "./panels-garment";
 import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from "./panels-artwork";
 import { MusePanel, TechPackPanel, ValidationPanel, VersionsPanel, useLiveValidation } from "./panels-pro";
+import { HistoryPanel } from "./pro-panels";
 import type { GarmentViewerHandle, LightingPreset, ViewPreset } from "@/components/three/GarmentViewer";
 import { isSoftwareRenderer } from "@/lib/three/capabilities";
 import { ThemeToggle } from "@/components/theme";
@@ -132,7 +133,15 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
     return () => clearTimeout(t);
   }, [config, dirty, ready]);
 
-  const save = useCallback(async (opts: { asNewVersion?: boolean; note?: string } = {}): Promise<string | null> => {
+  // Atelier / Atelier Pro: saved designs also autosave to the account 45 s after the last change.
+  const saveRef = useRef<((o?: { asNewVersion?: boolean; note?: string; quiet?: boolean }) => Promise<string | null>) | null>(null);
+  useEffect(() => {
+    if (!ready || !dirty || !user || !projectId || mode === "studio") return;
+    const t = setTimeout(() => void saveRef.current?.({ quiet: true }), 45_000);
+    return () => clearTimeout(t);
+  }, [config, dirty, ready, user, projectId, mode]);
+
+  const save = useCallback(async (opts: { asNewVersion?: boolean; note?: string; quiet?: boolean } = {}): Promise<string | null> => {
     const s = useEditor.getState();
     if (!user) {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ config: s.config, name: s.name, at: Date.now() }));
@@ -151,15 +160,16 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
       }
       const r = await api<{ design: { currentVersion: number; updatedAt: string }; validation: { status: string } }>(`/api/designs/${s.projectId}`, { method: "PUT", body: { config: s.config, name: s.name, mode: s.mode, asNewVersion: opts.asNewVersion, note: opts.note } });
       s.markSaved({ projectId: s.projectId, version: r.design.currentVersion, savedAt: r.design.updatedAt });
-      toast(opts.asNewVersion ? `Saved as version ${r.design.currentVersion}` : "Design saved");
+      if (!opts.quiet) toast(opts.asNewVersion ? `Saved as version ${r.design.currentVersion}` : "Design saved");
       return s.projectId;
     } catch (e) {
-      toast(errorMessage(e), "bad");
+      toast(opts.quiet ? `Autosave failed: ${errorMessage(e)}` : errorMessage(e), "bad");
       return null;
     } finally {
       setSaving(false);
     }
   }, [user, router, childId]);
+  saveRef.current = save;
 
   async function addToCart() {
     const id = useEditor.getState().dirty || !useEditor.getState().projectId ? await save() : useEditor.getState().projectId;
@@ -315,7 +325,7 @@ function EditorLayout(p: {
       case "layers": return <LayersPanel />;
       case "muse": return <MusePanel />;
       case "fit": return <FitPanel avatarOn={p.avatar.on} onAvatar={(on, body) => { p.setAvatar({ on, body }); if (on && p.view === "2d") p.setView("split"); }} />;
-      case "versions": return <VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} />;
+      case "versions": return <div className="space-y-5"><HistoryPanel /><VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} /></div>;
       case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} exportGlb={() => p.viewer.current?.exportGlb() ?? Promise.resolve(null)} />;
       case "check": return (
         <div className="space-y-4">

@@ -121,6 +121,8 @@ export function buildTechSpec(config: DesignConfig, meta: { name: string; versio
       detail = `"${l.text}" · ${l.fontFamily} ${l.fontWeight}${l.italic ? " italic" : ""} · ${(l.fontSize * 10).toFixed(1)} mm · ${l.color}${l.curve.mode !== "none" ? ` · ${l.curve.mode} ${l.curve.amount}` : ""}${f ? ` · ${f.license}` : l.fontAssetId ? " · customer-uploaded font (rights confirmed by uploader)" : ""}${l.effects.length ? ` · ${l.effects.length} layered effect(s)` : ""}`;
     } else if (l.type === "graphic") {
       detail = `${l.source} asset ${l.assetId}${Object.keys(l.colorMap).length ? ` · recoloured ${Object.entries(l.colorMap).map(([a, b]) => `${a}→${b}`).join(", ")}` : ""}`;
+    } else if (l.type === "drawing") {
+      detail = `freehand drawing · ${l.strokes.length} stroke(s) · colours ${[...new Set(l.strokes.filter((s) => s.tool !== "eraser").map((s) => s.color.toUpperCase()))].join(", ") || "—"}`;
     } else {
       detail = `raster ${l.pixelWidth}×${l.pixelHeight}px${l.crop.w < 1 || l.crop.h < 1 ? ` (cropped to ${Math.round(l.pixelWidth * l.crop.w)}×${Math.round(l.pixelHeight * l.crop.h)}px)` : ""} · ${Math.round((l.pixelWidth * l.crop.w) / (l.width / 2.54))} DPI at print size`;
     }

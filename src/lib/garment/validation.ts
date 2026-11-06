@@ -214,6 +214,18 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
     else if (l.opacity < 1 && method === "screen")
       add({ code: "SCREEN_OPACITY", severity: "warning", category: "print", layerId: l.id, message: "Transparency in screen printing is reproduced with halftones.", suggestion: "Consider full opacity or DTG/DTF." });
 
+    // Atelier Pro effects (v3)
+    if (l.blendMode && l.blendMode !== "normal")
+      add({ code: "BLEND_PREVIEW", severity: "info", category: "print", layerId: l.id, message: `"${l.name}" uses the ${l.blendMode.replace("-", " ")} blend mode.`, suggestion: "Blending with the fabric colour is a preview: printed inks don't mix with the garment colour. The print file blends artwork layers with each other only." });
+    if (l.type === "text" && l.fill && method === "embroidery")
+      add({ code: "EMBROIDERY_GRADIENT", severity: "error", category: "print", layerId: l.id, message: "Gradient text can't be embroidered.", suggestion: "Use a solid thread colour or a print method." });
+    else if (l.type === "text" && l.fill && method === "screen")
+      add({ code: "SCREEN_GRADIENT", severity: "warning", category: "print", layerId: l.id, message: "Screen printing reproduces gradients with halftone dots.", suggestion: "Use DTG/DTF for a smooth gradient, or accept a halftone look." });
+    if (method === "embroidery" && (l.adjust || (l.filters ?? []).some((f) => f.enabled && ["grain", "halftone", "texture", "blur", "distort"].includes(f.type))))
+      add({ code: "EMBROIDERY_EFFECTS", severity: "warning", category: "print", layerId: l.id, message: `Photo adjustments and texture filters on "${l.name}" don't translate to thread.`, suggestion: "Embroidery uses solid thread colours — remove the effects or choose a print method." });
+    if (l.type === "drawing" && method === "embroidery" && l.strokes.some((s) => s.tool === "airbrush" || s.tool === "chalk" || s.hardness < 0.5))
+      add({ code: "EMBROIDERY_SOFT_STROKES", severity: "warning", category: "print", layerId: l.id, message: "Soft airbrush and chalk strokes can't be stitched.", suggestion: "Use hard brush strokes for embroidery." });
+
     if (l.type === "image") {
       // Effective pixels after cropping.
       const pw = l.pixelWidth * l.crop.w;

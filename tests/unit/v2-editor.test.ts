@@ -17,7 +17,7 @@ import { customFontFamily, detectFont } from "@/lib/services/uploads";
 const svgAssets = { svg: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><rect width="100" height="50" fill="#ff0000"/></svg>`, dataUrl: () => "data:image/png;base64,AAAA", patternUrl: () => undefined };
 
 describe("design schema v2", () => {
-  it("is version 2 and upgrades stored v1 documents losslessly", () => {
+  it("is the current version and upgrades stored v1 documents losslessly", () => {
     const d = createDesign("tee-classic-crew", "men");
     expect(d.schemaVersion).toBe(DESIGN_SCHEMA_VERSION);
     const t = createTextLayer(d, "HELLO");
@@ -28,14 +28,14 @@ describe("design schema v2", () => {
     delete v1.layers[0].fontAssetId;
     delete v1.layers[1].crop;
     const up = designConfigSchema.parse(v1);
-    expect(up.schemaVersion).toBe(2);
+    expect(up.schemaVersion).toBe(DESIGN_SCHEMA_VERSION);
     const [ut, ug] = up.layers;
     expect(ut.type === "text" && ut.effects).toEqual([]);
     expect(ut.type === "text" && ut.fontAssetId).toBeNull();
     expect(ug.type === "graphic" && ug.crop).toEqual({ x: 0, y: 0, w: 1, h: 1 });
     expect(ut.type === "text" && ut.text).toBe("HELLO");
     // unknown future versions are rejected rather than silently accepted
-    expect(designConfigSchema.safeParse({ ...d, schemaVersion: 3 }).success).toBe(false);
+    expect(designConfigSchema.safeParse({ ...d, schemaVersion: DESIGN_SCHEMA_VERSION + 1 }).success).toBe(false);
   });
 });
 

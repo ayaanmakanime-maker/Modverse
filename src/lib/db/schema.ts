@@ -359,7 +359,7 @@ export const designLayers = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     versionId: uuid("version_id").notNull().references(() => designVersions.id, { onDelete: "cascade" }),
     layerId: text("layer_id").notNull(),
-    type: text("type", { enum: ["text", "graphic", "image"] }).notNull(),
+    type: text("type", { enum: ["text", "graphic", "image", "drawing"] }).notNull(),
     zone: text("zone").notNull(),
     zIndex: integer("z_index").notNull(),
     name: text("name").notNull(),

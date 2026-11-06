@@ -138,7 +138,7 @@ const PREMIUM_BUTTONS = new Set(["horn", "wood", "pearl", "metal", "pearl-snap"]
 
 /** Embroidery stitch-count estimate for a layer (fill coverage × density + underlay/trims). */
 export function estimateStitches(l: Layer, rules: PricingRules = DEFAULT_PRICING): number {
-  const coverage = l.type === "text" ? 0.32 : l.type === "image" ? 0.7 : 0.55;
+  const coverage = l.type === "text" ? 0.32 : l.type === "image" ? 0.7 : l.type === "drawing" ? 0.25 : 0.55;
   return Math.round(500 + l.width * l.height * coverage * rules.decoration.stitchDensityPerCm2);
 }
 
@@ -153,6 +153,7 @@ export function layerColours(l: Layer, ctx: PricingContext = {}): string[] {
     if (!base) return ["unknown-1", "unknown-2", "unknown-3", "unknown-4"]; // conservative until colours are known
     return [...new Set(base.map((h) => (l.colorMap[h.toUpperCase()] ?? l.colorMap[h] ?? h).toUpperCase()))];
   }
+  if (l.type === "drawing") return [...new Set(l.strokes.filter((s) => s.tool !== "eraser").map((s) => s.color.toUpperCase()))];
   return ["C", "M", "Y", "K", "W", "process"]; // raster artwork on screen = simulated process
 }
 

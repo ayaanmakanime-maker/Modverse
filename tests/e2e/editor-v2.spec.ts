@@ -101,7 +101,7 @@ test("V2 editor: drag & drop typography, clipboard, zoom/pan, title case, layere
   const id = await saveDesign(page);
   const { version } = await (await page.request.get(`/api/designs/${id}`)).json();
   const c = version.config;
-  expect(c.schemaVersion).toBe(2);
+  expect(c.schemaVersion).toBe(3);
   const title = c.layers.find((l: { name: string }) => l.name === "Title-case headline");
   expect(title.textTransform).toBe("title");
   expect(title.effects[0].kind).toBe("extrude");

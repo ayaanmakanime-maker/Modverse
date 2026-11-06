@@ -10,7 +10,7 @@ import { PRINT_METHOD_INFO } from "@/lib/garment/fabrics";
 import { computeMeasurements } from "@/lib/garment/sizing";
 import { fitToPlacement, placementPreset, PLACEMENT_LABELS, type PlacementPreset } from "@/lib/garment/panels";
 import { PRINT_METHODS, ZONES } from "@/lib/garment/types";
-import type { Crop, GraphicLayer, ImageLayer, Layer, TextEffect, TextLayer } from "@/lib/garment/schema";
+import type { Crop, DrawingLayer, GraphicLayer, ImageLayer, Layer, TextEffect, TextLayer } from "@/lib/garment/schema";
 import { Button, ColorPicker, Segmented, Slider, Select, toast } from "@/components/ui";
 import { FONT_ACCEPT, useCustomFonts } from "@/lib/typography/custom-fonts";
 import { useSession } from "@/components/session";
@@ -19,6 +19,7 @@ import { paletteSwapMap } from "@/lib/library/palette-swap";
 import { getSvg } from "@/lib/render/assets";
 import { extractSvgColors } from "@/lib/svg/sanitize";
 import { ZONE_LABELS } from "./Canvas2D";
+import { ProLayerSections } from "./pro-panels";
 
 const CATS: { value: FontCategory | "all"; label: string }[] = [
   { value: "all", label: "All" }, { value: "sans", label: "Sans" }, { value: "serif", label: "Serif" }, { value: "display", label: "Display" }, { value: "script", label: "Script" }, { value: "mono", label: "Mono" }, { value: "indic", label: "Indian scripts" },
@@ -175,6 +176,7 @@ function CommonControls({ layer }: { layer: Layer }) {
         </Select>
         <p className="text-[0.65rem] text-mute">{PRINT_METHOD_INFO[method].description} Max {PRINT_METHOD_INFO[method].maxWidthCm}×{PRINT_METHOD_INFO[method].maxHeightCm} cm.</p>
       </Section>
+      <ProLayerSections layer={layer} />
       <div className="flex flex-wrap gap-1 border-t border-line pt-3">
         <button className="mv-chip" onClick={() => reorder(layer.id, "top")}><ArrowUpToLine className="size-3" /> Front</button>
         <button className="mv-chip" onClick={() => reorder(layer.id, "bottom")}><ArrowDownToLine className="size-3" /> Back</button>
@@ -197,7 +199,7 @@ export function TextProperties({ layer }: { layer: TextLayer }) {
     <div className="space-y-3" data-testid="text-properties">
       <label className="block">
         <span className="mv-label">Text</span>
-        <textarea className="mv-input min-h-16 resize-y" value={layer.text} onChange={(e) => live({ text: e.target.value, name: e.target.value.slice(0, 24) || "Text" })} onFocus={() => checkpoint("Edit text")} rows={2} aria-label="Text content" data-testid="text-content" placeholder="Type a name, slogan, number…" />
+        <textarea className="mv-input min-h-16 resize-y" value={layer.text} onChange={(e) => live({ text: e.target.value, name: e.target.value.slice(0, 24) || "Text" })} onFocus={() => checkpoint("Edit text")} onBlur={() => useEditor.getState().endGesture()} rows={2} aria-label="Text content" data-testid="text-content" placeholder="Type a name, slogan, number…" />
       </label>
       {issues.length > 0 && (
         <ul className="space-y-1">
@@ -439,10 +441,28 @@ export function ImageProperties({ layer }: { layer: ImageLayer }) {
   );
 }
 
+export function DrawingProperties({ layer }: { layer: DrawingLayer }) {
+  const update = useEditor((s) => s.updateLayer);
+  const colours = [...new Set(layer.strokes.filter((s) => s.tool !== "eraser").map((s) => s.color.toUpperCase()))];
+  return (
+    <div className="space-y-3" data-testid="drawing-properties">
+      <p className="text-xs text-bone-2">Freehand drawing · {layer.strokes.length} stroke{layer.strokes.length === 1 ? "" : "s"} (max 200)</p>
+      {colours.length > 0 && <div className="flex flex-wrap gap-1">{colours.map((c) => <span key={c} className="size-5 rounded-full border border-line" style={{ background: c }} title={c} />)}</div>}
+      <div className="flex flex-wrap gap-1">
+        {layer.strokes.length > 0 && <button className="mv-chip" onClick={() => update(layer.id, { strokes: layer.strokes.slice(0, -1) } as Partial<Layer>, { label: "Remove last stroke" })}>Remove last stroke</button>}
+        {layer.strokes.length > 0 && <button className="mv-chip text-bad" onClick={() => update(layer.id, { strokes: [] } as Partial<Layer>, { label: "Clear drawing" })}>Clear drawing</button>}
+      </div>
+      <p className="text-[0.65rem] text-mute">Draw with the Brush (B) or Pencil (N) in Atelier Pro; the eraser (E) erases strokes drawn before it. Strokes are vectors, so they stay sharp at any print size.</p>
+      <CommonControls layer={layer} />
+    </div>
+  );
+}
+
 export function SelectedProperties() {
   const layer = useEditor(selectedLayer);
   if (!layer) return null;
   if (layer.type === "text") return <TextProperties layer={layer} />;
   if (layer.type === "graphic") return <GraphicProperties layer={layer} />;
+  if (layer.type === "drawing") return <DrawingProperties layer={layer} />;
   return <ImageProperties layer={layer} />;
 }
