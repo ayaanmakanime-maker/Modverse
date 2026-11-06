@@ -9,6 +9,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { isSoftwareRenderer } from "@/lib/three/capabilities";
+import { useResolvedTheme } from "@/components/theme";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { buildGarmentGeometry, type ButtonData, type ButtonholeData, type GarmentGeometry, type MeshData } from "@/lib/three/garment-geometry";
@@ -577,7 +578,10 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
       return new Blob([result as ArrayBuffer], { type: "model/gltf-binary" });
     },
   }));
-  const L = LIGHTS[lighting];
+  const uiTheme = useResolvedTheme();
+  const L0 = LIGHTS[lighting];
+  // Light UI → bright photo-studio sweep (white garments get a soft grey edge so they still read).
+  const L = uiTheme === "light" ? { ...L0, bg: ["#ffffff", "#e4e1db"] as [string, string] } : L0;
   const mode = controlsMode ?? (compact ? "none" : "full");
   if (webgl === false)
     return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-mute">3D preview needs WebGL, which isn&apos;t available in this browser. The 2D editor and all other features still work.</div>;

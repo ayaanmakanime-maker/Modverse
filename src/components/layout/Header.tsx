@@ -7,6 +7,7 @@ import { Menu, ShoppingBag, User, X, LogOut, LayoutDashboard, Shield, Palette, C
 import { HeaderLogo, Logo } from "@/components/brand/Logo";
 import { useSession } from "@/components/session";
 import { api } from "@/lib/client/api";
+import { ThemeToggle } from "@/components/theme";
 
 const NAV = [
   { href: "/shop/men", label: "Men" },
@@ -46,6 +47,7 @@ export function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
           <Link href="/search" className="rounded-full p-2 text-bone-2 hover:bg-surface-2" aria-label="Search the catalogue" data-testid="header-search"><Search className="size-5" /></Link>
           <Link href="/cart" className="relative rounded-full p-2 text-bone-2 hover:bg-surface-2" aria-label={`Cart (${cartCount} items)`}>
             <ShoppingBag className="size-5" />

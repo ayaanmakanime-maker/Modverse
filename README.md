@@ -39,7 +39,8 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | Accounts | Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements, avatars, guardian-managed child profiles. |
 | Admin | Analytics, orders + production approval, design reviews, production board, shipping, disputes, partner approval, pricing & discounts, users/roles, catalogue, library, Integration Manager, audit log, settings. |
 | **V2: AI pipeline** | Fashion Director (local rules, or Ollama / Gemini / OpenAI / on-device Gemini Nano when enabled) → artwork resolution → design compiler (validated, previewed, priced) → applied as one undoable transaction. |
-| **V2: fit & try-on** | Live trial room with tracking-loss guidance, live colour changes, consented camera measurement; fit analysis keeps *estimated*, *simulated* and customer-*verified* fit separate. |
+| **V2: fit & try-on** | Live trial room that doubles as a **fit check** — every size compared zone by zone with your measurements against the garment's design intent, best size, and a fit map on your live image; fit analysis keeps *estimated*, *simulated* and customer-*verified* fit separate. |
+| **Light mode** | White UI theme across the whole site (toggle or Dark/Light/System in settings). |
 | **V2: dynamic pricing** | Itemised, manufacturing-aware prices (fabric consumption from real panel areas, colours, stitches, placements), admin rules and discount codes, server-verified totals and price snapshots. |
 | **V2: partner portals** | Manufacturers (jobs, quotations, stages, QC, photos, production tech pack) and logistics partners (labels, pickups, tracking, proof of delivery), admin approval, disputes, notifications, a payouts ledger and optional Shiprocket courier booking — each organisation sees only its own work. |
 

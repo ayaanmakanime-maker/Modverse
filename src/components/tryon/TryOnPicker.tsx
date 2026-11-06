@@ -8,6 +8,10 @@ import { api } from "@/lib/client/api";
 import { useSession } from "@/components/session";
 import { BrandLoader } from "@/components/brand/Logo";
 import { ColorPicker, Select } from "@/components/ui";
+import { checkAllSizes } from "@/lib/garment/fit-check";
+import { estimateFromHeightWeight } from "@/lib/garment/fit";
+import type { CameraEstimateResult } from "@/lib/tryon/camera-measure";
+import { bodyFromInputs, FitCheckPanel, type QuickBody } from "./FitCheckPanel";
 
 const TrialRoom = dynamic(() => import("./TrialRoom").then((m) => m.TrialRoom), { ssr: false, loading: () => <BrandLoader label="Preparing trial room" /> });
 
@@ -29,7 +33,24 @@ export function TryOnPicker({ saved }: { saved: { id: string; name: string; conf
     d.fabric.color = color;
     return d;
   }, [choice, audience, color, saved]);
-  const body = profiles.find((p) => p.id === profileId)?.measurements;
+  const profile = profiles.find((p) => p.id === profileId)?.measurements;
+  const [quick, setQuick] = useState<QuickBody>({ height: "", weight: "", chest: "", waist: "" });
+  const [camera, setCamera] = useState<Partial<Record<"shoulder" | "armLength" | "torsoLength", number>>>({});
+  const { body: fitBody, provenance } = useMemo(() => bodyFromInputs(profile, quick, camera, (h, w) => estimateFromHeightWeight(config.audience, h, w)), [profile, quick, camera, config.audience]);
+  const fit = useMemo(() => checkAllSizes(config, fitBody, provenance), [config, fitBody, provenance]);
+  const [sizePick, setSizePick] = useState<string | null>(null);
+  useEffect(() => setSizePick(null), [choice, audience]);
+  const size = sizePick ?? fit.best ?? config.size;
+  const sized = useMemo(() => ({ ...config, size }), [config, size]);
+  const current = fit.sizes.find((s) => s.size === size);
+  const fitMap = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (current) for (const z of current.zones) if (z.status !== "unknown") out[z.zone] = ({ "too-tight": "#E5484D", tighter: "#F5A524", "as-designed": "#30A46C", looser: "#3E8ED0", "too-loose": "#7C66DC", unknown: "#8A8A8A" } as const)[z.status];
+    return out;
+  }, [current]);
+  const onCamera = (r: CameraEstimateResult) => setCamera(Object.fromEntries(r.estimates.map((e) => [e.key, e.valueCm])));
+  const cameraNote = Object.keys(camera).length ? `Camera estimate used: ${Object.entries(camera).map(([k, v]) => `${k === "armLength" ? "arm" : k === "torsoLength" ? "torso" : "shoulder"} ${v} cm`).join(" · ")} (approximate)` : null;
+  const body = (profile ?? (Object.keys(fitBody).length ? (fitBody as Record<string, number>) : undefined));
   return (
     <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
       <aside className="space-y-4">
@@ -47,11 +68,7 @@ export function TryOnPicker({ saved }: { saved: { id: string; name: string; conf
             <ColorPicker label="Colour" value={color} onChange={setColor} />
           </>
         )}
-        {profiles.length > 0 && (
-          <label className="block text-sm"><span className="mv-label">Measurement profile (for scale)</span>
-            <Select value={profileId} onChange={(e) => setProfileId(e.target.value)}><option value="">Size chart</option>{profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select>
-          </label>
-        )}
+        <FitCheckPanel checks={fit.sizes} best={fit.best} size={size} onSize={setSizePick} profiles={profiles} profileId={profileId} onProfile={setProfileId} quick={quick} onQuick={setQuick} cameraNote={cameraNote} confidence={current?.analysis.confidence ?? "low"} />
         <div className="mv-card space-y-1 p-3 text-xs text-mute">
           <p className="text-bone">Capability levels</p>
           <p><b className="text-bone-2">A</b> — 2D garment overlay with articulated sleeves.</p>
@@ -59,7 +76,7 @@ export function TryOnPicker({ saved }: { saved: { id: string; name: string; conf
           <p><b className="text-bone-2">C</b> — Experimental: person segmentation keeps the garment on your body and forearms pass in front of it.</p>
         </div>
       </aside>
-      <TrialRoom config={config} body={body} />
+      <TrialRoom config={sized} body={body} fitMap={fitMap} onCameraEstimate={onCamera} />
     </div>
   );
 }

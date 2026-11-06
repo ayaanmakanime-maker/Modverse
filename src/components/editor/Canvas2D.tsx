@@ -524,7 +524,7 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
       </div>
       <div
         ref={containerRef}
-        className={clsx("relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_center,#1a1a1c_0%,#0a0a0b_70%)]", dropping && "outline outline-2 -outline-offset-4 outline-champagne/70")}
+        className={clsx("relative min-h-0 flex-1 overflow-hidden mv-canvas-bg", dropping && "outline outline-2 -outline-offset-4 outline-champagne/70")}
         onDragOver={onDragOver}
         onDragLeave={(e) => { if (e.currentTarget === e.target) setDropping(false); }}
         onDrop={onDrop}

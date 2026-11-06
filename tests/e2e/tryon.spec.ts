@@ -45,3 +45,38 @@ test("editor fit analysis keeps estimates, simulation and verified fit separate"
   await page.getByTestId("fit-chest").fill("100");
   await expect(page.getByText(/rough estimates \(±8 cm\)/)).toHaveCount(0);
 });
+
+test("trial room fit check: per-zone fit by size, best size, fit map", async ({ page }) => {
+  await page.goto("/try-on");
+  const fc = page.getByTestId("fit-check");
+  await expect(fc.getByTestId("fit-verdict")).toContainText("Add measurements");
+  await fc.getByTestId("fit-q-chest").fill("104");
+  await fc.getByTestId("fit-q-waist").fill("92");
+  await fc.getByTestId("fit-q-height").fill("178");
+  // A best size is suggested and the verdict explains each zone
+  await expect(fc.getByText(/closest to how this garment is designed/)).toBeVisible();
+  await expect(fc.getByTestId("fit-verdict")).toContainText(/Good fit|Wearable/);
+  await expect(fc.getByTestId("fit-zones")).toContainText("Chest");
+  // A much smaller size is flagged as too small
+  await fc.getByTestId("fit-size-XS").click();
+  await expect(fc.getByTestId("fit-verdict")).toContainText("XS: Likely too small");
+  await expect(fc.getByTestId("fit-zones")).toContainText(/Too tight|Snugger/);
+  // The camera view offers the fit map once there is a verdict
+  await page.getByTestId("start-camera").click();
+  await expect(page.getByTestId("stop-camera")).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByTestId("tryon-fitmap")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("stop-camera").click();
+});
+
+test("light mode: toggle switches the whole UI to white and persists", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByTestId("theme-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(255, 255, 255)");
+  await page.goto("/shop/men"); // server renders the saved preference (no flash)
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("img.mv-logo-on-light").first()).toBeVisible();
+  await page.getByTestId("theme-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});

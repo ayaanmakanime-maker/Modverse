@@ -40,3 +40,13 @@ FPS, inference time (ms), tracking quality, jitter, turn angle and recoveries ar
 
 ## Limits (stated in the UI)
 This is augmented reality, not cloth simulation and not a fit check: the garment does not drape or collide physically, Level B is rigid, Level C depends on segmentation quality and lighting, and loose garments are approximated by the 2D/3D shape. Size recommendations come from measurements (see `docs/GARMENT_SYSTEM.md` → Fit intelligence), never from the camera image.
+
+## Fit check (V2.2)
+The trial room is also a **fit check** (`src/lib/garment/fit-check.ts`, `src/components/tryon/FitCheckPanel.tsx`):
+* **Your body:** a saved measurement profile, or quick entry (chest, waist, height, weight), plus — optionally — the camera's shoulder/arm/torso estimate (labelled approximate). Typed tape measurements always win over estimates; height/weight give rough chest/waist with low confidence.
+* **Every size checked:** each size of *this* garment (its model, fit, proportions) is compared with your body zone by zone — chest, waist, hem/hips, shoulders, sleeves, length — **against how the garment is designed to fit** (an oversized tee is meant to be roomy, a slim shirt close). Each zone reads *Fits as designed*, *Snugger than designed*, *Too tight*, *Looser than designed* or *Much too loose*, with the ease in cm; the size closest to the design intent is starred; each size chip carries a verdict colour.
+* **On your body:** the overlay is drawn at the chosen size's real centimetre dimensions on your tracked body, and the **Fit map** tints the shoulders, chest, waist, hem and sleeves in the verdict colours (Levels A and C). Switching size re-draws both.
+* **Honest limits:** this is a measurement-based estimate shown on your live image. The camera positions the garment; it cannot feel tension or simulate drape, and camera/height-weight values are approximate. *Verified* fit still comes only from feedback after wearing the physical garment.
+
+## Light mode
+All of ModVerse (store, editor, trial room, admin and partner portals) has a white light theme: header/editor/admin toggle or Account → Settings → Appearance (Dark · Light · System). The preference is stored in a cookie and rendered on the server, so pages never flash the wrong theme; logos switch to the dark-lettering artwork and the 3D studio backdrop turns white.

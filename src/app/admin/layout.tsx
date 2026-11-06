@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: { default: "Admin", template: "%s · ModVerse Admin" } };
@@ -24,6 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </nav>
         <p className="mt-6 hidden text-xs text-mute lg:block">Signed in as {user.email} ({user.role})</p>
         <Link href="/" className="mt-2 hidden text-xs text-mute underline lg:block">Back to store</Link>
+        <ThemeToggle className="mt-2 hidden lg:block" />
       </aside>
       <main className="min-w-0 p-4 md:p-8">{children}</main>
     </div>

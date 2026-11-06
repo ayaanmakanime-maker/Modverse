@@ -24,6 +24,7 @@ import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from ".
 import { MusePanel, TechPackPanel, ValidationPanel, VersionsPanel, useLiveValidation } from "./panels-pro";
 import type { GarmentViewerHandle, LightingPreset, ViewPreset } from "@/components/three/GarmentViewer";
 import { isSoftwareRenderer } from "@/lib/three/capabilities";
+import { ThemeToggle } from "@/components/theme";
 
 const GarmentViewer = dynamic(() => import("@/components/three/GarmentViewer").then((m) => m.GarmentViewer), { ssr: false, loading: () => <BrandLoader label="Preparing 3D" /> });
 
@@ -351,6 +352,7 @@ function EditorLayout(p: {
         <div className="hidden md:block"><Segmented size="sm" label="Design mode" value={p.mode} onChange={p.setMode} options={(["studio", "atelier", "pro"] as const).map((m) => ({ value: m, label: MODE_INFO[m] }))} /></div>
         <div className="md:hidden"><Select aria-label="Design mode" value={p.mode} onChange={(e) => p.setMode(e.target.value as EditorMode)} className="!w-auto !py-1 !text-xs">{(["studio", "atelier", "pro"] as const).map((m) => <option key={m} value={m}>{MODE_INFO[m]}</option>)}</Select></div>
         <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle className="hidden sm:block" />
           <button onClick={p.undo} disabled={!p.canUndo} className="rounded-full p-2 text-bone-2 hover:bg-surface-2 disabled:opacity-30" aria-label="Undo" title="Undo (Ctrl+Z)" data-testid="undo"><Undo2 className="size-4" /></button>
           <button onClick={p.redo} disabled={!p.canRedo} className="rounded-full p-2 text-bone-2 hover:bg-surface-2 disabled:opacity-30" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" data-testid="redo"><Redo2 className="size-4" /></button>
           <button onClick={() => p.setTab("check")} className="hidden items-center gap-1.5 rounded-full px-2 py-1 text-xs hover:bg-surface-2 sm:flex" title="Validation" data-testid="validation-status">

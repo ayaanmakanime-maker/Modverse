@@ -18,9 +18,20 @@ const SRC: Record<Variant, { src: string; w: number; h: number }> = {
   "monogram-dark": { src: "/brand/derived/modverse-monogram-dark.png", w: 454, h: 324 },
 };
 
-export function Logo({ variant = "lockup", className, alt = "ModVerse — Your World. Your Style.", priority }: { variant?: Variant; className?: string; alt?: string; priority?: boolean }) {
+/** Theme-adaptive counterparts: shown instead of the light-lettering artwork when the UI is light. */
+const ON_LIGHT: Partial<Record<Variant, Variant>> = { original: "lockup-dark", lockup: "lockup-dark", wordmark: "wordmark-dark", monogram: "monogram-dark" };
+
+export function Logo({ variant = "lockup", className, alt = "ModVerse — Your World. Your Style.", priority, fixed }: { variant?: Variant; className?: string; alt?: string; priority?: boolean; fixed?: boolean }) {
   const v = SRC[variant];
-  return <img src={v.src} width={v.w} height={v.h} alt={alt} className={clsx("h-auto select-none", className)} draggable={false} fetchPriority={priority ? "high" : undefined} />;
+  const img = (s: { src: string; w: number; h: number }, extra?: string, a = alt) => <img src={s.src} width={s.w} height={s.h} alt={a} className={clsx("h-auto select-none", className, extra)} draggable={false} fetchPriority={priority ? "high" : undefined} />;
+  const light = fixed ? undefined : ON_LIGHT[variant];
+  if (!light) return img(v);
+  return (
+    <>
+      {img(v, "mv-logo-on-dark")}
+      {img(SRC[light], "mv-logo-on-light", alt)}
+    </>
+  );
 }
 
 /** Responsive header treatment: monogram on small screens, monogram + wordmark from md. */

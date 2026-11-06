@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getMembership } from "@/lib/services/partners";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: { default: "Partner portal", template: "%s · ModVerse Partners" }, robots: { index: false } };
@@ -23,6 +24,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
         </nav>
         <p className="mt-6 hidden text-xs text-mute lg:block">{m.org.name} · {user.email}</p>
         <Link href="/" className="mt-2 hidden text-xs text-mute underline lg:block">Back to store</Link>
+        <ThemeToggle className="mt-2 hidden lg:block" />
       </aside>
       <main className="min-w-0 p-4 md:p-8">{children}</main>
     </div>

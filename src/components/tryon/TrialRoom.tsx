@@ -12,6 +12,7 @@ import { embeddedFontCss, ensureDesignAssets, fontNeeds, getDataUrl, getPatternU
 import { Garment } from "@/components/three/GarmentViewer";
 import { Badge, Button, Modal, Notice, Segmented, toast } from "@/components/ui";
 import { estimateFromWorldLandmarks, type CameraEstimateResult, type WorldLandmark } from "@/lib/tryon/camera-measure";
+import type { FitZone } from "@/lib/garment/fit";
 import { useSession } from "@/components/session";
 import { api, errorMessage } from "@/lib/client/api";
 
@@ -110,7 +111,7 @@ function PoseGarment3D({ config, pose, size }: { config: DesignConfig; pose: Rea
   );
 }
 
-export function TrialRoom({ config: baseConfig, body }: { config: DesignConfig; body?: Record<string, number> }) {
+export function TrialRoom({ config: baseConfig, body, fitMap, onCameraEstimate }: { config: DesignConfig; body?: Record<string, number>; fitMap?: Partial<Record<FitZone, string>>; onCameraEstimate?: (r: CameraEstimateResult) => void }) {
   const { user } = useSession();
   // Live customisation inside the room (does not modify the saved design).
   const [liveColor, setLiveColor] = useState<string | null>(null);
@@ -125,6 +126,10 @@ export function TrialRoom({ config: baseConfig, body }: { config: DesignConfig; 
   const [matchLight, setMatchLight] = useState(true);
   const matchLightRef = useRef(matchLight);
   matchLightRef.current = matchLight;
+  // Fit map: tints chest/waist/hem/shoulders/sleeves by how this size fits the wearer (from measurements).
+  const [showFitMap, setShowFitMap] = useState(true);
+  const fitMapRef = useRef<Partial<Record<FitZone, string>> | null>(null);
+  fitMapRef.current = showFitMap && fitMap && Object.keys(fitMap).length ? fitMap : null;
   const [guidance, setGuidance] = useState<Guidance>(null);
   const measuring = useRef<{ until: number; frames: WorldLandmark[][] } | null>(null);
   const [measure, setMeasure] = useState<CameraEstimateResult | null>(null);
@@ -341,6 +346,7 @@ export function TrialRoom({ config: baseConfig, body }: { config: DesignConfig; 
         measuring.current = null;
         setMeasureBusy(false);
         setMeasure(r);
+        if (r.usable) onCameraEstimate?.(r);
       }
       let quality = 0;
       let pts: Record<string, Pt> | null = null;
@@ -437,6 +443,8 @@ export function TrialRoom({ config: baseConfig, body }: { config: DesignConfig; 
                 g.rect(bx.x0, y0, bx.x1 - bx.x0, y1 - y0);
                 g.clip();
                 g.drawImage(img, bx.x0, bx.y0, bx.x1 - bx.x0, bx.y1 - bx.y0);
+                const fmS = fitMapRef.current;
+                if (fmS?.sleeve && y0 === 0) { g.globalAlpha = 0.38; g.fillStyle = fmS.sleeve; g.fillRect(bx.x0, 2, bx.x1 - bx.x0, Math.min(7, y1 - 2)); g.globalAlpha = 1; }
                 g.restore();
               };
               const sleeveLen = bx.y1 - 0.5;
@@ -447,6 +455,15 @@ export function TrialRoom({ config: baseConfig, body }: { config: DesignConfig; 
             drawSleeve(o.right, rs, re, rw, -1);
             base(ex.x * scale * turn, ex.y * scale * turn, ey.x * scale, ey.y * scale, O.x, O.y);
             g.drawImage(o.torso, o.torsoBox.x0, o.torsoBox.y0, o.torsoBox.x1 - o.torsoBox.x0, o.torsoBox.y1 - o.torsoBox.y0);
+            const fm = fitMapRef.current;
+            if (fm) {
+              // Bands in garment centimetres (same transform as the torso image).
+              const band = (color: string | undefined, y0: number, y1: number, half: number) => { if (!color) return; g.globalAlpha = 0.36; g.fillStyle = color; g.beginPath(); g.roundRect(-half, y0, half * 2, y1 - y0, 2); g.fill(); g.globalAlpha = 1; };
+              band(fm.shoulder, slope - 1, slope + 3, m.shoulderWidth / 2);
+              band(fm.chest, m.armholeDepth - 3, m.armholeDepth + 4, m.chest / 4 - 1);
+              band(fm.waist, m.bodyLength * 0.56, m.bodyLength * 0.56 + 6, m.waist / 4 - 1);
+              band(fm.hip ?? fm.length, m.bodyLength - 7, m.bodyLength - 1, m.hem / 4 - 1);
+            }
             g.setTransform(1, 0, 0, 1, 0, 0);
             g.filter = "none";
             if (lv === "C" && segmenter.current && frame % 2 === 0) {
@@ -530,6 +547,7 @@ export function TrialRoom({ config: baseConfig, body }: { config: DesignConfig; 
         <Segmented label="Capability level" value={level} onChange={setLevel} options={[{ value: "A", label: "Level A · 2D overlay" }, { value: "B", label: "Level B · 3D on landmarks" }, { value: "C", label: "Level C · occlusion (experimental)" }]} />
         <button className={clsx("mv-chip", mirror && "!border-bone")} onClick={() => setMirror(!mirror)} aria-pressed={mirror}><FlipHorizontal className="size-3" /> Mirror view</button>
         <button className={clsx("mv-chip", matchLight && "!border-bone")} onClick={() => setMatchLight(!matchLight)} aria-pressed={matchLight} title="Match the garment's brightness to your room lighting"><Sun className="size-3" /> Match lighting</button>
+        {fitMap && Object.keys(fitMap).length > 0 && <button className={clsx("mv-chip", showFitMap && "!border-bone")} onClick={() => setShowFitMap(!showFitMap)} aria-pressed={showFitMap} title="Tint the garment by how this size fits you (Levels A and C)" data-testid="tryon-fitmap">Fit map</button>}
         <button className="mv-chip" onClick={toggleFullscreen} aria-pressed={fullscreen} data-testid="tryon-fullscreen">{fullscreen ? <Minimize2 className="size-3" /> : <Maximize2 className="size-3" />} {fullscreen ? "Exit full screen" : "Full screen"}</button>
       </div>
       <div className="flex flex-wrap items-center gap-1.5" aria-label="Live customisation">
@@ -605,7 +623,7 @@ export function TrialRoom({ config: baseConfig, body }: { config: DesignConfig; 
           </div>
         )}
       </Modal>
-      <p className="flex items-start gap-2 text-xs text-mute"><ShieldCheck className="mt-0.5 size-4 shrink-0" /> Pose tracking positions the garment on your body in real time. It is an augmented-reality visualisation, not a physically accurate cloth simulation or a fit check; sizing comes from your measurements. Level C uses on-device segmentation and is experimental.</p>
+      <p className="flex items-start gap-2 text-xs text-mute"><ShieldCheck className="mt-0.5 size-4 shrink-0" /> Pose tracking positions the garment on your body in real time, drawn at this size&apos;s real dimensions. The fit check and fit map compare the garment&apos;s measurements with yours (tape measurements are most accurate; camera and height/weight estimates are approximate) — the camera does not feel tension or simulate drape. Level C uses on-device segmentation and is experimental.</p>
     </div>
   );
 }

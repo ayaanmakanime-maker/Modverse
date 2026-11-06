@@ -1,5 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
+import { ThemePicker } from "@/components/theme";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Trash2, Pencil } from "lucide-react";
@@ -205,6 +206,7 @@ export function SettingsPanel() {
   return (
     <div className="space-y-6">
       <h1 className="mv-display text-3xl">Settings</h1>
+      <section className="mv-card space-y-3 p-4"><p className="font-medium">Appearance</p><p className="text-sm text-mute">Dark is the ModVerse signature look; Light is a clean white interface; System follows your device.</p><ThemePicker /></section>
       <form className="mv-card space-y-3 p-4" onSubmit={async (e) => { e.preventDefault(); try { await api("/api/account", { method: "PATCH", body: { name: profile.name, phone: profile.phone || null, marketingOptIn: profile.marketingOptIn } }); toast("Profile updated"); router.refresh(); } catch (err) { toast(errorMessage(err), "bad"); } }}>
         <p className="font-medium">Profile</p>
         <p className="text-sm text-mute">{profile.email}</p>
