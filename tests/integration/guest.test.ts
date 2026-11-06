@@ -15,6 +15,10 @@ import { applyAsPartner } from "@/lib/services/partners";
 import { sendEmail } from "@/lib/email";
 import { verifyPassword } from "@/lib/auth/password";
 
+/** Unique per run, so every integration file can share one PostgreSQL database (PGlite gives each file its own). */
+const RUN = Math.random().toString(36).slice(2, 8);
+const em = (address: string) => address.replace("@", `+${RUN}@`);
+
 const asSession = (u: typeof s.users.$inferSelect): SessionUser => ({ id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: !!u.emailVerifiedAt, isGuest: u.isGuest, sessionId: "t" });
 beforeAll(async () => { await getDb(); }, 120_000);
 
@@ -48,16 +52,16 @@ describe("guest mode", () => {
   it("is saved into a normal account keeping its designs; strong password and a free email required", async () => {
     const g = asSession(await createGuestUser());
     const { project } = await createProject(g, { modelId: "tee-oversized", audience: "men" });
-    await expect(claimGuestAccount(g, { name: "Asha", email: "asha@example.com", password: "short" }, "http://x")).rejects.toMatchObject({ code: "weak_password" });
+    await expect(claimGuestAccount(g, { name: "Asha", email: em("asha@example.com"), password: "short" }, "http://x")).rejects.toMatchObject({ code: "weak_password" });
     await expect(claimGuestAccount(g, { name: "Asha", email: "x@guest.modverse.local", password: "Correct-Horse-Battery-9" }, "http://x")).rejects.toMatchObject({ code: "bad_email" });
-    const u = await claimGuestAccount(g, { name: "Asha", email: "asha@example.com", password: "Correct-Horse-Battery-9" }, "http://x");
-    expect(u).toMatchObject({ isGuest: false, email: "asha@example.com", name: "Asha" });
+    const u = await claimGuestAccount(g, { name: "Asha", email: em("asha@example.com"), password: "Correct-Horse-Battery-9" }, "http://x");
+    expect(u).toMatchObject({ isGuest: false, email: em("asha@example.com"), name: "Asha" });
     expect(await verifyPassword(u.passwordHash, "Correct-Horse-Battery-9")).toBe(true);
     expect(u.emailVerifiedAt).toBeNull(); // must verify the new address
     expect((await listProjects(asSession(u))).map((p) => p.id)).toEqual([project.id]);
-    await expect(claimGuestAccount(asSession(u), { name: "A", email: "b@example.com", password: "Correct-Horse-Battery-9" }, "http://x")).rejects.toMatchObject({ code: "not_guest" });
+    await expect(claimGuestAccount(asSession(u), { name: "A", email: em("b@example.com"), password: "Correct-Horse-Battery-9" }, "http://x")).rejects.toMatchObject({ code: "not_guest" });
     const g2 = asSession(await createGuestUser());
-    await expect(claimGuestAccount(g2, { name: "Other", email: "asha@example.com", password: "Correct-Horse-Battery-9" }, "http://x")).rejects.toMatchObject({ code: "email_taken" });
+    await expect(claimGuestAccount(g2, { name: "Other", email: em("asha@example.com"), password: "Correct-Horse-Battery-9" }, "http://x")).rejects.toMatchObject({ code: "email_taken" });
   });
 
   it("can be switched off, and abandoned guests without orders are cleaned up", async () => {

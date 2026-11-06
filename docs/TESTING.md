@@ -39,4 +39,6 @@ SVG sanitiser · Creative Library integrity (supplied 1,000 assets preserved + S
 | Ultracode upgrade (unit) | `atelier-pro.test.ts` (composer effects, adjustments maths, selections, history), `fabric-lab.test.ts` (profiles, drape, regions, safe area, production preview, flagship geometry), `avatars.test.ts`, `body-scan.test.ts` (synthetic body accuracy, loose clothing, held objects), `ai-capabilities.test.ts` |
 
 ## Notes
+Integration tests on PostgreSQL: create an **empty, throwaway** database, run `DATABASE_URL=… npm run db:migrate`, then `DATABASE_URL=… npx vitest run tests/integration`. Fixture e-mails get a per-run suffix so the four files can share the database in one run, but the suite assumes empty global state (e.g. no Shiprocket credentials), so use a fresh database for each run — never a database with real data.
+
 Camera tests use Chromium's fake device and software GL, so they verify the pipeline, not real-world tracking quality. 3D FPS in CI is software-rendered. Latest results: BUILD_STATUS.md.

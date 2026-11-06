@@ -42,7 +42,7 @@ Status labels (V2 spec, Part 17): **Fully implemented** — works end-to-end wit
 | `npm run lint` | 0 errors, 0 warnings |
 | `npm run typecheck` | clean |
 | `npm test` (Vitest) | **172 / 172** passed in 24 files — 136 unit + 36 integration (PGlite) |
-| Integration on **PostgreSQL 16** (`DATABASE_URL`) | **36 / 36** passed, each test file on a freshly migrated database; `npm run db:migrate` applied migrations 0000–0007 (52 tables). The files share fixed fixture e-mails, so they can't all run against one database in a single pass |
+| Integration on **PostgreSQL 16** (`DATABASE_URL`) | **36 / 36** passed in one run of `npx vitest run tests/integration` against a single freshly migrated database (`npm run db:migrate` applied migrations 0000–0007, 52 tables). Fixture e-mails are unique per run; the suite expects an empty database |
 | `npm run build` | passed |
 | `npm run test:e2e` (Playwright, Chromium) | **31 / 31** passed — incl. the customer journey, partner journey, Atelier Pro tools, Fabric Lab, body scanner, avatars and mobile |
 | `npm run perf` | recorded in `docs/evaluation/performance.json` (earlier V2-G run) |
