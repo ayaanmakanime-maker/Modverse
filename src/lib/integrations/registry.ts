@@ -65,6 +65,18 @@ export const INTEGRATIONS: IntegrationDef[] = [
     localFallback: "Local rule-based Fashion Director (deterministic, offline).",
   },
   {
+    id: "meta-muse", category: "ai", name: "Meta Muse Image (hosted image generation)", envPrefix: "META_MUSE",
+    description: "Meta's Muse Image model for AI artwork generation in the editor (Upload & AI). Billed per generated image by Meta; your Meta developer team must have billing set up. Images carry Meta's invisible Content Seal watermark. Web/image search and code execution by the model are OFF by default.",
+    docsUrl: "https://developers.meta.com/", billable: true, testable: true,
+    fields: [
+      { key: "apiKey", label: "API key", secret: true, required: true, placeholder: "LLM_…", pattern: "^[A-Za-z0-9_|.\\-]{16,200}$", help: "Create it in your Meta developer account. Stored encrypted; never sent to the browser." },
+      { key: "baseUrl", label: "Base URL", secret: false, required: false, placeholder: "https://api.meta.ai/v1", pattern: "^https://", help: "Leave empty for the default." },
+      { key: "model", label: "Image model", secret: false, required: false, placeholder: "muse-image-1.0" },
+      { key: "reasoning", label: "Reasoning strength", secret: false, required: false, placeholder: "low", pattern: "^(low|high)$", help: "low = faster and cheaper (default); high = the model plans more before rendering." },
+    ],
+    localFallback: "Artwork generation uses ComfyUI if connected, otherwise stays disabled; users upload artwork or use the Creative Library.",
+  },
+  {
     id: "comfyui", category: "ai", name: "ComfyUI (local image generation)", envPrefix: "COMFYUI",
     description: "Local Stable-Diffusion-family workflows for artwork generation where hardware and model licences permit.",
     docsUrl: "https://github.com/comfyanonymous/ComfyUI", billable: false, testable: true,

@@ -13,6 +13,8 @@ describe("AI capability adapters", () => {
   it("only activates hosted providers that an admin enabled", () => {
     expect(activeAdapters(["gemini"])["fashion-director"]?.id).toBe("director-gemini");
     expect(activeAdapters(["openai"])["artwork-generation"]?.id).toBe("artwork-openai");
+    expect(activeAdapters(["meta-muse"])["artwork-generation"]).toMatchObject({ id: "artwork-meta-muse", cost: "billable" });
+    expect(activeAdapters(["comfyui", "meta-muse"])["artwork-generation"]?.id).toBe("artwork-comfyui"); // free local first
     expect(activeAdapters([])["fashion-director"]?.id).toBe("director-local");
   });
   it("returns schema-validated, deterministic structured outputs", () => {
