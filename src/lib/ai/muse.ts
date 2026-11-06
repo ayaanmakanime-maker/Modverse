@@ -1,5 +1,5 @@
 /**
- * The Muse — ModVerse AI Fashion Director (local rule-based engine).
+ * AI Muse — ModVerse AI Fashion Director (local rule-based engine).
  *
  * Every suggestion that changes the design carries structured DesignOps, so
  * applying it goes through the real garment configuration engine. Output from

@@ -24,7 +24,7 @@ export default function Home() {
             <Logo variant="original" priority className="w-full max-w-xl" />
             <h1 className="mv-display mt-6 text-4xl text-bone md:text-6xl">Design the garment itself.</h1>
             <p className="mt-5 max-w-xl text-lg text-bone-2">
-              Silhouette, construction, fabric, every panel, typography and artwork — guided by The Muse, previewed in 3D, tried on with your camera and checked for manufacturing before you order.
+              Silhouette, construction, fabric, every panel, typography and artwork — guided by AI Muse, previewed in 3D, tried on with your camera and checked for manufacturing before you order.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/design/new?mode=studio" className="mv-btn mv-btn-primary">Start designing <ArrowRight className="size-4" /></Link>
@@ -73,7 +73,7 @@ export default function Home() {
         <p className="mv-eyebrow">Three ways to design — one engine</p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[
-            { mode: "studio", name: "Design Studio", tag: "Guided", body: "Templates, presets, colours, fabrics, library graphics and your own words — with The Muse at your side." },
+            { mode: "studio", name: "Design Studio", tag: "Guided", body: "Templates, presets, colours, fabrics, library graphics and your own words — with AI Muse at your side." },
             { mode: "atelier", name: "Atelier", tag: "Advanced", body: "Independent panels, collars and cuffs, proportions, layers, embroidery, avatar preview and version history." },
             { mode: "pro", name: "Atelier Pro", tag: "Professional", body: "Precise measurements, material properties, print & embroidery zones, fit and manufacturing validation, tech packs and BOM." },
           ].map((m) => (
@@ -108,7 +108,7 @@ export default function Home() {
       <section className="mx-auto max-w-7xl px-4 pb-8 md:px-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            [Sparkles, "The Muse", "Describe a garment in plain words — it builds and edits the real configuration, and tells you what it can't do."],
+            [Sparkles, "AI Muse", "Describe a garment in plain words — it builds and edits the real configuration, and tells you what it can't do."],
             [Type, "Typography editor", "34 licensed typefaces incl. Devanagari, Tamil and Bengali; curved, circular, outlined and layered text."],
             [Box, "Parametric 3D", "Every model, collar, cuff and proportion change rebuilds the 3D garment geometry live."],
             [Camera, "Virtual trial room", "Live pose tracking in your browser. Camera frames never leave your device."],

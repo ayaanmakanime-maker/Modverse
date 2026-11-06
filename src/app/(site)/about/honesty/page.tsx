@@ -7,7 +7,7 @@ export default function Page() {
     ["Virtual trial room", "Pose-tracked overlays (Levels A/B) and experimental occlusion (Level C). Not physically accurate clothing."],
     ["Fabric properties", "Typical industry ranges for visualisation and rules — not lab-tested values of a specific mill."],
     ["Tech packs, BOM, CAD exports", "Design-intent documents. Pattern making, grading and production approval must be done by qualified professionals and the manufacturer."],
-    ["The Muse", "Local deterministic rules unless an admin connects a language model; every answer is labelled with its source."],
+    ["AI Muse", "Local deterministic rules unless an admin connects a language model; every answer is labelled with its source."],
     ["AI artwork", "Only generated when a provider is configured. Nothing is faked."],
     ["Payments", "Simulated and clearly labelled unless a payment provider is configured. Real payments are only confirmed after verified provider signatures."],
     ["Manufacturing & shipping", "Orders are made and shipped by manufacturing and logistics partners that ModVerse approves; they work in the ModVerse partner portals. Courier tracking numbers and labels are issued by ModVerse until a courier integration is connected, so tracking happens on ModVerse rather than on the courier website."],

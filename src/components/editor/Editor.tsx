@@ -36,7 +36,7 @@ type Tab = "start" | "garment" | "construction" | "measurements" | "fabric" | "f
 const TAB_META: Record<Tab, { label: string; icon: typeof Shirt }> = {
   start: { label: "Start", icon: Wand2 }, garment: { label: "Garment", icon: Shirt }, construction: { label: "Construction", icon: Scissors }, measurements: { label: "Proportions", icon: Ruler },
   fabric: { label: "Colour & fabric", icon: Palette }, fabriclab: { label: "Fabric Lab", icon: FlaskConical }, panels: { label: "Panels", icon: LayoutGrid }, library: { label: "Library", icon: ImageIcon }, text: { label: "Text", icon: Type },
-  upload: { label: "Upload & AI", icon: Upload }, layers: { label: "Layers", icon: LayersIcon }, muse: { label: "The Muse", icon: Sparkles }, fit: { label: "Fit & avatar", icon: User },
+  upload: { label: "Upload & AI", icon: Upload }, layers: { label: "Layers", icon: LayersIcon }, muse: { label: "AI Muse", icon: Sparkles }, fit: { label: "Fit & avatar", icon: User },
   check: { label: "Check & order", icon: CheckCircle2 }, versions: { label: "Versions", icon: History }, techpack: { label: "Tech pack", icon: FileText },
 };
 
@@ -444,7 +444,7 @@ function EditorLayout(p: {
               <div className="flex flex-wrap gap-1">
                 <button className="mv-chip" onClick={() => p.setTab("text")}><Type className="size-3" /> Add text</button>
                 <button className="mv-chip" onClick={() => p.setTab("library")}><ImageIcon className="size-3" /> Add graphic</button>
-                <button className="mv-chip" onClick={() => p.setTab("muse")}><Sparkles className="size-3" /> Ask The Muse</button>
+                <button className="mv-chip" onClick={() => p.setTab("muse")}><Sparkles className="size-3" /> Ask AI Muse</button>
               </div>
             </div>
           )}

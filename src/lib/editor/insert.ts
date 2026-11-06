@@ -2,7 +2,7 @@
 /**
  * Insertion helpers shared by clicks, drag-and-drop, file drops and paste.
  * Every insertion goes through the editor store (one undo step) and the same
- * layer factories used by The Muse, so placement is consistent everywhere.
+ * layer factories used by AI Muse, so placement is consistent everywhere.
  */
 import { useEditor } from "./store";
 import { createGraphicLayer, createImageLayer, createTextLayer, newLayerId } from "../garment/design";

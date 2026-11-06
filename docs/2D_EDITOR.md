@@ -16,7 +16,7 @@
 * **State:** `useEditor` (Zustand). `commit()` creates an undo step; `checkpoint()` + `transient()` make a drag one undo step. All changes re-validate against the Zod schema and compatibility rules.
 
 ## Panels (by mode)
-Start (Studio guided steps + presets) · Garment · Construction · Proportions · Colour & fabric · Panels · Library · Text · Upload & AI · Layers · The Muse · Fit & avatar · Check & order · Versions · Tech pack.
+Start (Studio guided steps + presets) · Garment · Construction · Proportions · Colour & fabric · Panels · Library · Text · Upload & AI · Layers · AI Muse · Fit & avatar · Check & order · Versions · Tech pack.
 
 ## Layers & compositions
 Visibility, lock, reorder, group/ungroup, multi-select, save selection as a reusable **composition** (stored per user), insert compositions from the Library panel.

@@ -513,7 +513,7 @@ export function StartPanel({ goto }: { goto: (tab: string) => void }) {
     { n: 1, t: "Choose your garment", d: "Category, model, fit and size.", tab: "garment" },
     { n: 2, t: "Colour & fabric", d: "Pick a colour and a fabric that suits the season.", tab: "fabric" },
     { n: 3, t: "Add graphics or text", d: "Creative Library, your own words, or uploads.", tab: "library" },
-    { n: 4, t: "Ask The Muse", d: "Describe changes in plain words.", tab: "muse" },
+    { n: 4, t: "Ask AI Muse", d: "Describe changes in plain words.", tab: "muse" },
     { n: 5, t: "Check & order", d: "Validate, save and add to cart.", tab: "check" },
   ];
   return (

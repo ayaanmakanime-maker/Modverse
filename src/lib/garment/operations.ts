@@ -8,7 +8,7 @@ import type { FixPatch } from "./validation";
 
 /**
  * Structured design operations. Every AI-driven change (text-to-design,
- * The Muse, validation auto-fixes, optional LLM providers) is expressed as
+ * AI Muse, validation auto-fixes, optional LLM providers) is expressed as
  * these operations — never as code. Each operation is schema-validated,
  * applied to an allowlisted path, and the resulting design is re-validated
  * against the full DesignConfig schema before it is accepted.

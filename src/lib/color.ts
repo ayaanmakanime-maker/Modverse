@@ -1,4 +1,4 @@
-/** Colour utilities shared by the validator, The Muse and the text-to-design parser. */
+/** Colour utilities shared by the validator, AI Muse and the text-to-design parser. */
 
 export const NAMED_COLORS: Record<string, string> = {
   black: "#0B0B0B", "jet black": "#050505", charcoal: "#36383C", graphite: "#4A4A48", grey: "#8C8C8C", gray: "#8C8C8C",

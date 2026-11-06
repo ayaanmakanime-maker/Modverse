@@ -1,6 +1,6 @@
 /**
  * Core ModVerse garment vocabulary. Every module — 2D editor, 3D renderer,
- * The Muse, validation, pricing, tech packs and orders — shares these types.
+ * AI Muse, validation, pricing, tech packs and orders — shares these types.
  */
 
 export const AUDIENCES = ["men", "women", "kids"] as const;
