@@ -532,7 +532,19 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
   useEffect(() => setSpin(!!autoRotate), [autoRotate]);
   const geo = useMemo(() => buildGarmentGeometry(config, { resolution: 16, folds: false }), [config]);
   const size = Math.max(geo.measurements.bodyLength, geo.measurements.chest / 2 + geo.measurements.sleeveLength * 0.8);
-  const distance = (compact ? 2.1 : 2.4) * size + (showAvatar ? 40 : 0);
+  // Frame by the pane's SHAPE as well as the garment's height: in a narrow split pane the width is the limit.
+  const [aspect, setAspect] = useState(1.3);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setAspect(Math.max(0.3, el.clientWidth / Math.max(1, el.clientHeight))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const widthNeeded = geo.measurements.chest / 2 + geo.measurements.sleeveLength * 1.5 + 6; // body + both sleeves hanging outwards
+  const fitDistance = (widthNeeded * 1.08) / (2 * Math.tan((32 / 2) * (Math.PI / 180)) * aspect);
+  const distance = Math.max((compact ? 2.1 : 2.4) * size, fitDistance) + (showAvatar ? 40 : 0);
   const centreOffset = geo.measurements.bodyLength / 2 - 4;
   const viewGoal = useCallback((v: ViewPreset): Omit<CameraGoal, "id"> => ({ position: new THREE.Vector3(...VIEW_DIRS[v]).normalize().multiplyScalar(distance).toArray() as [number, number, number], target: [0, 0, 0] }), [distance]);
   const [goal, setGoal] = useState<CameraGoal | null>(null);
@@ -571,7 +583,7 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
     return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-mute">3D preview needs WebGL, which isn&apos;t available in this browser. The 2D editor and all other features still work.</div>;
   const btn = "rounded-full px-2.5 py-1 text-[0.66rem] text-bone-2 transition hover:bg-surface-3 hover:text-bone";
   return (
-    <div className="relative h-full w-full" data-testid="garment-viewer">
+    <div ref={wrapRef} className="relative h-full w-full" data-testid="garment-viewer">
       <Canvas
         shadows
         // Render on demand: frames are drawn only when the design, camera, lighting or size changes
