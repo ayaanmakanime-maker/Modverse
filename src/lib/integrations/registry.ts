@@ -124,7 +124,7 @@ export const INTEGRATIONS: IntegrationDef[] = [
       { key: "password", label: "API user password", secret: true, required: true },
       { key: "pickupPincode", label: "Pickup pincode", secret: false, required: true, pattern: "^[1-9][0-9]{5}$" },
     ],
-    localFallback: "Flat-rate shipping estimate and manual tracking entry by staff.",
+    localFallback: "Shipping rules from Admin → Pricing; logistics partners issue ModVerse AWBs/labels and post tracking in the partner portal (or staff enter tracking manually).",
   },
   {
     id: "cloudinary", category: "storage", name: "Cloudinary", envPrefix: "CLOUDINARY",
@@ -232,7 +232,7 @@ export const INTEGRATIONS: IntegrationDef[] = [
     description: "Generic production-partner webhook: approved orders and tech packs are posted for production.",
     docsUrl: "https://example.invalid/manufacturer-api", billable: true, testable: false,
     fields: [{ key: "endpoint", label: "Order endpoint", secret: false, required: true, pattern: "^https://" }, { key: "apiKey", label: "API key", secret: true, required: true }],
-    localFallback: "Orders remain in ModVerse for staff review; no manufacturer is connected.",
+    localFallback: "Approved manufacturers fulfil orders through the ModVerse partner portal (no machine-to-machine API yet).",
   },
 ];
 

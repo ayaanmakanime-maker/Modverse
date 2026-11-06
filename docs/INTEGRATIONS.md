@@ -16,12 +16,12 @@ All external services are **planned integration targets**, not active connection
 | Auth | Google OAuth | `/api/auth/oauth/google` (+ callback) | OpenID config reachability (secret verified at sign-in) | Email + password |
 | Auth | Apple Sign In | Registry only | — | Email + password |
 | Payments | Razorpay (UPI/cards/net banking) | Order creation, Checkout.js, signature verify, webhook | `/v1/payments?count=1` | Simulated checkout |
-| Shipping | Shiprocket | Registry + login test | `auth/login` | Flat rate + manual tracking |
+| Shipping | Shiprocket | Registry + login test | `auth/login` | Logistics partner portal: ModVerse-issued AWB + PDF label, pickup scheduling, tracking events, POD (**simulated** courier booking) |
 | Storage | Cloudinary / S3 | `StorageProvider` interface | — | Local private storage |
 | Email | Resend | `sendEmail()` | `/domains` | Simulated mailbox |
 | SMS | MSG91 | Registry only | — | Email only |
 | Other | Google Maps, PostHog, Sentry, Turnstile, Redis | Registry only | — | Manual entry, local analytics, console, rate limits, in-memory |
 | Search | Meilisearch | Registry + health test | `/health` | Database search |
-| Manufacturing | CLO 3D, Gerber AccuMark, manufacturer API | Data contracts (CAD exchange JSON, tech pack JSON) | — | Staff-managed production |
+| Manufacturing | CLO 3D, Gerber AccuMark, manufacturer API | Data contracts (CAD exchange JSON, tech pack JSON) | — | **Manufacturer partner portal** (jobs, quotations, stages, QC, photos, production tech pack) — locally implemented; no machine-to-machine API |
 
 Providers without an implemented test cannot be enabled — this is deliberate so nothing is shown as connected without proof.

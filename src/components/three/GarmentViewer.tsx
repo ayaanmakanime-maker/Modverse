@@ -8,6 +8,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
+import { isSoftwareRenderer } from "@/lib/three/capabilities";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { buildGarmentGeometry, type ButtonData, type ButtonholeData, type GarmentGeometry, type MeshData } from "@/lib/three/garment-geometry";
@@ -374,7 +375,7 @@ interface CameraGoal {
 
 /** Smooth camera transitions: spherical interpolation around the target (never passes through the garment). */
 function CameraRig({ goal, controls }: { goal: CameraGoal | null; controls: React.RefObject<OrbitControlsImpl | null> }) {
-  const { camera } = useThree();
+  const { camera, invalidate } = useThree();
   const anim = useRef<{ fromT: THREE.Vector3; toT: THREE.Vector3; fromDir: THREE.Vector3; q: THREE.Quaternion; fromDist: number; toDist: number; t0: number; dur: number } | null>(null);
   useEffect(() => {
     if (!goal) return;
@@ -388,7 +389,8 @@ function CameraRig({ goal, controls }: { goal: CameraGoal | null; controls: Reac
     // opposite directions: rotate around the vertical axis rather than over the top
     if (fromDir.dot(toDir) < -0.98) fromDir.add(new THREE.Vector3(0.06, 0, 0)).normalize();
     anim.current = { fromT, toT, fromDir, q: new THREE.Quaternion().setFromUnitVectors(fromDir, toDir), fromDist: fromVec.length(), toDist: toVec.length(), t0: performance.now(), dur: 750 };
-  }, [goal, camera, controls]);
+    invalidate();
+  }, [goal, camera, controls, invalidate]);
   useFrame(() => {
     const a = anim.current;
     if (!a) return;
@@ -403,6 +405,7 @@ function CameraRig({ goal, controls }: { goal: CameraGoal | null; controls: Reac
       controls.current.update();
     } else camera.lookAt(target);
     if (k >= 1) anim.current = null;
+    else invalidate(); // on-demand rendering: keep frames coming until the transition ends
   });
   return null;
 }
@@ -431,17 +434,19 @@ function PostFX({ quality, composerRef }: { quality: RenderQuality; composerRef:
       composer.dispose();
     };
   }, [composer, composerRef]);
+  const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     composer.setPixelRatio(gl.getPixelRatio());
     composer.setSize(size.width, size.height);
-  }, [composer, gl, size.width, size.height]);
+    invalidate();
+  }, [composer, gl, size.width, size.height, invalidate]);
   useFrame(() => composer.render(), 1);
   return null;
 }
 
 /** Soft studio backdrop: a radial gradient keeps dark garments separated from the background. */
 function Backdrop({ inner, outer }: { inner: string; outer: string }) {
-  const { scene } = useThree();
+  const { scene, invalidate } = useThree();
   useEffect(() => {
     const c = document.createElement("canvas");
     c.width = c.height = 512;
@@ -454,11 +459,12 @@ function Backdrop({ inner, outer }: { inner: string; outer: string }) {
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     scene.background = t;
+    invalidate();
     return () => {
       scene.background = null;
       t.dispose();
     };
-  }, [scene, inner, outer]);
+  }, [scene, inner, outer, invalidate]);
   return null;
 }
 
@@ -495,6 +501,7 @@ const LIGHTS: Record<LightingPreset, { key: number; fill: number; rim: number; c
 function defaultQuality(compact?: boolean): RenderQuality {
   if (compact) return "low";
   if (typeof window === "undefined") return "balanced";
+  if (isSoftwareRenderer()) return "low"; // the "Std/HQ" toggle still lets the user opt in
   const coarse = window.matchMedia?.("(pointer: coarse)").matches;
   const cores = navigator.hardwareConcurrency ?? 8;
   return coarse && cores <= 4 ? "low" : "balanced";
@@ -567,6 +574,10 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
     <div className="relative h-full w-full" data-testid="garment-viewer">
       <Canvas
         shadows
+        // Render on demand: frames are drawn only when the design, camera, lighting or size changes
+        // (continuous only while auto-rotating or measuring FPS). Saves battery and keeps the editor
+        // responsive on devices without a fast GPU.
+        frameloop={spin || showStats ? "always" : "demand"}
         dpr={[1, quality === "low" ? 1.5 : 2]}
         camera={{ position: viewGoal(view).position, fov: 32, near: 1, far: 5000 }}
         gl={{ preserveDrawingBuffer: true, antialias: true, toneMappingExposure: exposure }}

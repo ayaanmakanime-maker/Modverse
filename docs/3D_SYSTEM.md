@@ -32,13 +32,15 @@ Physically based `MeshPhysicalMaterial` per panel:
 Switching fabric changes relief, roughness, sheen, colour variation and folds — not just colour.
 
 ## Lighting & rendering
-Key (shadow-casting), soft fill, two **rim lights** from behind, top spot and hemisphere light; locally generated studio environment with soft-box Lightformers (no HDR download); **contact shadows**; **ground-truth ambient occlusion** (three.js `GTAOPass`, denoised) through an `EffectComposer` with `OutputPass`; **Khronos PBR Neutral tone mapping** for faithful colours; radial studio backdrop to separate dark garments. Quality modes: *High* (16 AO samples, 4× MSAA), *Std* (default), *Fast* (no AO/relief; default for compact viewers and low-power phones).
+Key (shadow-casting), soft fill, two **rim lights** from behind, top spot and hemisphere light; locally generated studio environment with soft-box Lightformers (no HDR download); **contact shadows**; **ground-truth ambient occlusion** (three.js `GTAOPass`, denoised) through an `EffectComposer` with `OutputPass`; **Khronos PBR Neutral tone mapping** for faithful colours; radial studio backdrop to separate dark garments. Quality modes: *High* (16 AO samples, 4× MSAA), *Std* (default), *Fast* (no AO/relief; default for compact viewers, low-power phones and **GPU-less devices** — software WebGL such as SwiftShader/llvmpipe is detected via `WEBGL_debug_renderer_info`, `src/lib/three/capabilities.ts`).
+
+**On-demand rendering.** The canvas uses `frameloop="demand"`: frames are drawn only when the design, textures, camera, lighting or size change (camera transitions and OrbitControls damping request frames while moving). It renders continuously only while auto-rotating or when the FPS readout is on (`/lab/3d`). On a GPU-less machine this cut editor latency in Split view from ~10 s to ~2 s per edit; on such devices the editor also opens in 2D with a notice (3D is one click away). Measurements: [PERFORMANCE.md](PERFORMANCE.md).
 
 ## Viewer
 360° orbit + auto-rotate, zoom, pan; view presets (front/back/side/¾) with **smooth camera transitions** (spherical interpolation, never through the garment); **detail inspection** (collar, chest, cuff, hem, back) with close-up framing; **reset camera**; quality toggle; optional FPS / mesh / triangle readout (`/lab/3d`, used for benchmarks); PNG capture and GLB export. WebGL absence is detected and explained.
 
 ## Quality benchmarks
-`/lab/3d?model=…&color=…&view=…` (not linked from the storefront). Benchmarks and screenshots are in `docs/QUALITY_AND_PROVIDER_EVALUATION.md` (`docs/images/benchmarks/`): classic formal shirt, oversized T-shirt, regular-fit T-shirt (+ linen shirt for fabric contrast).
+`/lab/3d?model=…&color=…&view=…&quality=low|balanced|high` (not linked from the storefront). Benchmarks and screenshots are in `docs/QUALITY_AND_PROVIDER_EVALUATION.md` (`docs/images/benchmarks/`): classic formal shirt, oversized T-shirt, regular-fit T-shirt (+ linen shirt for fabric contrast).
 
 ## Avatar (`src/lib/three/avatar.ts`)
 Parametric mannequin from body measurements (height, chest, waist, hip, shoulder, arm, neck, bicep, wrist), body type, build, skin tone and hair. Arms follow the sleeve angle. It is a **visual representation**, not a body scan.

@@ -18,7 +18,9 @@ Structured spec per design version: garment, fabric, construction, panels, measu
 * **CAD exchange JSON** (`modverse.design-intent.v1`): measurements, construction, flat outlines, print areas and placements for future CLO 3D / Gerber AccuMark bridges.
 
 ## Order workflow
-`pending_payment → payment_confirmed → design_validation → awaiting_production_approval → manufacturing → quality_inspection → packed → shipped → delivered` (+ cancelled, refunded). Orders store immutable design + spec snapshots. Staff must **approve every item** before manufacturing; status cannot move backwards; tracking can be entered manually. No manufacturer is connected — the `manufacturer` integration describes the future webhook contract.
+`pending_payment → payment_confirmed → design_validation → awaiting_production_approval → manufacturing → quality_inspection → packed → shipped → delivered` (+ cancelled, refunded). Orders store immutable design + spec snapshots. Staff must **approve every item** before manufacturing; status cannot move backwards.
+
+**V2 — partner fulfilment** ([PARTNER_PORTALS.md](PARTNER_PORTALS.md)): approved manufacturer organisations receive jobs (capability-matched), accept/decline, quote, report stages, issues, QC and photos, and mark orders ready; approved logistics partners generate labels, schedule pickups and post tracking with proof of delivery. Partner events advance the order automatically and only forward (quotation approved → manufacturing, QC pass → quality inspection, ready → packed, pickup → shipped, delivery → delivered). Manufacturers download a **production copy** of the tech pack from the order snapshot (order number, quantity, size; no retail prices). Manual staff status updates and tracking entry remain for orders fulfilled outside the portals. A machine-to-machine manufacturer API is not implemented — partners use the portal.
 
 ## Disclaimer
 Visual previews, procedural geometry and generated PDFs are **not factory-ready patterns**. Pattern grading, construction, fabric specifications and production validation must be reviewed by qualified professionals and the actual manufacturer.

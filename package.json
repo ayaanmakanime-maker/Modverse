@@ -22,7 +22,8 @@
     "brand:derive": "python3 -I scripts/derive-brand-assets.py",
     "setup": "npm run library:import && npm run fonts:sync && npm run db:migrate && npm run db:seed && (npm run models:fetch || echo \"models:fetch failed \u2014 trial room will use the MediaPipe CDN\")",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
-    "ai:eval": "tsx scripts/ai-eval.ts"
+    "ai:eval": "tsx scripts/ai-eval.ts",
+    "perf": "tsx scripts/perf.ts"
   },
   "engines": {
     "node": ">=20.9"

@@ -4,7 +4,7 @@
 
 **AI-powered personalised fashion design and commerce platform — YOUR WORLD. YOUR STYLE.**
 
-ModVerse lets customers design the *garment itself* — silhouette, construction, proportions, fabric, every panel, typography and artwork — guided by **The Muse**, previewed in parametric **3D**, tried on with a **live camera**, checked by a **manufacturing rules engine**, and ordered through a full commerce flow. Initial market: India. Initial catalogue: Men's, Women's and Kids' T-shirts (15 models) and shirts (17 models).
+ModVerse lets customers design the *garment itself* — silhouette, construction, proportions, fabric, every panel, typography and artwork — guided by **The Muse** (an AI Fashion Director whose proposals are compiled, validated and applied as one undoable step), previewed in realistic parametric **3D**, tried on with a **live camera**, checked by a **manufacturing rules engine**, priced from real manufacturing cost drivers, ordered through a full commerce flow and fulfilled by approved **manufacturer and logistics partners**. Initial market: India. Initial catalogue: Men's, Women's and Kids' T-shirts (15 models) and shirts (17 models).
 
 Everything runs **locally with no paid services or credentials**. External providers (OpenAI, Ollama, ComfyUI, Razorpay, Shiprocket, Resend, Google sign-in, …) are prepared behind an admin **Integration Manager** and stay inactive until tested and enabled.
 
@@ -37,7 +37,11 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | Manufacturing | Validation engine with fixes, tech pack PDF/JSON, BOM, measurement sheet, print-ready SVG / 300 DPI PNG, CAD exchange JSON. |
 | Commerce | Cart, checkout, order snapshots, simulated payments (labelled) or Razorpay test mode with signature verification, order tracking. |
 | Accounts | Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements, avatars, guardian-managed child profiles. |
-| Admin | Analytics, orders + production approval, design reviews, users/roles, catalogue, library, Integration Manager, audit log, settings. |
+| Admin | Analytics, orders + production approval, design reviews, production board, shipping, disputes, partner approval, pricing & discounts, users/roles, catalogue, library, Integration Manager, audit log, settings. |
+| **V2: AI pipeline** | Fashion Director (local rules, or Ollama / Gemini / OpenAI / on-device Gemini Nano when enabled) → artwork resolution → design compiler (validated, previewed, priced) → applied as one undoable transaction. |
+| **V2: fit & try-on** | Live trial room with tracking-loss guidance, live colour changes, consented camera measurement; fit analysis keeps *estimated*, *simulated* and customer-*verified* fit separate. |
+| **V2: dynamic pricing** | Itemised, manufacturing-aware prices (fabric consumption from real panel areas, colours, stitches, placements), admin rules and discount codes, server-verified totals and price snapshots. |
+| **V2: partner portals** | Manufacturers (jobs, quotations, stages, QC, photos, production tech pack) and logistics partners (labels, pickups, tracking, proof of delivery), admin approval, disputes — each organisation sees only its own work. |
 
 ## Scripts
 
@@ -48,11 +52,12 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | `npm run db:migrate` · `db:seed` · `db:reset` | Database lifecycle (`db:generate` creates new migrations) |
 | `npm run library:import` | Re-import the Creative Library from `assets/` |
 | `npm run fonts:sync` · `models:fetch` · `brand:derive` | Fonts, CV models, logo variants |
+| `npm run ai:eval` · `perf` | AI pipeline evaluation · performance probe against a running build |
 
 ## Documentation
 
-[Architecture](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_SCHEMA.md) · [Brand](docs/BRAND_GUIDELINES.md) · [Garment system](docs/GARMENT_SYSTEM.md) · [2D editor](docs/2D_EDITOR.md) · [3D system](docs/3D_SYSTEM.md) · [Virtual try-on](docs/VIRTUAL_TRY_ON.md) · [AI system](docs/AI_SYSTEM.md) · [Typography](docs/TYPOGRAPHY_SYSTEM.md) · [Creative Library](docs/CREATIVE_LIBRARY.md) · [Manufacturing](docs/MANUFACTURING.md) · [Security](docs/SECURITY.md) · [Integrations](docs/INTEGRATIONS.md) · [API setup](docs/API_SETUP_GUIDE.md) · [Costs](docs/COST_AND_DEPENDENCIES.md) · [Provider status](docs/PROVIDER_STATUS.md) · [Testing](docs/TESTING.md) · [Build status](docs/BUILD_STATUS.md) · [Master specification](docs/MASTER_PROMPT.md)
+[Build status](docs/BUILD_STATUS.md) · [Architecture](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_SCHEMA.md) · [Brand](docs/BRAND_GUIDELINES.md) · [Garment system](docs/GARMENT_SYSTEM.md) · [2D editor](docs/2D_EDITOR.md) · [3D system](docs/3D_SYSTEM.md) · [AI system](docs/AI_SYSTEM.md) · [Typography](docs/TYPOGRAPHY_SYSTEM.md) · [Virtual try-on](docs/VIRTUAL_TRY_ON.md) · [Live try-on](docs/LIVE_TRY_ON.md) · [Dynamic pricing](docs/DYNAMIC_PRICING.md) · [Manufacturing](docs/MANUFACTURING.md) · [Partner portals](docs/PARTNER_PORTALS.md) · [Creative Library](docs/CREATIVE_LIBRARY.md) · [Security](docs/SECURITY.md) · [Integrations](docs/INTEGRATIONS.md) · [API setup](docs/API_SETUP_GUIDE.md) · [Costs](docs/COST_AND_DEPENDENCIES.md) · [Provider status](docs/PROVIDER_STATUS.md) · [Quality & provider evaluation](docs/QUALITY_AND_PROVIDER_EVALUATION.md) · [Testing](docs/TESTING.md) · [Performance](docs/PERFORMANCE.md) · [Master specification](docs/MASTER_PROMPT.md)
 
 ## Honesty notes
 
-Size recommendations are estimates; avatars are visual representations; 3D garments are parametric visualisations (not cloth simulation); the trial room is pose-tracked overlay, not physically accurate clothing; tech packs are **design-intent documents, not factory-ready patterns**; payments are simulated unless a provider is configured; no manufacturer or courier is connected in this release. See [/about/honesty](src/app/(site)/about/honesty/page.tsx).
+Size recommendations are estimates; avatars are visual representations; 3D garments are parametric visualisations (not cloth simulation); the trial room is pose-tracked overlay, not physically accurate clothing; tech packs are **design-intent documents, not factory-ready patterns**; payments are simulated unless a provider is configured; manufacturers and logistics companies work through the partner portals, but courier bookings (AWB, labels) are ModVerse-issued until a courier API is connected; prices are illustrative until supplier rates are verified. See [/about/honesty](src/app/(site)/about/honesty/page.tsx).

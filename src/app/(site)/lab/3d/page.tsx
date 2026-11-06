@@ -16,5 +16,6 @@ export default async function Lab({ searchParams }: { searchParams: Promise<Reco
   const config = createDesign(model.id, audience);
   if (sp.fabric && FABRIC_BY_ID.get(sp.fabric)?.garmentTypes.includes(config.garmentType)) config.fabric.id = sp.fabric;
   if (sp.color && /^[0-9a-f]{6}$/i.test(sp.color)) config.fabric.color = `#${sp.color.toUpperCase()}`;
-  return <Lab3D config={config} view={(sp.view as never) ?? "front"} avatar={sp.avatar === "1"} />;
+  const quality = (["low", "balanced", "high"] as const).find((q) => q === sp.quality);
+  return <Lab3D config={config} view={(sp.view as never) ?? "front"} avatar={sp.avatar === "1"} quality={quality} />;
 }

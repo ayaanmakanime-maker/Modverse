@@ -23,6 +23,7 @@ import { ConstructionPanel, FabricPanel, FitPanel, GarmentPanel, MeasurementsPan
 import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from "./panels-artwork";
 import { MusePanel, TechPackPanel, ValidationPanel, VersionsPanel, useLiveValidation } from "./panels-pro";
 import type { GarmentViewerHandle, LightingPreset, ViewPreset } from "@/components/three/GarmentViewer";
+import { isSoftwareRenderer } from "@/lib/three/capabilities";
 
 const GarmentViewer = dynamic(() => import("@/components/three/GarmentViewer").then((m) => m.GarmentViewer), { ssr: false, loading: () => <BrandLoader label="Preparing 3D" /> });
 
@@ -109,6 +110,14 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
   useEffect(() => {
     if (!MODE_TABS[mode].includes(tab)) setTab(MODE_TABS[mode][0]);
   }, [mode, tab]);
+
+  // Without a GPU, a live 3D pane makes every edit wait for a CPU-rendered frame: open in 2D instead.
+  useEffect(() => {
+    if (!ready || !isSoftwareRenderer() || useEditor.getState().view !== "split") return;
+    setView("2d");
+    toast("3D preview is paused on this device (no GPU acceleration) — choose Split or 3D any time.", "info");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   useEffect(() => {
     if (!ready || !dirty) return;
