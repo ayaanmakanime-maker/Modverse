@@ -151,3 +151,18 @@ describe("custom fonts", () => {
     expect(codes).not.toContain("FONT_UNSUPPORTED");
   });
 });
+
+describe("palette swap", () => {
+  it("maps artwork colours to a palette by lightness rank and honours a shift", async () => {
+    const { paletteSwapMap } = await import("@/lib/library/palette-swap");
+    const art = ["#0F172A", "#7C3AED", "#F8FAFC"];
+    const pal = ["#FFF4E0", "#E4572E", "#2B1B17", "#F3A712", "#A8201A"];
+    const m = paletteSwapMap(art, pal);
+    expect(m["#0F172A"]).toBe("#2B1B17"); // darkest → darkest
+    expect(m["#F8FAFC"]).toBe("#FFF4E0"); // lightest → lightest
+    expect(Object.keys(m)).toHaveLength(3);
+    expect(paletteSwapMap(art, pal, 1)["#0F172A"]).not.toBe("#2B1B17");
+    expect(paletteSwapMap(["#123456"], ["#000000", "#FFFFFF"])).toHaveProperty("#123456");
+    expect(paletteSwapMap([], pal)).toEqual({});
+  });
+});

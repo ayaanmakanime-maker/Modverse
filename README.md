@@ -30,7 +30,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | Design experiences | **Design Studio** (guided), **Atelier** (advanced), **Atelier Pro** (professional) — one engine, three workflows. |
 | Garment engine | Fit, proportions, neckline/collar, placket, sleeves/cuffs, hem, pockets, yoke, pleats, darts, buttons, stitching, monogram, 11 independent panels. |
 | Typography | 34 OFL fonts (incl. Devanagari, Tamil, Bengali), curved/circular/vertical text, outline, shadow, background, skew; identical in 2D, 3D and print. |
-| Creative Library | The supplied v0.1 library: 500 graphics, 100 patterns, 100 templates, 100 palettes, 200 elements, 20 collections — imported from its manifests, sanitised. |
+| Creative Library | The supplied v0.1 library (1,000 assets, 20 collections) **plus the ModVerse Studio Library** — ~970 original assets in 24 collections (festive & desi, mandala/rangoli, wildlife, pets, kids, sports, music, gaming, food, travel, wellness, botanical, surf, retro, celestial, streetwear, celebration, campus, eco, abstract, line art, stickers, badges, seamless patterns). Every graphic is recolourable (≤5 colours) and one-tap palette-swappable; place on any 2D/3D surface. |
 | The Muse | Local deterministic text-to-design + conversational editing that applies validated operations; optional Ollama/OpenAI. |
 | 3D | React Three Fiber parametric garments (lofted sleeves, collars, plackets, buttons, pockets, cuffs), fabric relief, avatar. |
 | Trial room | MediaPipe on-device pose tracking — Level A (2D), B (3D on landmarks), C (experimental occlusion). |

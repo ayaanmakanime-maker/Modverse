@@ -14,7 +14,7 @@ export function directorSystemPrompt(config: DesignConfig | null, opts: { compac
     `Return ONLY a JSON object matching schema "${PROPOSAL_VERSION}". No prose, no markdown.`,
     "Keep existing design settings unless the customer asks to change them (intent \"edit\"). Use intent \"create\" for a new garment.",
     "Never invent geometry, coordinates, prices or capabilities. Put anything ModVerse cannot do into \"unsupported\".",
-    "Artwork: describe what is needed (style, subject, colours) with a placement; set source \"generate\" only when the customer explicitly wants new AI artwork, otherwise \"library\" or \"any\". You may set assetId to a Creative Library id (MVG_001…MVG_500 graphics, MVE_001…MVE_200 stickers).",
+    "Artwork: describe what is needed (style, subject, colours) with a placement; set source \"generate\" only when the customer explicitly wants new AI artwork, otherwise \"library\" or \"any\". You may set assetId to a Creative Library id (MVG_001…MVG_500 and MXG_001…MXG_732 graphics, MVE_001…MVE_200 and MXE_001…MXE_092 stickers/badges, MXP_ patterns).",
     `Placements: ${PLACEMENTS.join(", ")}.`,
     compact ? `Model ids: ${GARMENT_MODELS.map((m) => m.id).join(", ")}.` : `Models (id: name, fit): ${GARMENT_MODELS.map((m) => `${m.id}: ${m.name}, ${m.fit}`).join("; ")}.`,
     `Fabrics (id[garment types]): ${FABRICS.map((f) => `${f.id}[${f.garmentTypes.join("/")}]`).join(", ")}.`,

@@ -7,7 +7,7 @@ PostgreSQL via Drizzle ORM (`src/lib/db/schema.ts`), **52 tables**, versioned SQ
 | Identity & access | `users` (role customer/staff/admin, status), `sessions` (sha256 token ids), `auth_tokens` (verify/reset), `outbox_emails` (simulated mailbox), `addresses` |
 | Guardian & fit | `guardian_profiles`, `child_profiles` (nickname + birth year + consent), `measurement_profiles`, `avatar_profiles` |
 | Catalogue | `categories`, `garment_models`, `garment_components`, `fabrics`, `materials`, `products` |
-| Creative Library | `asset_collections`, `creative_assets` (1,000 rows from the manifest), `colour_palettes`, `library_favorites`, `library_recent`, `saved_compositions`, `uploaded_assets` |
+| Creative Library | `asset_collections`, `creative_assets` (1,967 rows: 1,000 from the supplied manifest + 967 ModVerse Studio Library assets), `colour_palettes`, `library_favorites`, `library_recent`, `saved_compositions`, `uploaded_assets` |
 | Designs | `design_themes` (ModVerse Together), `design_projects`, `design_versions` (full `DesignConfig` JSON + validation summary), projections `design_layers`, `text_elements`, `artwork_elements`, `panel_configurations`, `manufacturing_specs`, `tech_packs` |
 | Commerce | `wishlist_items`, `carts`, `cart_items`, `orders`, `order_items` (immutable design + spec snapshots), `order_events`, `payments`, `shipments` |
 | Partners (V2) | `organizations` (manufacturer/logistics, status, capabilities), `organization_members`, `production_jobs`, `quotations`, `production_events`, `disputes`, `settlements` (V2.1 payables ledger) |

@@ -213,7 +213,7 @@ export function AdminLibrary() {
   return (
     <div>
       <H1>Creative Library</H1>
-      <p className="mb-4 text-sm text-mute">All 1,000 assets were imported from the original manifest. Deactivating hides an asset from customers; original files are never modified.</p>
+      <p className="mb-4 text-sm text-mute">The supplied v0.1 library and the ModVerse Studio Library were imported from their manifests. Deactivating hides an asset from customers; original files are never modified.</p>
       <div className="mb-4 flex flex-wrap gap-2">
         <Select value={kind} onChange={(e) => setKind(e.target.value)} className="!w-40">{["graphic", "element", "template", "pattern", "palette"].map((k) => <option key={k}>{k}</option>)}</Select>
         <Select value={collection} onChange={(e) => setCollection(e.target.value)} className="!w-60">{COLLECTIONS.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select>

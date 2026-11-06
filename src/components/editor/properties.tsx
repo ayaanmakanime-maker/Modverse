@@ -14,7 +14,8 @@ import type { Crop, GraphicLayer, ImageLayer, Layer, TextEffect, TextLayer } fro
 import { Button, ColorPicker, Segmented, Slider, Select, toast } from "@/components/ui";
 import { FONT_ACCEPT, useCustomFonts } from "@/lib/typography/custom-fonts";
 import { useSession } from "@/components/session";
-import { errorMessage } from "@/lib/client/api";
+import { api, errorMessage } from "@/lib/client/api";
+import { paletteSwapMap } from "@/lib/library/palette-swap";
 import { getSvg } from "@/lib/render/assets";
 import { extractSvgColors } from "@/lib/svg/sanitize";
 import { ZONE_LABELS } from "./Canvas2D";
@@ -359,6 +360,37 @@ function CropControls({ layer }: { layer: GraphicLayer | ImageLayer }) {
   );
 }
 
+function PaletteSwap({ layer, colors }: { layer: GraphicLayer; colors: string[] }) {
+  const update = useEditor((s) => s.updateLayer);
+  const [palettes, setPalettes] = useState<{ id: string; name: string; colors: string[] }[]>([]);
+  const [shift, setShift] = useState(0);
+  useEffect(() => {
+    let live = true;
+    // Studio palettes first (they match the Studio artwork's colour roles), then the supplied v0.1 palettes.
+    Promise.all([api<{ items: { id: string; name: string; colors: string[] }[] }>("/api/library?kind=palette&q=studio&limit=40"), api<{ items: { id: string; name: string; colors: string[] }[] }>("/api/library?kind=palette&limit=24")])
+      .then(([a, b]) => live && setPalettes([...a.items, ...b.items.filter((x) => !a.items.some((y) => y.id === x.id))])).catch(() => undefined);
+    return () => { live = false; };
+  }, []);
+  if (!palettes.length) return null;
+  const apply = (p: { name: string; colors: string[] }, s = shift) => update(layer.id, { colorMap: paletteSwapMap(colors, p.colors, s) }, { label: `Palette → ${p.name}` });
+  return (
+    <div className="space-y-1.5" data-testid="palette-swap">
+      <p className="mv-label !text-[0.62rem]">Recolour with a palette</p>
+      <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto pr-1 mv-scroll">
+        {palettes.slice(0, 40).map((p) => (
+          <button key={p.id} title={p.name} aria-label={`Palette ${p.name}`} onClick={() => apply(p)} className="flex h-6 w-14 overflow-hidden rounded-md border border-line hover:border-bone" data-testid={`swap-${p.id}`}>
+            {p.colors.map((c) => <span key={c} className="h-full flex-1" style={{ background: c }} />)}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-1.5">
+        <button className="mv-chip" onClick={() => apply(palettes[Math.floor(Math.random() * palettes.length)])} data-testid="swap-random">Shuffle palette</button>
+        <button className="mv-chip" onClick={() => { const s = (shift + 1) % 5; setShift(s); const cur = palettes.find((p) => paletteSwapMap(colors, p.colors, shift)[colors[0]] === layer.colorMap[colors[0]]) ?? palettes[0]; apply(cur, s); }} title="Rotate which colour goes where">Rotate roles</button>
+      </div>
+    </div>
+  );
+}
+
 export function GraphicProperties({ layer }: { layer: GraphicLayer }) {
   const update = useEditor((s) => s.updateLayer);
   const svg = getSvg(layer.url);
@@ -382,6 +414,7 @@ export function GraphicProperties({ layer }: { layer: GraphicLayer }) {
               );
             })}
           </div>
+          <PaletteSwap layer={layer} colors={colors} />
           {editing && <ColorPicker value={layer.colorMap[editing] ?? editing} onChange={(hex) => update(layer.id, { colorMap: { ...layer.colorMap, [editing]: hex } }, { label: "Recolour graphic" })} />}
           {Object.keys(layer.colorMap).length > 0 && <button className="mv-chip" onClick={() => update(layer.id, { colorMap: {} }, { label: "Reset colours" })}>Reset colours</button>}
         </Section>

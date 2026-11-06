@@ -244,7 +244,7 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
           </>
         )}
       </div>
-      <p className="text-[0.62rem] text-mute">ModVerse Original Creative Library v0.1 — procedural SVG artwork. Not sewing patterns or stitch files.</p>
+      <p className="text-[0.62rem] text-mute">ModVerse Creative Library (supplied v0.1 + Studio Library) — original SVG artwork. Not sewing patterns or stitch files.</p>
     </div>
   );
 }

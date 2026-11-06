@@ -6,7 +6,7 @@ import { useEditor } from "@/lib/editor/store";
 import { GarmentFlat, flatViewBox } from "@/components/garment/GarmentFlat";
 import { computeMeasurements } from "@/lib/garment/sizing";
 import { printableArea, sleeveShape, zoneCanvas, polygonToPath, rotatedBounds, type Rect } from "@/lib/garment/panels";
-import { layerMarkup, patternDef, type AssetResolver } from "@/lib/render/compose";
+import { flatPatternFills, layerMarkup, patternDef, type AssetResolver } from "@/lib/render/compose";
 import { assetVersion, ensureDesignAssets, getDataUrl, getPatternUrl, getSvg, subscribeAssets } from "@/lib/render/assets";
 import { availableZones, panelColor } from "@/lib/garment/design";
 import type { Layer } from "@/lib/garment/schema";
@@ -460,7 +460,8 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
 
   let content: React.ReactNode;
   if (isTorso) {
-    content = <GarmentFlat config={config} view={zone} measurements={m} overlay={overlay} svgProps={svgProps} viewBoxOverride={vb} title={`${zone} 2D editor`} />;
+    const pats = flatPatternFills(config, resolver, "c2d");
+    content = <GarmentFlat config={config} view={zone} measurements={m} overlay={overlay} svgProps={svgProps} viewBoxOverride={vb} title={`${zone} 2D editor`} defs={<g dangerouslySetInnerHTML={{ __html: pats.defs }} />} patternFill={pats.fill} />;
   } else {
     let shape: React.ReactNode;
     if (zone === "sleeveLeft" || zone === "sleeveRight") {

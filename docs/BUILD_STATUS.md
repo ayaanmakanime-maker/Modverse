@@ -9,6 +9,7 @@ Status labels (V2 spec, Part 17): **Fully implemented** — works end-to-end wit
 |---|---|---|
 | Existing work preserved (15.2) | **Fully implemented** | V1 code, logo master, Creative Library, DB and migrations kept; migrations 0001–0006 are additive; design documents upgrade v1 → v2 on read |
 | Three design experiences (2) | **Fully implemented** | Studio / Atelier / Pro over one engine and one `DesignConfig`; mode switch keeps the design |
+| Creative Library | **Fully implemented** | Supplied v0.1 (1,000 assets) + **ModVerse Studio Library** (732 graphics, 78 seamless patterns, 92 badges/elements, 39 text templates, 26 palettes; 24 collections; original artwork, recolourable, palette-swappable) — see CREATIVE_LIBRARY.md. Professionally hand-illustrated art: **Not included** |
 | 2D editor (3) | **Fully implemented** | Garment-specific surfaces incl. cuffs; drag & drop, clipboard, zoom/pan, crop, snapping/guides, groups, shortcuts; typography (title case, layered effects, curved/circular/arched/vertical, Indic scripts, **custom font uploads**); library search/filters/favourites/recent/drag-and-drop — see 2D_EDITOR.md |
 | Single source of truth 2D ↔ 3D ↔ print (5) | **Fully implemented** | One composer renders the 2D canvas, 3D textures, try-on overlay and print exports |
 | Realistic 3D (4) | **Fully implemented** for parametric garments | 32 models, PBR fabrics (normal + weave relief), procedural folds (labelled approximation), GTAO, neutral tone mapping, detail inspection, GLB export, **on-demand rendering** · cloth physics: **Not implemented** |
@@ -31,10 +32,10 @@ Status labels (V2 spec, Part 17): **Fully implemented** — works end-to-end wit
 |---|---|
 | `npm run lint` | 0 errors, 0 warnings |
 | `npm run typecheck` | clean |
-| `npm test` (Vitest) | **117 / 117** passed — 86 unit + 31 integration (PGlite) |
+| `npm test` (Vitest) | **123 / 123** passed — 92 unit + 31 integration (PGlite) |
 | Integration on **PostgreSQL 16** (`DATABASE_URL`) | **31 / 31** passed; `npm run db:migrate` applied migrations 0000–0006 to an empty database (52 tables) |
 | `npm run build` | passed |
-| `npm run test:e2e` (Playwright, Chromium) | **22 / 22** passed in 2.8 min — incl. the complete customer journey, the partner journey (with payouts) and mobile |
+| `npm run test:e2e` (Playwright, Chromium) | **23 / 23** passed — incl. the complete customer journey, the partner journey (with payouts) and mobile |
 | `npm run perf` | recorded in `docs/evaluation/performance.json` |
 | `npm run ai:eval` | recorded in `docs/evaluation/ai-eval-results.json` (local rules; hosted models not evaluated — no credentials) |
 

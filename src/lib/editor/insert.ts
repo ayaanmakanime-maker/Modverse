@@ -11,6 +11,7 @@ import { fitToPlacement, placementPreset, printableArea, rotatedBounds, type Pla
 import { layerSchema, type Layer, type TextLayer } from "../garment/schema";
 import type { Zone } from "../garment/types";
 import { presetLayer, TYPOGRAPHY_BY_ID, type TypographyPreset } from "../typography/presets";
+import { FONT_BY_FAMILY } from "../typography/fonts";
 import { api } from "../client/api";
 
 export const DRAG_MIME = "application/x-modverse-item";
@@ -29,7 +30,7 @@ export interface LibraryItem {
   width: number;
   height: number;
   colors: string[];
-  editableTexts: { text: string; x: number; y: number; fontSize: number; fontWeight: string; fill: string; letterSpacing: number; anchor: string }[] | null;
+  editableTexts: { text: string; x: number; y: number; fontSize: number; fontWeight: string; fill: string; letterSpacing: number; anchor: string; fontFamily?: string }[] | null;
 }
 
 export interface UploadItem {
@@ -72,10 +73,12 @@ function moveTo(layers: Layer[], at: InsertOpts["at"]): Layer[] {
   return layers.map((l) => ({ ...l, zone: at.zone, x: +(l.x + dx).toFixed(2), y: +(l.y + dy).toFixed(2) }));
 }
 
+/** Explicit preset > drop position > the surface currently being edited (sleeve, back, collar…) > the kind's default. */
 function presetFor(opts: InsertOpts, fallback: PlacementPreset): PlacementPreset {
   if (opts.preset) return opts.preset;
   if (opts.at) return ZONE_DEFAULT_PRESET[opts.at.zone];
-  return fallback;
+  const viewing = useEditor.getState().zone;
+  return viewing && viewing !== "front" ? ZONE_DEFAULT_PRESET[viewing] : fallback;
 }
 
 function commitLayers(layers: Layer[], label: string) {
@@ -117,7 +120,7 @@ export function insertLibraryItem(a: LibraryItem, opts: InsertOpts = {}, signedI
     const k = fit.width / a.width;
     const texts: TextLayer[] = (a.editableTexts ?? []).map((t) => {
       const tl = createTextLayer(config, t.text, preset, {
-        fontFamily: "Inter", fontWeight: t.fontWeight === "bold" ? 700 : Number(t.fontWeight) || 400, fontSize: +(t.fontSize * k).toFixed(2), color: t.fill, letterSpacing: t.letterSpacing / Math.max(1, t.fontSize), align: "center",
+        fontFamily: t.fontFamily && FONT_BY_FAMILY.has(t.fontFamily) ? t.fontFamily : "Inter", fontWeight: t.fontWeight === "bold" ? 700 : Number(t.fontWeight) || 400, fontSize: +(t.fontSize * k).toFixed(2), color: t.fill, letterSpacing: t.letterSpacing / Math.max(1, t.fontSize), align: "center",
       });
       return { ...tl, zone: fit.zone, x: +(fit.x + (t.x - a.width / 2) * k).toFixed(2), y: +(fit.y + (t.y - t.fontSize * 0.35 - a.height / 2) * k).toFixed(2), groupId: gid };
     });

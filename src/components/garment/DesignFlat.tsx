@@ -2,7 +2,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { computeMeasurements } from "@/lib/garment/sizing";
-import { layerMarkup, type AssetResolver } from "@/lib/render/compose";
+import { flatPatternFills, layerMarkup, type AssetResolver } from "@/lib/render/compose";
 import { assetVersion, ensureDesignAssets, getDataUrl, getPatternUrl, getSvg, subscribeAssets } from "@/lib/render/assets";
 import { GarmentFlat } from "./GarmentFlat";
 
@@ -19,6 +19,7 @@ export function DesignFlat({ config, view, className, title }: { config: DesignC
   }, [config]);
   const m = computeMeasurements(config);
   const layers = config.layers.filter((l) => l.zone === view && l.visible);
+  const pats = flatPatternFills(config, resolver, `df-${view}`);
   return (
     <GarmentFlat
       config={config}
@@ -26,6 +27,8 @@ export function DesignFlat({ config, view, className, title }: { config: DesignC
       measurements={m}
       className={className}
       title={title ?? `${view} of the design`}
+      defs={<g dangerouslySetInnerHTML={{ __html: pats.defs }} />}
+      patternFill={pats.fill}
       overlay={<g pointerEvents="none">{layers.map((l) => <g key={l.id} dangerouslySetInnerHTML={{ __html: layerMarkup(l, resolver) }} />)}</g>}
     />
   );

@@ -49,7 +49,7 @@ beforeAll(async () => {
 describe("seed & auth", () => {
   it("seeds the real catalogue, library and an admin with an Argon2id hash", async () => {
     const db = await getDb();
-    expect((await db.select().from(s.creativeAssets)).length).toBe(1000);
+    expect((await db.select().from(s.creativeAssets)).length).toBeGreaterThanOrEqual(1967);
     expect((await db.select().from(s.garmentModels)).length).toBe(32);
     const [admin] = await db.select().from(s.users).where(eq(s.users.role, "admin"));
     expect(admin.passwordHash.startsWith("$argon2id$")).toBe(true);

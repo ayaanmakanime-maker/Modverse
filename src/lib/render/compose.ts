@@ -221,6 +221,17 @@ export function patternDef(config: DesignConfig, panel: PanelId, assets: AssetRe
   return [`<pattern id="${id}" width="${n(tile)}" height="${n(tile)}" patternUnits="userSpaceOnUse"><svg width="${n(tile)}" height="${n(tile)}" viewBox="${dims.viewBox.join(" ")}" preserveAspectRatio="none" opacity="${n(ps.patternOpacity)}">${inner}</svg></pattern>`, `url(#${id})`];
 }
 
+/** Pattern fills for every panel that is visible on a flat garment drawing (front/back, sleeves, collar, yoke, pocket). */
+export function flatPatternFills(config: DesignConfig, assets: AssetResolver, idPrefix: string): { defs: string; fill: Record<string, string> } {
+  let defs = "";
+  const fill: Record<string, string> = {};
+  for (const panel of ["front", "back", "sleeveLeft", "sleeveRight", "collar", "yoke", "pocket"] as PanelId[]) {
+    const [d, f] = patternDef(config, panel, assets, idPrefix);
+    if (f) { defs += d; fill[panel] = `${idPrefix}-pat-${panel}`; }
+  }
+  return { defs, fill };
+}
+
 function stitchLine(points: Pt[], color: string, double: boolean, offset = 0): string {
   const d = polygonToPath(points, false);
   const base = `<path d="${d}" fill="none" stroke="${color}" stroke-width="0.09" stroke-dasharray="0.32 0.22" transform="translate(0 ${n(offset)})"/>`;
