@@ -32,7 +32,6 @@ export const pricingRulesSchema = z.object({
   margins: z.object({ material: z.number().min(1).max(5), construction: z.number().min(1).max(5), decoration: z.number().min(1).max(5) }),
   tax: z.object({ gstLowRate: z.number().min(0).max(0.5), gstHighRate: z.number().min(0).max(0.5), gstThreshold: money }),
   shipping: z.object({ flatRate: money, freeAbove: money }),
-  kidsFactor: z.number().min(0.3).max(1.5),
   plusSizeSurcharge: money,
   material: z.object({
     /** Fabric cost per m² (gross, incl. wastage) by fabric category — used for consumption differences. */
@@ -63,7 +62,6 @@ export const DEFAULT_PRICING: PricingRules = {
   // GST on apparel depends on the sale value per piece — verify current rates with a tax advisor.
   tax: { gstLowRate: 0.05, gstHighRate: 0.18, gstThreshold: 2500 },
   shipping: { flatRate: 79, freeAbove: 1999 },
-  kidsFactor: 0.72,
   plusSizeSurcharge: 100,
   material: {
     costPerM2: { cotton: 180, "organic-cotton": 230, blend: 160, linen: 420, denim: 360, jersey: 170, pique: 200, fleece: 240, flannel: 260, other: 200 },
@@ -164,7 +162,6 @@ export function priceDesign(config: DesignConfig, rules: PricingRules = DEFAULT_
   const fabric = getFabric(config.fabric.id);
   const c = config.construction;
   const lines: PriceLine[] = [];
-  const kidsF = config.audience === "kids" ? rules.kidsFactor : 1;
   const m = rules.margins;
   const push = (category: PriceCategory, label: string, cost: number, detail?: string, margin = category === "base" ? 1 : m[category]) => {
     const amount = round(cost * margin);
@@ -172,13 +169,13 @@ export function priceDesign(config: DesignConfig, rules: PricingRules = DEFAULT_
   };
 
   // ── Base ─────────────────────────────────────────────
-  lines.push({ label: `${model.name} base`, amount: round(model.basePrice * kidsF), category: "base", detail: `${model.fabricId === config.fabric.id ? "base fabric & construction included" : "base construction included"}` });
+  lines.push({ label: `${model.name} base`, amount: round(model.basePrice), category: "base", detail: `${model.fabricId === config.fabric.id ? "base fabric & construction included" : "base construction included"}` });
   if (["XXL", "3XL"].includes(config.size)) lines.push({ label: "Plus size", amount: rules.plusSizeSurcharge, category: "base" });
 
   // ── Material ─────────────────────────────────────────
-  if (fabric.priceDelta) lines.push({ label: fabric.name, amount: round(fabric.priceDelta * kidsF), category: "material", detail: fabric.composition });
+  if (fabric.priceDelta) lines.push({ label: fabric.name, amount: round(fabric.priceDelta), category: "material", detail: fabric.composition });
   const gsmSteps = (config.fabric.gsm - fabric.defaultGsm) / 20;
-  if (Math.abs(gsmSteps) >= 1) push("material", `${config.fabric.gsm} GSM weight`, gsmSteps * rules.material.gsmStepCost * kidsF, `${gsmSteps > 0 ? "+" : ""}${config.fabric.gsm - fabric.defaultGsm} GSM vs ${fabric.defaultGsm}`);
+  if (Math.abs(gsmSteps) >= 1) push("material", `${config.fabric.gsm} GSM weight`, gsmSteps * rules.material.gsmStepCost, `${gsmSteps > 0 ? "+" : ""}${config.fabric.gsm - fabric.defaultGsm} GSM vs ${fabric.defaultGsm}`);
   // Consumption vs the model's own default proportions at the same size (fit, length, width, sleeve changes).
   if (MODEL_BY_ID.has(config.modelId)) {
     const ref = createDesign(config.modelId, config.audience, config.size);
@@ -194,7 +191,7 @@ export function priceDesign(config: DesignConfig, rules: PricingRules = DEFAULT_
   // ── Construction ─────────────────────────────────────
   const ex = rules.construction;
   const base = model.construction;
-  const add = (cond: boolean, label: string, cost: number, detail?: string) => cond && push("construction", label, cost * kidsF, detail);
+  const add = (cond: boolean, label: string, cost: number, detail?: string) => cond && push("construction", label, cost, detail);
   add(c.pocketCount > base.pocketCount, `Extra pocket${c.pocketCount - base.pocketCount > 1 ? "s" : ""}`, ex.pocket * (c.pocketCount - base.pocketCount));
   add(c.placket === "henley" && base.placket !== "henley", "Henley placket", ex.henleyPlacket);
   add(c.cuff === "french" && base.cuff !== "french", "French cuffs", ex.frenchCuffs);
@@ -212,9 +209,9 @@ export function priceDesign(config: DesignConfig, rules: PricingRules = DEFAULT_
   add(Object.values(config.adjustments).some((v) => Math.abs(v) >= 0.5), "Custom proportions", ex.customProportions, "made-to-measure pattern adjustment");
   for (const p of Object.keys(config.panels) as PanelId[]) {
     const ps = config.panels[p];
-    if (ps.patternId) push("construction", `All-over pattern · ${p}`, ex.patternPanel * kidsF);
-    else if (ps.color && ps.color.toUpperCase() !== config.fabric.color.toUpperCase()) push("construction", `Contrast colour · ${p}`, ex.panelColour * kidsF);
-    if (ps.fabricId && ps.fabricId !== config.fabric.id) push("construction", `Panel fabric · ${p}`, ex.panelFabric * kidsF, getFabric(panelFabricId(config, p)).name);
+    if (ps.patternId) push("construction", `All-over pattern · ${p}`, ex.patternPanel);
+    else if (ps.color && ps.color.toUpperCase() !== config.fabric.color.toUpperCase()) push("construction", `Contrast colour · ${p}`, ex.panelColour);
+    if (ps.fabricId && ps.fabricId !== config.fabric.id) push("construction", `Panel fabric · ${p}`, ex.panelFabric, getFabric(panelFabricId(config, p)).name);
   }
 
   // ── Decoration (area, colours, stitches, placements — never position) ──

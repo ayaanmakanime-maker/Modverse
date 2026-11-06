@@ -199,9 +199,15 @@ export const DESIGN_SCHEMA_VERSION = 3 as const;
 /** Upgrade older stored design documents to the current schema version. */
 export function upgradeDesignConfig(raw: unknown): unknown {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
-  const r = raw as Record<string, unknown>;
-  if (r.schemaVersion === 1 || r.schemaVersion === 2) return { ...r, schemaVersion: DESIGN_SCHEMA_VERSION };
-  return raw;
+  let r = raw as Record<string, unknown>;
+  if (r.schemaVersion === 1 || r.schemaVersion === 2) r = { ...r, schemaVersion: DESIGN_SCHEMA_VERSION };
+  // The Kids range was retired. Stored kids designs stay readable: they open as the smallest adult size of the
+  // Men's range (artwork keeps its centimetre positions) with a note, and nothing in the database is rewritten.
+  if (r.audience === "kids") {
+    const note = `Converted from the retired Kids range (was size ${String(r.size ?? "?")}).`;
+    r = { ...r, audience: "men", size: "XS", notes: [typeof r.notes === "string" ? r.notes : "", note].filter(Boolean).join("\n").slice(0, 2000) };
+  }
+  return r;
 }
 
 const designConfigObject = z.object({

@@ -328,7 +328,7 @@ export function Garment({ config, centered = true, relief = true, production = f
   );
 }
 
-/** Flagship avatar under the garment: Atlas (men), Aura (women) or Nova (kids), proportioned from the body measurements. */
+/** Flagship avatar under the garment: Atlas (men) or Aura (women), proportioned from the body measurements. */
 function Avatar({ config, body, appearance, armDrop }: { config: DesignConfig; body?: Partial<AvatarBody>; appearance?: AvatarAppearance; armDrop: number }) {
   const m = useMemo(() => buildGarmentGeometry(config, { resolution: 12, folds: false }).measurements, [config]);
   const full = useMemo(() => ({ ...bodyForSize(config.audience, config.size), ...(body ?? {}) }) as AvatarBody, [config.audience, config.size, body]);
@@ -556,7 +556,7 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
   const detail = (d: DetailPreset) => {
     const a = geo.anchors[d];
     const target: [number, number, number] = [a[0], a[1] + centreOffset, a[2]];
-    const dir = new THREE.Vector3(...DETAIL_VIEW[d].dir).normalize().multiplyScalar(DETAIL_VIEW[d].dist * (config.audience === "kids" ? 0.75 : 1));
+    const dir = new THREE.Vector3(...DETAIL_VIEW[d].dir).normalize().multiplyScalar(DETAIL_VIEW[d].dist);
     setSpin(false);
     go({ target, position: [target[0] + dir.x, target[1] + dir.y, target[2] + dir.z] });
   };

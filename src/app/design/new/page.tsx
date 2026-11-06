@@ -5,8 +5,6 @@ import { GARMENT_MODELS, MODEL_BY_ID } from "@/lib/garment/models";
 import { AUDIENCES, AUDIENCE_LABELS, type Audience } from "@/lib/garment/types";
 import { GarmentFlat } from "@/components/garment/GarmentFlat";
 import { Logo } from "@/components/brand/Logo";
-import { getCurrentUser } from "@/lib/auth/session";
-import { listChildren } from "@/lib/services/account";
 import { EditorClient } from "../EditorClient";
 import { presetLayer, TYPOGRAPHY_BY_ID } from "@/lib/typography/presets";
 import { availableZones } from "@/lib/garment/design";
@@ -20,8 +18,6 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const mode: Mode = MODES.includes(sp.mode as Mode) ? (sp.mode as Mode) : "studio";
   const audience: Audience = AUDIENCES.includes(sp.audience as Audience) ? (sp.audience as Audience) : "men";
-  const user = await getCurrentUser();
-  const children = user ? (await listChildren(user)).map((c) => ({ id: c.id, nickname: c.nickname })) : [];
   const model = sp.model ? MODEL_BY_ID.get(sp.model) : undefined;
   const typoQ = sp.typography && TYPOGRAPHY_BY_ID.has(sp.typography) ? `&typography=${sp.typography}` : "";
 
@@ -36,7 +32,7 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
       if (availableZones(config).includes(layer.zone)) config.layers.push(layer);
       else config.layers.push(presetLayer(config, typo, "center-chest"));
     }
-    return <EditorClient initial={{ projectId: null, name: `${m.name} design`, mode, version: 0, config, savedAt: null, loadDraft: !!sp.draft }} childProfiles={children} />;
+    return <EditorClient initial={{ projectId: null, name: `${m.name} design`, mode, version: 0, config, savedAt: null, loadDraft: !!sp.draft }} />;
   }
 
   return (

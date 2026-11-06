@@ -231,7 +231,7 @@ export function applyOperations(input: DesignConfig, rawOps: unknown[], ctx: App
             const l = draft.layers.find((x) => x.id === t.id)!;
             const ch = op.changes;
             if (ch.preset) {
-              const p = placementPreset(m, ch.preset, draft.audience === "kids");
+              const p = placementPreset(m, ch.preset);
               const fitted = fitToPlacement(p, l.width / l.height);
               const keepSmaller = l.width < fitted.width && l.zone === p.zone;
               l.zone = fitted.zone;

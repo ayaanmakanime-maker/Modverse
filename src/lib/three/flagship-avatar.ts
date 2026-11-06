@@ -1,5 +1,5 @@
 /**
- * Flagship avatars — Atlas (adult male), Aura (adult female), Nova (child).
+ * Flagship avatars — Atlas (adult male) and Aura (adult female).
  *
  * Procedural, rigged bodies whose GEOMETRY is generated from body
  * measurements (height, chest, waist, hip, shoulder, arm length, neck,
@@ -16,7 +16,7 @@
  */
 import type { BodyMeasurements } from "../garment/types";
 
-export type AvatarModel = "atlas" | "aura" | "nova";
+export type AvatarModel = "atlas" | "aura";
 export type AvatarPose = "fit" | "relaxed" | "t-pose";
 export interface AvatarStyle {
   model: AvatarModel;
@@ -29,14 +29,13 @@ export interface AvatarStyle {
 }
 export interface AvatarBody extends BodyMeasurements { inseam?: number; thigh?: number }
 
-export const AVATAR_INFO: Record<AvatarModel, { name: string; audience: "men" | "women" | "kids"; blurb: string; hair: AvatarStyle["hair"] }> = {
+export const AVATAR_INFO: Record<AvatarModel, { name: string; audience: "men" | "women"; blurb: string; hair: AvatarStyle["hair"] }> = {
   atlas: { name: "Atlas", audience: "men", blurb: "Adult male flagship · athletic-average build", hair: "short" },
   aura: { name: "Aura", audience: "women", blurb: "Adult female flagship · balanced proportions", hair: "bun" },
-  nova: { name: "Nova", audience: "kids", blurb: "Child flagship (≈ 8–12 yrs) · age-appropriate proportions", hair: "short" },
 };
 
-export const modelForAudience = (a: string): AvatarModel => (a === "women" ? "aura" : a === "kids" ? "nova" : "atlas");
-export const modelForBodyType = (t?: string): AvatarModel => (t === "feminine" ? "aura" : t === "child" ? "nova" : "atlas");
+export const modelForAudience = (a: string): AvatarModel => (a === "women" ? "aura" : "atlas");
+export const modelForBodyType = (t?: string): AvatarModel => (t === "feminine" ? "aura" : "atlas");
 
 export const BONES = [
   "hips", "spine", "chest", "neck", "head",
@@ -172,26 +171,25 @@ const AX = { x: [1, 0, 0] as V3, y: [0, 1, 0] as V3, z: [0, 0, 1] as V3 };
 
 /** Build a flagship avatar for the given body measurements and style. */
 export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
-  const kid = style.model === "nova";
   const fem = style.model === "aura";
   const H = body.height;
   const buildK = { slim: 0.95, average: 1, athletic: 1.02, broad: 1.06, curvy: 1.03 }[style.build];
-  // Vertical landmarks from the neck base (fractions of height; children have larger heads, shorter legs).
-  const neckBaseFromFloor = (kid ? 0.8 : 0.825) * H;
+  // Vertical landmarks from the neck base (fractions of height).
+  const neckBaseFromFloor = 0.825 * H;
   const floorY = -neckBaseFromFloor;
-  const headH = H / (kid ? 6.3 : 7.6);
+  const headH = H / 7.6;
   const yShoulder = -0.025 * H;
   const yArmpit = -0.078 * H;
   const yChest = -0.104 * H;
   const yUnder = -0.14 * H;
-  const yWaist = -(kid ? 0.2 : 0.218) * H;
-  const yHip = -(kid ? 0.285 : 0.3) * H;
-  const inseam = body.inseam ?? (kid ? 0.43 : 0.45) * H;
+  const yWaist = -0.218 * H;
+  const yHip = -0.3 * H;
+  const inseam = body.inseam ?? 0.45 * H;
   const yCrotch = floorY + inseam + 2;
   // Cross-sections from circumferences (body-shape depth ratios).
-  const [chA, chB] = ellipseFor(body.chest * 0.985, fem ? 0.74 : kid ? 0.7 : 0.68);
+  const [chA, chB] = ellipseFor(body.chest * 0.985, fem ? 0.74 : 0.68);
   const [waA, waB] = ellipseFor(body.waist, fem ? 0.72 : 0.76);
-  const [hiA, hiB] = ellipseFor(body.hip, fem ? 0.78 : kid ? 0.72 : 0.7);
+  const [hiA, hiB] = ellipseFor(body.hip, fem ? 0.78 : 0.7);
   const sh = body.shoulder / 2;
   const neckR = body.neck / (2 * Math.PI);
   const N = 36;
@@ -200,7 +198,7 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
     const c = Math.cos(th), s = Math.sin(th);
     return [Math.sign(c) * Math.abs(c) ** (2 / e), Math.sign(s) * Math.abs(s) ** (2 / e)];
   };
-  const torsoShape = sq(fem || kid ? 2.1 : 2.35);
+  const torsoShape = sq(fem ? 2.1 : 2.35);
   // Torso: hips → spine → chest blend; chest pecs/bust and seat shaping on the ring offsets.
   const bustProj = fem ? Math.max(1.5, Math.min(5, (body.chest - body.waist) * 0.12)) : 0;
   const levels: [number, number, number, number, number][] = [
@@ -225,9 +223,9 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
     shape: torsoShape,
   }));
   loft(skin, torsoRings, N, true, false);
-  // Bust / pec shaping (adult female bust; adult male chest; none for Nova — age-appropriate).
+  // Bust / pec shaping (adult female bust; adult male chest).
   const startShape = 0;
-  const shapeAmt = fem ? bustProj : kid ? 0 : 0.7;
+  const shapeAmt = fem ? bustProj : 0.7;
   if (shapeAmt > 0) {
     for (let i = startShape; i < skin.positions.length; i += 3) {
       const x = skin.positions[i], y = skin.positions[i + 1], z = skin.positions[i + 2];
@@ -246,13 +244,13 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
     { center: [0, yChin + headH * 0.12, -0.2], u: AX.x, v: AX.z, a: neckR * 0.95, b: neckR * 0.95, bones: [B.neck, B.head], w: 0.8 },
   ], N);
   const headC: V3 = [0, yChin + headH * 0.5, 0.4];
-  const hw = headH * (fem ? 0.37 : kid ? 0.42 : 0.39);
-  const hd = headH * (kid ? 0.47 : 0.45);
+  const hw = headH * (fem ? 0.37 : 0.39);
+  const hd = headH * 0.45;
   blob(skin, headC, AX, [hw, headH * 0.5, hd], B.head, (x, y, z) => {
     // narrower jaw and chin below the eye line, flatter sides, subtle nose and brow
     const jaw = y < 0 ? 1 - 0.28 * (-y) ** 1.3 : 1;
     let nz = z * (y < -0.3 ? 1 - 0.12 * (-y - 0.3) : 1);
-    if (nz > 0.5) nz += 0.09 * Math.exp(-((x / 0.13) ** 2) - ((y + 0.05) / 0.22) ** 2) * (kid ? 0.7 : 1); // nose
+    if (nz > 0.5) nz += 0.09 * Math.exp(-((x / 0.13) ** 2) - ((y + 0.05) / 0.22) ** 2); // nose
     if (nz > 0.6 && y > 0.05 && y < 0.3) nz += 0.025 * Math.exp(-(((y - 0.2) / 0.08) ** 2)); // brow
     return [x * jaw * (Math.abs(x) > 0.7 ? 0.97 : 1), y, nz];
   }, 28, 20);
@@ -263,7 +261,7 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
   const armLen = body.armLength;
   const upperL = armLen * 0.55;
   const foreL = armLen * 0.45;
-  const bicepR = (body.bicep ?? body.chest * (kid ? 0.28 : 0.31)) / (2 * Math.PI) * buildK;
+  const bicepR = (body.bicep ?? body.chest * 0.31) / (2 * Math.PI) * buildK;
   const wristR = (body.wrist ?? body.chest * 0.17) / (2 * Math.PI);
   const drop = (style.armDropDeg * Math.PI) / 180;
   const bones: AvatarRig["bones"] = [];
@@ -296,7 +294,7 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
     }
     loft(skin, armRings, 24, true, false);
     // Hand: palm + fingers (relaxed, palm facing the thigh) and thumb.
-    const handL = H * (kid ? 0.1 : 0.108);
+    const handL = H * 0.108;
     const palmC = add(wrist, mul(dir2, handL * 0.28));
     const hx = norm(cross(dir2, [0, 0, 1]));
     blob(skin, palmC, { x: [0, 0, 1], y: dir2, z: hx }, [wristR * 1.25, handL * 0.32, wristR * 0.62], hb, undefined, 16, 10);
@@ -307,9 +305,9 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
   // Legs
   const thighC = body.thigh ?? body.hip * (fem ? 0.6 : 0.57);
   const thighR = thighC / (2 * Math.PI);
-  const ankleR = thighR * (kid ? 0.42 : 0.38);
+  const ankleR = thighR * 0.38;
   const kneeY = lerp(floorY + H * 0.04, yCrotch, 0.48);
-  const ankleY = floorY + H * (kid ? 0.045 : 0.04);
+  const ankleY = floorY + H * 0.04;
   const legRingsBySide: Record<string, Ring[]> = {};
   for (const side of [1, -1] as const) {
     const S = side === 1 ? "L" : "R";
@@ -334,7 +332,7 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
   const hair = part("hair");
   const hairStyle = style.hair;
   if (hairStyle !== "none") {
-    const lift = hairStyle === "short" ? (kid ? 0.9 : 0.55) : 0.8;
+    const lift = hairStyle === "short" ? 0.55 : 0.8;
     blob(hair, add(headC, [0, headH * 0.04, -0.2]), AX, [hw + lift, headH * 0.5 + lift * 0.8, hd + lift], B.head, (x, y, z) => [x, y, z < -0.2 ? z : z * 0.98], 28, 14, [0, hairStyle === "short" ? 1.45 : 1.75]);
     if (hairStyle === "bun") blob(hair, add(headC, [0, headH * 0.36, -hd * 0.72]), AX, [headH * 0.16, headH * 0.15, headH * 0.15], B.head, undefined, 16, 12);
     if (hairStyle === "long" || hairStyle === "medium") blob(hair, add(headC, [0, -headH * (hairStyle === "long" ? 0.45 : 0.2), -hd * 0.55]), AX, [hw * 1.02, headH * (hairStyle === "long" ? 0.6 : 0.38), hd * 0.42], B.head, undefined, 20, 12);
@@ -342,7 +340,7 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
 
   // Outfit: relaxed black cargo trousers with thigh pockets, white sneakers (as in the flagship look).
   const trousers = part("trousers");
-  const ease = kid ? 1.6 : 2.2;
+  const ease = 2.2;
   loft(trousers, levels.slice(0, 5).map(([y, a, b, z], i) => ({ center: [0, y + (i === 4 ? 1.5 : 0), z] as V3, u: AX.x, v: AX.z, a: a + ease, b: b + ease, bones: [B.hips, B.spine] as [number, number], w: i === 4 ? 0.5 : 0, shape: torsoShape })), N, false, false);
   for (const S of ["L", "R"]) {
     const rings = legRingsBySide[S].slice(0, 9).map((r, i) => ({ ...r, a: r.a + ease + (i >= 6 ? 0.8 : 0), b: r.b + ease + (i >= 6 ? 0.8 : 0) }));
@@ -354,7 +352,7 @@ export function buildAvatar(body: AvatarBody, style: AvatarStyle): AvatarRig {
   }
   const shoes = part("shoes");
   const soles = part("soles");
-  const footL = H * (kid ? 0.145 : 0.152);
+  const footL = H * 0.152;
   for (const side of [1, -1] as const) {
     const S = side === 1 ? "L" : "R";
     const ankle = bonePos[`foot_${S}` as BoneName]!;

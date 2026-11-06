@@ -113,7 +113,7 @@ export function insertLibraryItem(a: LibraryItem, opts: InsertOpts = {}, signedI
   if (a.kind === "template" && a.baseUrl) {
     const preset = presetFor(opts, "full-front");
     const m = computeMeasurements(config);
-    const p = placementPreset(m, preset, config.audience === "kids");
+    const p = placementPreset(m, preset);
     const fit = fitToPlacement(p, a.width / a.height);
     const gid = newLayerId("grp");
     const base = { ...createGraphicLayer(config, { id: a.id, name: `${a.name} (base)`, url: a.baseUrl, width: a.width, height: a.height }, preset), groupId: gid };

@@ -35,12 +35,6 @@ export async function getProjectForUser(db: Db, user: SessionUser, id: string, o
   return p;
 }
 
-async function assertChildOwned(db: Db, userId: string, childProfileId: string | null | undefined) {
-  if (!childProfileId) return;
-  const [c] = await db.select().from(s.childProfiles).where(and(eq(s.childProfiles.id, childProfileId), eq(s.childProfiles.guardianUserId, userId)));
-  if (!c) throw forbidden("Child profile not found for this guardian");
-}
-
 async function writeProjections(db: Db, versionId: string, config: DesignConfig) {
   await db.delete(s.designLayers).where(eq(s.designLayers.versionId, versionId));
   await db.delete(s.panelConfigurations).where(eq(s.panelConfigurations.versionId, versionId));
@@ -64,25 +58,21 @@ function summary(report: ReturnType<typeof validateDesign>) {
 export async function listProjects(user: SessionUser) {
   const db = await getDb();
   return db
-    .select({ id: s.designProjects.id, name: s.designProjects.name, audience: s.designProjects.audience, garmentType: s.designProjects.garmentType, modelId: s.designProjects.modelId, mode: s.designProjects.mode, status: s.designProjects.status, currentVersion: s.designProjects.currentVersion, updatedAt: s.designProjects.updatedAt, childProfileId: s.designProjects.childProfileId, reviewStatus: s.designProjects.reviewStatus })
+    .select({ id: s.designProjects.id, name: s.designProjects.name, audience: s.designProjects.audience, garmentType: s.designProjects.garmentType, modelId: s.designProjects.modelId, mode: s.designProjects.mode, status: s.designProjects.status, currentVersion: s.designProjects.currentVersion, updatedAt: s.designProjects.updatedAt, reviewStatus: s.designProjects.reviewStatus })
     .from(s.designProjects)
     .where(and(eq(s.designProjects.userId, user.id), isNull(s.designProjects.deletedAt)))
     .orderBy(desc(s.designProjects.updatedAt));
 }
 
-export async function createProject(user: SessionUser, input: { name?: string; modelId: string; audience: DesignConfig["audience"]; mode?: DesignMode; config?: unknown; childProfileId?: string | null; size?: string }) {
+export async function createProject(user: SessionUser, input: { name?: string; modelId: string; audience: DesignConfig["audience"]; mode?: DesignMode; config?: unknown; size?: string }) {
   const db = await getDb();
   const model = getModel(input.modelId);
-  if (input.audience === "kids" && !input.childProfileId) {
-    // Kids designs can be created by any adult account; linking to a child profile is optional but guardian-checked.
-  }
-  await assertChildOwned(db, user.id, input.childProfileId);
   const config = input.config ? designConfigSchema.parse(input.config) : createDesign(input.modelId, input.audience, input.size);
   const report = validateDesign(config, validationContext(config));
   return db.transaction(async (tx) => {
     const [p] = await tx
       .insert(s.designProjects)
-      .values({ userId: user.id, name: (input.name ?? `${model.name} design`).slice(0, 80), audience: config.audience, garmentType: config.garmentType, modelId: config.modelId, mode: input.mode ?? "studio", childProfileId: input.childProfileId ?? null, status: report.status === "fail" ? "draft" : "validated" })
+      .values({ userId: user.id, name: (input.name ?? `${model.name} design`).slice(0, 80), audience: config.audience, garmentType: config.garmentType, modelId: config.modelId, mode: input.mode ?? "studio", status: report.status === "fail" ? "draft" : "validated" })
       .returning();
     const [v] = await tx.insert(s.designVersions).values({ projectId: p.id, version: 1, config, validationStatus: report.status, validationSummary: summary(report), note: "Created", createdBy: user.id }).returning();
     await writeProjections(tx as unknown as Db, v.id, config);
@@ -155,7 +145,7 @@ export async function revertProject(user: SessionUser, id: string, version: numb
 export async function duplicateProject(user: SessionUser, id: string) {
   const { project, version } = await getProjectWithVersion(user, id);
   if (project.userId !== user.id) throw forbidden();
-  return createProject(user, { name: `${project.name} (copy)`, modelId: project.modelId, audience: project.audience, mode: project.mode, config: version.config, childProfileId: project.childProfileId });
+  return createProject(user, { name: `${project.name} (copy)`, modelId: project.modelId, audience: project.audience, mode: project.mode, config: version.config });
 }
 
 export async function renameProject(user: SessionUser, id: string, name: string) {

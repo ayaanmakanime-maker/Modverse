@@ -8,7 +8,7 @@ import { AUDIENCE_LABELS } from "@/lib/garment/types";
 
 export const metadata = { title: "Search" };
 
-/** Site-wide catalogue search across Men, Women and Kids. */
+/** Site-wide catalogue search across the Men and Women ranges. */
 export default async function SearchPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = parseCatalogueQuery(await searchParams);
   const models = searchCatalogue(query);

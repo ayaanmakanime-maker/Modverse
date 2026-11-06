@@ -79,7 +79,7 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
   const area = printableArea(m, zone, config.garmentType, config.construction);
   const canvas = zoneCanvas(m, zone);
   const isTorso = zone === "front" || zone === "back";
-  const baseVb: [number, number, number, number] = isTorso ? flatViewBox(m, true, config.construction, config.audience === "kids") : [canvas.x0 - 2, canvas.y0 - 2, canvas.x1 - canvas.x0 + 4, canvas.y1 - canvas.y0 + 4];
+  const baseVb: [number, number, number, number] = isTorso ? flatViewBox(m, true, config.construction) : [canvas.x0 - 2, canvas.y0 - 2, canvas.x1 - canvas.x0 + 4, canvas.y1 - canvas.y0 + 4];
   // Zoom & pan operate on the SVG viewBox (vector-sharp at any zoom level).
   const vb: [number, number, number, number] = [
     baseVb[0] + (baseVb[2] - baseVb[2] / zoom) / 2 + pan.x,

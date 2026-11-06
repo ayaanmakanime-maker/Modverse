@@ -12,7 +12,6 @@ import { ThemeToggle } from "@/components/theme";
 const NAV = [
   { href: "/shop/men", label: "Men" },
   { href: "/shop/women", label: "Women" },
-  { href: "/shop/kids", label: "Kids" },
   { href: "/design/new", label: "Design" },
   { href: "/library", label: "Library" },
   { href: "/try-on", label: "Try-On" },

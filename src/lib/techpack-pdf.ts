@@ -119,13 +119,12 @@ function table(c: Ctx, headers: string[], rows: string[][], widths: number[]) {
 
 function placementDiagram(c: Ctx, config: DesignConfig) {
   const m = computeMeasurements(config);
-  const kids = config.audience === "kids";
   ensure(c, 250);
   const views: ("front" | "back")[] = ["front", "back"];
   const boxW = (W - 2 * M - 20) / 2;
   const boxH = 230;
   views.forEach((view, vi) => {
-    const torso = torsoShape(m, view, config.construction, kids);
+    const torso = torsoShape(m, view, config.construction);
     const scale = Math.min(boxW / (m.chest / 2 + 30), boxH / (m.bodyLength + 14));
     const ox = M + vi * (boxW + 20) + boxW / 2;
     const oy = c.y - 14;
@@ -157,7 +156,6 @@ function placementDiagram(c: Ctx, config: DesignConfig) {
 /** One diagram per decorated surface with dimension callouts from the factory reference points. */
 function placementSheet(c: Ctx, spec: TechSpec, config: DesignConfig) {
   const m = computeMeasurements(config);
-  const kids = config.audience === "kids";
   const zones = [...new Set(spec.placements.map((p) => p.zone))];
   const RED = rgb(0.75, 0.2, 0.2);
   const GOLD = rgb(0.6, 0.5, 0.3);
@@ -173,7 +171,7 @@ function placementSheet(c: Ctx, spec: TechSpec, config: DesignConfig) {
     c.page.drawText(t(`${zone.toUpperCase()} - reference: ${items[0].reference}`), { x: M, y: c.y, size: 7.5, font: c.bold, color: MUTE });
     const ox = M + (boxW - cw * scale) / 2 - canvas.x0 * scale;
     const oy = c.y - 12 - (-canvas.y0) * scale;
-    if (zone === "front" || zone === "back") c.page.drawSvgPath(polygonToPath(torsoShape(m, zone, config.construction, kids).outline), { x: ox, y: oy, scale, borderColor: INK, borderWidth: 0.6 });
+    if (zone === "front" || zone === "back") c.page.drawSvgPath(polygonToPath(torsoShape(m, zone, config.construction).outline), { x: ox, y: oy, scale, borderColor: INK, borderWidth: 0.6 });
     else if (zone === "sleeveLeft" || zone === "sleeveRight") c.page.drawSvgPath(polygonToPath(sleeveShape(m, config.construction).outline), { x: ox, y: oy, scale, borderColor: INK, borderWidth: 0.6 });
     else c.page.drawSvgPath(`M ${canvas.x0} ${canvas.y0} L ${canvas.x1} ${canvas.y0} L ${canvas.x1} ${canvas.y1} L ${canvas.x0} ${canvas.y1} Z`, { x: ox, y: oy, scale, borderColor: INK, borderWidth: 0.6 });
     const a = printableArea(m, zone as Parameters<typeof printableArea>[1], config.garmentType, config.construction);

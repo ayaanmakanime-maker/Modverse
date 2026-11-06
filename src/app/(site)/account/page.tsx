@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requirePageUser } from "@/lib/auth/session";
 import { listProjects } from "@/lib/services/designs";
 import { listOrders } from "@/lib/services/commerce";
-import { listMeasurementProfiles, listChildren } from "@/lib/services/account";
+import { listMeasurementProfiles } from "@/lib/services/account";
 import { formatINR } from "@/lib/garment/pricing";
 import { getModel } from "@/lib/garment/models";
 import { Badge } from "@/components/ui";
@@ -12,12 +12,12 @@ export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   const user = await requirePageUser("/account");
-  const [designs, orders, profiles, children] = await Promise.all([listProjects(user), listOrders(user), listMeasurementProfiles(user), listChildren(user)]);
+  const [designs, orders, profiles] = await Promise.all([listProjects(user), listOrders(user), listMeasurementProfiles(user)]);
   return (
     <div className="space-y-8">
       {!user.emailVerified && <VerifyBanner />}
-      <div className="grid gap-3 sm:grid-cols-4">
-        {[["Designs", designs.length, "/account/designs"], ["Orders", orders.length, "/account/orders"], ["Measurement profiles", profiles.length, "/account/measurements"], ["Child profiles", children.length, "/account/family"]].map(([l, n, h]) => (
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[["Designs", designs.length, "/account/designs"], ["Orders", orders.length, "/account/orders"], ["Measurement profiles", profiles.length, "/account/measurements"]].map(([l, n, h]) => (
           <Link key={l as string} href={h as string} className="mv-card p-4 hover:border-line-2"><p className="mv-display text-4xl">{n as number}</p><p className="text-xs text-mute">{l as string}</p></Link>
         ))}
       </div>

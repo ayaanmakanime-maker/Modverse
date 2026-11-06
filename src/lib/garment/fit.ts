@@ -102,7 +102,7 @@ export function analyseFit(
   } else zones.push({ zone: "shoulder", garmentCm: m.shoulderWidth, bodyCm: null, easeCm: null, category: null, source: null, note: "Add your shoulder width" });
   // Length relative to height (an ideal proportion, not a hard rule).
   if (body.height) {
-    const ratio = config.audience === "kids" ? 0.36 : config.garmentType === "shirt" ? 0.43 : 0.405;
+    const ratio = config.garmentType === "shirt" ? 0.43 : 0.405;
     const ideal = body.height * ratio;
     const d = +(m.bodyLength - ideal).toFixed(1);
     zones.push({ zone: "length", garmentCm: m.bodyLength, bodyCm: +ideal.toFixed(1), easeCm: d, category: d < -6 ? "fitted" : d < 4 ? "regular" : d < 10 ? "relaxed" : "oversized", source: src("height"), note: d < -6 ? `About ${Math.abs(Math.round(d))} cm shorter than typical for your height (cropped)` : d > 6 ? `About ${Math.round(d)} cm longer than typical for your height` : "Typical length for your height" });
@@ -140,9 +140,8 @@ export function analyseFit(
  */
 export function estimateFromHeightWeight(audience: Audience, heightCm: number, weightKg: number): { values: Partial<BodyMeasurements>; provenance: ProvenanceMap } {
   const bmi = weightKg / (heightCm / 100) ** 2;
-  const k = audience === "kids" ? 0.85 : 1;
-  const chest = +(k * (heightCm * 0.48 + (bmi - 22) * 2.4) + (audience === "women" ? 2 : 0)).toFixed(0);
-  const waist = +(k * (heightCm * 0.42 + (bmi - 22) * 3.1) - (audience === "women" ? 6 : 0)).toFixed(0);
+  const chest = +(heightCm * 0.48 + (bmi - 22) * 2.4 + (audience === "women" ? 2 : 0)).toFixed(0);
+  const waist = +(heightCm * 0.42 + (bmi - 22) * 3.1 - (audience === "women" ? 6 : 0)).toFixed(0);
   const p: Provenance = { source: "derived", confidence: "low", toleranceCm: 8 };
   return { values: { height: heightCm, chest, waist }, provenance: { height: { source: "user", confidence: "high" }, chest: p, waist: p } };
 }

@@ -87,9 +87,10 @@ describe("text-to-design (more)", () => {
     expect(r.unsupported.join(" ")).toMatch(/Hoodie|roadmap/i);
   });
 
-  it("creates kids designs and supports Hindi text", () => {
-    const { applied } = run('Create a kids yellow tshirt with "नमस्ते" in hindi on the front');
-    expect(applied.config.audience).toBe("kids");
+  it("supports Hindi text and explains that there is no children's range", () => {
+    const { r, applied } = run('Create a kids yellow tshirt with "नमस्ते" in hindi on the front');
+    expect(applied.config.audience).toBe("men"); // the default adult range — never a kids' size
+    expect(r.unsupported.join(" ")).toMatch(/no children's range/i);
     const t = applied.config.layers.find((l) => l.type === "text") as { fontFamily: string };
     expect(t.fontFamily).toBe("Noto Sans Devanagari");
   });

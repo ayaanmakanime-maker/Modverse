@@ -8,7 +8,7 @@
  * reads next to the supplied v0.1 library). Deterministic: same input → same output.
  * Reference research (marketplace category taxonomy only — no artwork, names or marks are copied):
  * print-on-demand and creator marketplaces organise designs by interest (sports, pets, food, travel,
- * gaming, music, festive/cultural, kids, campus/team), by style (line art, sticker, retro, boho,
+ * gaming, music, festive/cultural, playful characters, campus/team), by style (line art, sticker, retro, boho,
  * Bauhaus/abstract, badges and crests) and by use (all-over patterns, text lockups). Those axes
  * shaped the 23 collections below; every motif was drawn from scratch for this project.
  */

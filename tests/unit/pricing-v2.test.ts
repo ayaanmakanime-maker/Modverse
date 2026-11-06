@@ -100,7 +100,7 @@ describe("catalogue search & filters", () => {
     expect(searchCatalogue({ sleeve: "long" }).every((m) => m.construction.sleeveLength === "long")).toBe(true);
     const asc = searchCatalogue({ sort: "price-asc" });
     expect(asc[0].basePrice).toBeLessThanOrEqual(asc[asc.length - 1].basePrice);
-    expect(searchCatalogue({ audience: "kids" }).every((m) => m.audiences.includes("kids"))).toBe(true);
+    expect(searchCatalogue({ audience: "women" }).every((m) => m.audiences.includes("women"))).toBe(true);
     const q = parseCatalogueQuery({ q: "oxford", fit: "nonsense", min: "500", sort: "price-desc" });
     expect(q).toMatchObject({ q: "oxford", fit: "", minPrice: 500, sort: "price-desc" });
   });

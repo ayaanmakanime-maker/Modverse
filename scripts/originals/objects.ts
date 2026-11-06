@@ -86,7 +86,7 @@ export const OBJECTS: Obj[] = [
     m.forEach((row, y) => [...row].forEach((c, x) => { if (c === "1") d.rect(28 + x * 16, 40 + y * 16, 16.5, 16.5, y === 1 && x < 4 && x > 0 && !(x === 4) ? "l" : "p"); }));
     d.rect(44, 56, 16.5, 16.5, "l"); d.rect(60, 56, 16.5, 16.5, "s", { op: 0 }); d.rect(140, 120, 16.5, 16.5, "a", { op: 0.9 });
   } },
-  { id: "robot", name: "Friendly Robot", tags: ["robot", "ai", "tech", "future", "cute", "kids", "bot"], colls: ["Kids_Playroom", "Gaming_Tech"], draw: (d) => {
+  { id: "robot", name: "Friendly Robot", tags: ["robot", "ai", "tech", "future", "cute", "bot"], colls: ["Playful_Characters", "Gaming_Tech"], draw: (d) => {
     d.det("M100 52V28", 6); d.circle(100, 22, 9, "a"); d.rect(26, 84, 16, 40, "s", { rx: 6, outline: true }); d.rect(158, 84, 16, 40, "s", { rx: 6, outline: true });
     d.rect(40, 50, 120, 96, "p", { rx: 22, outline: true }); d.rect(56, 70, 88, 44, "d", { rx: 14 }); d.circle(82, 92, 10, "a"); d.circle(118, 92, 10, "a");
     d.rect(76, 124, 48, 10, "l", { rx: 5 }); d.rect(70, 148, 60, 30, "s", { rx: 10, outline: true });
@@ -108,12 +108,12 @@ export const OBJECTS: Obj[] = [
     d.ellipse(92, 176, 72, 9, "s"); d.stk("M138 92H152Q174 92 174 114Q174 136 150 136H136", "p", 12); d.path("M44 74H138V128Q138 170 92 170Q44 170 44 128Z", "p", { outline: true }); d.rect(44, 100, 94, 30, "a");
     d.det("M72 58Q62 44 74 30M96 56Q86 40 98 24M120 58Q110 44 122 30", 5);
   } },
-  { id: "icecream", name: "Ice Cream", tags: ["ice cream", "dessert", "summer", "sweet", "cone", "kids", "foodie"], colls: ["Kids_Playroom", "Foodie_Favourites"], draw: (d) => {
+  { id: "icecream", name: "Ice Cream", tags: ["ice cream", "dessert", "summer", "sweet", "cone", "foodie"], colls: ["Playful_Characters", "Foodie_Favourites"], draw: (d) => {
     d.poly([[62, 104], [138, 104], [100, 192]], "p", { outline: true }); d.det("M76 118L112 168M96 112L128 150M124 112L92 168M104 112L70 150", 3, "d", 0.45);
     d.path("M58 96H142Q152 110 142 118Q132 104 122 116Q112 128 100 114Q88 126 78 116Q68 106 58 118Z", "a", { outline: true });
     d.circle(100, 82, 40, "a", { outline: true }); d.circle(100, 46, 30, "s", { outline: true }); d.circle(100, 14, 8, "p", { outline: true });
   } },
-  { id: "donut", name: "Donut", tags: ["donut", "doughnut", "sweet", "dessert", "snack", "foodie", "kids"], colls: ["Foodie_Favourites", "Kids_Playroom"], draw: (d) => {
+  { id: "donut", name: "Donut", tags: ["donut", "doughnut", "sweet", "dessert", "snack", "foodie"], colls: ["Foodie_Favourites", "Playful_Characters"], draw: (d) => {
     d.path(`${ellipsePath(100, 100, 76, 76)}${ellipsePath(100, 100, 24, 24)}`, "p", { rule: true, outline: true });
     d.path("M34 96Q36 44 100 40Q164 44 166 100Q168 150 134 158Q124 150 120 160Q100 170 80 160Q70 150 62 158Q32 150 34 96ZM76 100a24 24 0 1 0 48 0a24 24 0 1 0 -48 0Z", "a", { rule: true });
     for (const [x, y, r, c] of [[60, 80, 20, "l"], [86, 56, -40, "s"], [128, 62, 60, "l"], [146, 98, 10, "s"], [140, 130, -30, "l"], [66, 128, 40, "s"], [100, 148, 80, "l"]] as const) d.rect(x - 8, y - 2.5, 16, 5, c, { rx: 2.5, rot: r });
@@ -157,7 +157,7 @@ export const OBJECTS: Obj[] = [
   { id: "moon", name: "Crescent Moon", tags: ["moon", "night", "crescent", "sleep", "celestial", "stars", "eid"], colls: ["Celestial_Skies", "Wellness_Mindful"], draw: (d) => {
     d.path("M128 20A82 82 0 1 0 180 132A66 66 0 1 1 128 20Z", "p", { outline: true }); d.poly(sparkle(150, 56, 14), "a"); d.poly(sparkle(176, 98, 8), "s"); d.poly(sparkle(60, 40, 9), "s");
   } },
-  { id: "sun", name: "Sun", tags: ["sun", "summer", "sunshine", "day", "bright", "celestial", "happy"], colls: ["Celestial_Skies", "Sunset_Surf", "Kids_Playroom"], draw: (d) => {
+  { id: "sun", name: "Sun", tags: ["sun", "summer", "sunshine", "day", "bright", "celestial", "happy"], colls: ["Celestial_Skies", "Sunset_Surf", "Playful_Characters"], draw: (d) => {
     for (let i = 0; i < 12; i++) d.g(`rotate(${i * 30} 100 100)`, () => d.poly([[100, 12], [112, 44], [88, 44]], i % 2 ? "s" : "p", { outline: true })); d.circle(100, 100, 44, "a", { outline: true }); d.stk("M80 108Q100 128 120 108", "d", 5); d.circle(86, 92, 4, "d"); d.circle(114, 92, 4, "d");
   } },
   { id: "heart", name: "Heart", tags: ["heart", "love", "valentine", "romance", "like", "kind"], colls: ["Love_Celebrate", "Wellness_Mindful"], draw: (d) => {
@@ -201,7 +201,7 @@ export const OBJECTS: Obj[] = [
   { id: "dice", name: "Dice", tags: ["dice", "game", "luck", "casino", "play", "streetwear"], colls: ["Streetwear_Icons", "Gaming_Tech"], draw: (d) => {
     d.rect(44, 44, 124, 124, "p", { rx: 24, outline: true }); d.rect(30, 30, 124, 124, "l", { rx: 24, outline: true }); for (const [x, y] of [[62, 62], [122, 62], [92, 92], [62, 122], [122, 122]]) d.circle(x, y, 10, "d");
   } },
-  { id: "star", name: "Bold Star", tags: ["star", "favourite", "shine", "award", "bright", "campus"], colls: ["Streetwear_Icons", "Campus_Team", "Kids_Playroom"], draw: (d) => {
+  { id: "star", name: "Bold Star", tags: ["star", "favourite", "shine", "award", "bright", "campus"], colls: ["Streetwear_Icons", "Campus_Team", "Playful_Characters"], draw: (d) => {
     d.poly(starPts(100, 104, 88, 40, 5), "a", { outline: true }); d.poly(starPts(100, 104, 52, 24, 5), "s");
   } },
   { id: "cake", name: "Celebration Cake", tags: ["cake", "birthday", "party", "celebrate", "sweet", "candles"], colls: ["Love_Celebrate"], draw: (d) => {
@@ -209,7 +209,7 @@ export const OBJECTS: Obj[] = [
     for (const [x, r] of [[72, "a"], [100, "s"], [128, "a"]] as const) { d.rect(x - 5, 66, 10, 38, r, { rx: 3, outline: true }); d.ellipse(x, 56, 6, 10, "s"); }
     for (const x of [58, 86, 114, 142]) d.circle(x, 152, 5, "l");
   } },
-  { id: "balloons", name: "Balloons", tags: ["balloon", "party", "celebrate", "birthday", "kids", "fun"], colls: ["Love_Celebrate", "Kids_Playroom"], draw: (d) => {
+  { id: "balloons", name: "Balloons", tags: ["balloon", "party", "celebrate", "birthday", "fun"], colls: ["Love_Celebrate", "Playful_Characters"], draw: (d) => {
     d.det("M130 160Q110 180 100 196M72 142Q86 170 100 196", 3.5); d.ellipse(134, 100, 36, 48, "s", { outline: true }); d.poly([[128, 146], [140, 146], [134, 156]], "s"); d.ellipse(74, 82, 44, 58, "p", { outline: true }); d.poly([[66, 138], [82, 138], [74, 150]], "p");
     d.ellipse(62, 62, 8, 16, "l", { op: 0.55, rot: 20 }); d.ellipse(124, 80, 6, 12, "l", { op: 0.55, rot: 20 });
   } },
@@ -236,21 +236,21 @@ export const OBJECTS: Obj[] = [
   { id: "drop", name: "Water Drop", tags: ["water", "drop", "rain", "eco", "blue", "pure"], colls: ["Eco_Earth"], draw: (d) => {
     d.path("M100 14Q166 100 154 130Q144 184 100 184Q56 184 46 130Q34 100 100 14Z", "p", { outline: true }); d.stk("M66 130Q68 156 90 164", "l", 8, { op: 0.8 }); d.poly(sparkle(140, 78, 10), "l");
   } },
-  { id: "planet", name: "Ringed Planet", tags: ["planet", "saturn", "space", "galaxy", "cosmic", "astronomy", "orbit"], colls: ["Celestial_Skies", "Kids_Playroom"], draw: (d) => {
+  { id: "planet", name: "Ringed Planet", tags: ["planet", "saturn", "space", "galaxy", "cosmic", "astronomy", "orbit"], colls: ["Celestial_Skies", "Playful_Characters"], draw: (d) => {
     d.g("rotate(-22 100 100)", () => { d.stk("M12 100A88 24 0 0 1 188 100", "a", 12); d.circle(100, 100, 52, "p", { outline: true }); d.path("M56 82Q100 96 144 82", "s", { op: 0 }); d.stk("M56 78Q100 92 146 76", "s", 8, { op: 0.7 }); d.stk("M12 100A88 24 0 0 0 188 100", "a", 12); });
     d.poly(sparkle(40, 36, 10), "s"); d.poly(sparkle(166, 160, 8), "l");
   } },
-  { id: "rocket", name: "Rocket", tags: ["rocket", "space", "launch", "kids", "adventure", "future"], colls: ["Kids_Playroom", "Celestial_Skies"], draw: (d) => {
+  { id: "rocket", name: "Rocket", tags: ["rocket", "space", "launch", "adventure", "future"], colls: ["Playful_Characters", "Celestial_Skies"], draw: (d) => {
     d.g("rotate(30 100 100)", () => { d.path("M100 150Q112 186 100 202Q88 186 100 150Z", "s"); d.path("M100 10Q152 44 142 122H58Q48 44 100 10Z", "l", { outline: true }); d.path("M100 10Q124 24 132 56H68Q76 24 100 10Z", "a"); d.circle(100, 78, 16, "p", { outline: true }); d.circle(100, 78, 8, "d"); d.poly([[58, 100], [30, 142], [58, 138]], "a", { outline: true }); d.poly([[142, 100], [170, 142], [142, 138]], "a", { outline: true }); d.rect(70, 120, 60, 12, "p"); });
   } },
-  { id: "rainbow", name: "Rainbow", tags: ["rainbow", "kids", "happy", "colour", "sky", "cloud", "pride"], colls: ["Kids_Playroom"], draw: (d) => {
+  { id: "rainbow", name: "Rainbow", tags: ["rainbow", "happy", "colour", "sky", "cloud", "pride"], colls: ["Playful_Characters"], draw: (d) => {
     d.stk("M22 150A78 78 0 0 1 178 150", "a", 16); d.stk("M40 150A60 60 0 0 1 160 150", "s", 16); d.stk("M58 150A42 42 0 0 1 142 150", "p", 16);
     d.circle(28, 152, 20, "l", { outline: true }); d.circle(52, 156, 17, "l", { outline: true }); d.circle(172, 152, 20, "l", { outline: true }); d.circle(148, 156, 17, "l", { outline: true });
   } },
-  { id: "cloud", name: "Cloud", tags: ["cloud", "sky", "weather", "dream", "soft", "kids"], colls: ["Kids_Playroom"], draw: (d) => {
+  { id: "cloud", name: "Cloud", tags: ["cloud", "sky", "weather", "dream", "soft"], colls: ["Playful_Characters"], draw: (d) => {
     d.path("M46 150Q16 150 20 118Q24 92 52 92Q56 56 94 52Q130 50 142 84Q184 82 184 118Q184 150 150 150Z", "l", { outline: true }); d.circle(78, 118, 5, "d"); d.circle(116, 118, 5, "d"); d.stk("M90 130Q97 138 104 130", "d", 4); d.circle(66, 132, 8, "s", { op: 0.6 }); d.circle(130, 132, 8, "s", { op: 0.6 });
   } },
-  { id: "dino", name: "Cute Dino", tags: ["dinosaur", "dino", "kids", "jurassic", "cute", "stegosaurus"], colls: ["Kids_Playroom"], draw: (d) => {
+  { id: "dino", name: "Cute Dino", tags: ["dinosaur", "dino", "jurassic", "cute", "stegosaurus"], colls: ["Playful_Characters"], draw: (d) => {
     for (const [x, y] of [[52, 78], [72, 62], [96, 56], [120, 62], [140, 76]] as const) d.poly([[x - 12, y + 22], [x, y - 8], [x + 12, y + 22]], "a", { outline: true });
     d.poly([[30, 126], [6, 150], [44, 148]], "p", { outline: true }); d.ellipse(92, 118, 64, 40, "p", { outline: true }); d.ellipse(160, 96, 26, 20, "p", { outline: true }); d.rect(60, 140, 18, 38, "p", { rx: 8, outline: true }); d.rect(112, 140, 18, 38, "p", { rx: 8, outline: true });
     d.circle(168, 90, 4.5, "d"); d.stk("M154 106Q166 112 176 104", "d", 3.5); d.ellipse(92, 134, 38, 20, "s", { op: 0.6 });
@@ -268,7 +268,7 @@ export const OBJECTS: Obj[] = [
   { id: "paw", name: "Paw Print", tags: ["paw", "pet", "dog", "cat", "animal", "print", "love"], colls: ["Pets_Paws"], draw: (d) => {
     d.path("M58 150Q58 110 100 106Q142 110 142 150Q142 178 100 178Q58 178 58 150Z", "p", { outline: true }); d.ellipse(46, 96, 15, 21, "p", { rot: -20, outline: true }); d.ellipse(80, 62, 16, 23, "p", { outline: true }); d.ellipse(120, 62, 16, 23, "p", { outline: true }); d.ellipse(154, 96, 15, 21, "p", { rot: 20, outline: true });
   } },
-  { id: "rabbit", name: "Bunny", tags: ["bunny", "rabbit", "easter", "cute", "pet", "kids", "animal"], colls: ["Pets_Paws", "Kids_Playroom"], draw: (d) => {
+  { id: "rabbit", name: "Bunny", tags: ["bunny", "rabbit", "easter", "cute", "pet", "animal"], colls: ["Pets_Paws", "Playful_Characters"], draw: (d) => {
     d.ellipse(70, 52, 16, 50, "l", { rot: -10, outline: true }); d.ellipse(130, 52, 16, 50, "l", { rot: 10, outline: true }); d.ellipse(70, 54, 7, 34, "s", { rot: -10 }); d.ellipse(130, 54, 7, 34, "s", { rot: 10 });
     d.ellipse(100, 128, 52, 46, "l", { outline: true }); d.circle(80, 120, 6, "d"); d.circle(120, 120, 6, "d"); d.poly([[94, 136], [106, 136], [100, 144]], "a"); d.det("M100 144Q92 154 84 148M100 144Q108 154 116 148", 3.5); d.circle(66, 140, 9, "s", { op: 0.55 }); d.circle(134, 140, 9, "s", { op: 0.55 });
   } },
@@ -289,11 +289,11 @@ export const OBJECTS: Obj[] = [
     d.poly(starPts(100, 100, 92, 58, 18), "a", { outline: true }); d.circle(100, 106, 52, "p", { outline: true }); d.circle(58, 66, 14, "p", { outline: true }); d.circle(142, 66, 14, "p", { outline: true });
     d.ellipse(100, 128, 28, 20, "l", { outline: true }); d.poly([[91, 116], [109, 116], [100, 128]], "d"); d.circle(80, 96, 6, "d"); d.circle(120, 96, 6, "d"); d.det("M100 128V138M100 138Q90 148 82 142M100 138Q110 148 118 142", 4);
   } },
-  { id: "panda", name: "Panda", tags: ["panda", "bamboo", "cute", "wildlife", "animal", "kids"], colls: ["Wildlife_Heroes", "Kids_Playroom"], draw: (d) => {
+  { id: "panda", name: "Panda", tags: ["panda", "bamboo", "cute", "wildlife", "animal"], colls: ["Wildlife_Heroes", "Playful_Characters"], draw: (d) => {
     d.circle(48, 50, 24, "d"); d.circle(152, 50, 24, "d"); d.circle(100, 108, 66, "l", { outline: true }); d.ellipse(72, 98, 18, 24, "d", { rot: 24 }); d.ellipse(128, 98, 18, 24, "d", { rot: -24 }); d.circle(75, 98, 6, "l"); d.circle(125, 98, 6, "l");
     d.ellipse(100, 126, 12, 8, "d"); d.stk("M100 134Q88 150 76 142M100 134Q112 150 124 142", "d", 4); d.circle(66, 136, 10, "s", { op: 0.5 }); d.circle(134, 136, 10, "s", { op: 0.5 });
   } },
-  { id: "elephant", name: "Elephant", tags: ["elephant", "wildlife", "animal", "indian", "gentle", "kids"], colls: ["Wildlife_Heroes", "Desi_Festive"], draw: (d) => {
+  { id: "elephant", name: "Elephant", tags: ["elephant", "wildlife", "animal", "indian", "gentle"], colls: ["Wildlife_Heroes", "Desi_Festive"], draw: (d) => {
     d.circle(40, 96, 38, "s", { outline: true }); d.circle(160, 96, 38, "s", { outline: true }); d.circle(40, 96, 22, "a", { op: 0.5 }); d.circle(160, 96, 22, "a", { op: 0.5 });
     d.circle(100, 96, 58, "p", { outline: true }); d.stk("M100 122V162Q100 186 130 178", "p", 32); d.stk("M100 122V162Q100 186 130 178", "d", 3, { op: 0.0 }); d.path("M66 128Q54 150 66 170Q70 150 80 140Z", "l", { outline: true }); d.path("M134 128Q146 150 134 170Q130 150 120 140Z", "l", { outline: true }); d.circle(78, 84, 6.5, "d"); d.circle(122, 84, 6.5, "d");
   } },

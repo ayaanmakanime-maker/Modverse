@@ -12,7 +12,7 @@ export function Footer() {
         <div>
           <p className="mv-eyebrow mb-4">Shop</p>
           <ul className="space-y-2 text-sm text-bone-2">
-            <li><Link href="/shop/men">Men</Link></li><li><Link href="/shop/women">Women</Link></li><li><Link href="/shop/kids">Kids</Link></li>
+            <li><Link href="/shop/men">Men</Link></li><li><Link href="/shop/women">Women</Link></li>
           </ul>
         </div>
         <div>

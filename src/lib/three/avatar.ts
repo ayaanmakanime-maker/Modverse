@@ -1,15 +1,15 @@
 /**
  * Avatar appearance data (stored in avatar_profiles.appearance). The older
- * generic lathe mannequin was replaced by the Atlas / Aura / Nova flagship
+ * generic lathe mannequin was replaced by the Atlas / Aura flagship
  * avatars (see flagship-avatar.ts); stored appearances map onto them:
- * bodyType masculine → Atlas, feminine → Aura, child → Nova.
+ * bodyType masculine → Atlas, feminine → Aura (older "child" values read as Atlas).
  */
 import type { AvatarModel, AvatarPose } from "./flagship-avatar";
 
 export interface AvatarAppearance {
   skinTone: string;
   build: "slim" | "average" | "athletic" | "broad" | "curvy";
-  bodyType: "masculine" | "feminine" | "child";
+  bodyType: "masculine" | "feminine";
   hair: "short" | "medium" | "long" | "bun" | "none";
   /** Flagship model (defaults from bodyType). */
   model?: AvatarModel;

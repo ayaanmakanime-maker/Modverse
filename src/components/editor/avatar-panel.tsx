@@ -1,6 +1,6 @@
 "use client";
 /**
- * Avatar studio (Fit tab): pick the flagship avatar (Atlas, Aura or Nova),
+ * Avatar studio (Fit tab): pick the flagship avatar (Atlas for the Men's range, Aura for the Women's),
  * reshape it with body-proportion sliders — each one regenerates the 3D
  * geometry — choose pose and skin tone. The same body drives the fit check.
  */
@@ -14,45 +14,44 @@ import { Notice, Slider } from "@/components/ui";
 
 export interface AvatarState { on: boolean; body?: Record<string, number>; appearance?: AvatarAppearance }
 
-const SLIDERS: { key: string; label: string; adult: [number, number]; kid: [number, number] }[] = [
-  { key: "height", label: "Height", adult: [145, 205], kid: [95, 165] },
-  { key: "chest", label: "Chest", adult: [76, 140], kid: [52, 90] },
-  { key: "waist", label: "Waist", adult: [58, 130], kid: [48, 84] },
-  { key: "hip", label: "Hip", adult: [78, 140], kid: [54, 92] },
-  { key: "shoulder", label: "Shoulder width", adult: [34, 54], kid: [24, 40] },
-  { key: "armLength", label: "Arm length", adult: [50, 72], kid: [34, 60] },
-  { key: "inseam", label: "Inseam", adult: [64, 92], kid: [40, 76] },
+const SLIDERS: { key: string; label: string; range: [number, number] }[] = [
+  { key: "height", label: "Height", range: [145, 205] },
+  { key: "chest", label: "Chest", range: [76, 140] },
+  { key: "waist", label: "Waist", range: [58, 130] },
+  { key: "hip", label: "Hip", range: [78, 140] },
+  { key: "shoulder", label: "Shoulder width", range: [34, 54] },
+  { key: "armLength", label: "Arm length", range: [50, 72] },
+  { key: "inseam", label: "Inseam", range: [64, 92] },
 ];
 
 export function avatarModelsFor(audience: string): AvatarModel[] {
-  return audience === "kids" ? ["nova"] : ["atlas", "aura"];
+  return audience === "women" ? ["aura"] : ["atlas"];
 }
 
 export function AvatarStudio({ config, avatar, setAvatar }: { config: DesignConfig; avatar: AvatarState; setAvatar: (a: AvatarState) => void }) {
-  const kid = config.audience === "kids";
   const sizeBody = bodyForSize(config.audience, config.size) as unknown as Record<string, number>;
-  const body: Record<string, number> = { ...sizeBody, inseam: Math.round(sizeBody.height * (kid ? 0.43 : 0.45)), ...(avatar.body ?? {}) };
-  const ap: AvatarAppearance = avatar.appearance ?? { skinTone: "#C68E6A", build: "average", bodyType: kid ? "child" : config.audience === "women" ? "feminine" : "masculine", hair: AVATAR_INFO[modelForAudience(config.audience)].hair, model: modelForAudience(config.audience), pose: "fit" };
+  const body: Record<string, number> = { ...sizeBody, inseam: Math.round(sizeBody.height * 0.45), ...(avatar.body ?? {}) };
+  const ap: AvatarAppearance = avatar.appearance ?? { skinTone: "#C68E6A", build: "average", bodyType: config.audience === "women" ? "feminine" : "masculine", hair: AVATAR_INFO[modelForAudience(config.audience)].hair, model: modelForAudience(config.audience), pose: "fit" };
   const model = avatarModelsFor(config.audience).includes(ap.model ?? "atlas") ? ap.model! : modelForAudience(config.audience);
   const set = (patch: Partial<AvatarState>) => setAvatar({ ...avatar, on: true, ...patch });
   const setAp = (patch: Partial<AvatarAppearance>) => set({ appearance: { ...ap, model, ...patch } });
   return (
     <div className="space-y-3" data-testid="avatar-studio">
       <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={avatar.on} onChange={(e) => setAvatar({ ...avatar, on: e.target.checked })} data-testid="avatar-toggle" /> Show the garment on the avatar in 3D</label>
-      <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Avatar">
-        {(["atlas", "aura", "nova"] as const).map((m) => {
+      <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Avatar">
+        {(["atlas", "aura"] as const).map((m) => {
           const allowed = avatarModelsFor(config.audience).includes(m);
           return (
-            <button key={m} role="radio" aria-checked={model === m} disabled={!allowed} onClick={() => setAp({ model: m, hair: AVATAR_INFO[m].hair, bodyType: m === "aura" ? "feminine" : m === "nova" ? "child" : "masculine" })} title={allowed ? AVATAR_INFO[m].blurb : m === "nova" ? "Nova wears kids' sizes — switch the design to Kids" : "Adult avatars wear adult sizes"} className={clsx("rounded-lg border px-2 py-1.5 text-left transition disabled:opacity-35", model === m ? "border-champagne bg-surface-2" : "border-line hover:border-bone/40")} data-testid={`avatar-${m}`}>
+            <button key={m} role="radio" aria-checked={model === m} disabled={!allowed} onClick={() => setAp({ model: m, hair: AVATAR_INFO[m].hair, bodyType: m === "aura" ? "feminine" : "masculine" })} title={allowed ? AVATAR_INFO[m].blurb : `${AVATAR_INFO[m].name} is used for the ${m === "atlas" ? "Men's" : "Women's"} range — switch the category to use it`} className={clsx("rounded-lg border px-2 py-1.5 text-left transition disabled:opacity-35", model === m ? "border-champagne bg-surface-2" : "border-line hover:border-bone/40")} data-testid={`avatar-${m}`}>
               <span className="block text-xs font-medium text-bone">{AVATAR_INFO[m].name}</span>
-              <span className="block text-[0.58rem] leading-tight text-mute">{m === "atlas" ? "Male" : m === "aura" ? "Female" : "Kids"}</span>
+              <span className="block text-[0.58rem] leading-tight text-mute">{m === "atlas" ? "Men" : "Women"}</span>
             </button>
           );
         })}
       </div>
       <div className="space-y-1.5" data-testid="avatar-sliders">
         {SLIDERS.map((s) => {
-          const [min, max] = kid ? s.kid : s.adult;
+          const [min, max] = s.range;
           return (
             <Slider key={s.key} label={s.label} unit="cm" step={0.5} min={min} max={max} value={Math.round((body[s.key] ?? min) * 2) / 2} onChange={(v) => set({ body: { ...body, [s.key]: v } })} />
           );

@@ -100,8 +100,8 @@ describe("AI pipeline: Director → artwork → compiler → engine", () => {
   });
 
   it("fits new artwork into the print area automatically", () => {
-    const base = createDesign("tee-classic-crew", "kids");
-    const r = compileProposal(base, designProposalSchema.parse({ version: PROPOSAL_VERSION, typography: [{ text: "AN EXTREMELY LONG SLOGAN THAT WILL NOT FIT ON A KIDS SLEEVE", placement: "left-sleeve" }] }), []);
+    const base = createDesign("tee-classic-crew", "women");
+    const r = compileProposal(base, designProposalSchema.parse({ version: PROPOSAL_VERSION, typography: [{ text: "AN EXTREMELY LONG SLOGAN THAT WILL NOT FIT ON A SLEEVE", placement: "left-sleeve" }] }), []);
     expect(r.validation.newIssues.some((i) => i.code === "OUTSIDE_PRINT_AREA" || i.code === "CROSSES_PRINT_BOUNDARY")).toBe(false);
   });
 

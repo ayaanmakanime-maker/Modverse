@@ -1,13 +1,19 @@
 import { expect, test } from "@playwright/test";
 
-test("Men, Women and Kids navigation with distinct T-shirt and shirt models", async ({ page }) => {
+test("Men and Women navigation with distinct T-shirt and shirt models; the Kids range is gone", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("img", { name: /ModVerse/ }).first()).toBeVisible();
-  for (const [cat, min] of [["men", 30], ["women", 32], ["kids", 26]] as const) {
+  for (const [cat, min] of [["men", 30], ["women", 32]] as const) {
     await page.goto(`/shop/${cat}`);
     await expect(page.getByTestId("product-card").first()).toBeVisible();
     expect(await page.getByTestId("product-card").count()).toBeGreaterThanOrEqual(min);
   }
+  // The retired Kids range: no navigation entry, no category page, no product pages.
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Kids", exact: true })).toHaveCount(0);
+  expect((await page.goto("/shop/kids"))?.status()).toBe(404);
+  expect((await page.goto("/shop/kids/tee-classic-crew"))?.status()).toBe(404);
+  expect((await page.goto("/account/family"))?.status()).toBe(404);
   await page.goto("/shop/men?type=shirt");
   expect(await page.getByTestId("product-card").count()).toBe(17);
   await page.goto("/shop/men?type=tshirt");

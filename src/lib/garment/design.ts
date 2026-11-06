@@ -218,7 +218,7 @@ export function newLayerId(prefix = "layer"): string {
 
 export function createTextLayer(config: DesignConfig, text: string, preset: PlacementPreset = "center-chest", overrides: Partial<TextLayer> = {}): TextLayer {
   const m = computeMeasurements(config);
-  const p = placementPreset(m, preset, config.audience === "kids");
+  const p = placementPreset(m, preset);
   const fontSize = overrides.fontSize ?? Math.max(1, Math.min(p.maxHeight * 0.6, (p.maxWidth / Math.max(4, text.length)) * 1.7));
   const lines = text.split("\n").length;
   const width = Math.min(p.maxWidth, Math.max(2, text.split("\n").reduce((mx, l) => Math.max(mx, l.length), 1) * fontSize * 0.62));
@@ -275,7 +275,7 @@ export function createGraphicLayer(
 ): GraphicLayer {
   const m = computeMeasurements(config);
   const aspect = asset.width > 0 && asset.height > 0 ? asset.width / asset.height : 1;
-  const pos = fitToPlacement(placementPreset(m, preset, config.audience === "kids"), aspect, scale);
+  const pos = fitToPlacement(placementPreset(m, preset), aspect, scale);
   return {
     id: newLayerId("gfx"),
     type: "graphic",
@@ -306,7 +306,7 @@ export function createImageLayer(
   source: ImageLayer["source"] = "upload",
 ): ImageLayer {
   const m = computeMeasurements(config);
-  const pos = fitToPlacement(placementPreset(m, preset, config.audience === "kids"), img.pixelWidth / img.pixelHeight);
+  const pos = fitToPlacement(placementPreset(m, preset), img.pixelWidth / img.pixelHeight);
   return {
     id: newLayerId("img"),
     type: "image",

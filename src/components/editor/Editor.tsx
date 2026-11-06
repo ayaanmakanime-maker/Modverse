@@ -60,7 +60,7 @@ export interface EditorInitial {
 
 const DRAFT_KEY = "mv-draft";
 
-export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial; childProfiles?: { id: string; nickname: string }[] }) {
+export function Editor({ initial }: { initial: EditorInitial }) {
   const router = useRouter();
   const { user, setCartCount } = useSession();
   const userRef = useRef(user);
@@ -88,7 +88,6 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
   const [lighting, setLighting] = useState<LightingPreset>("studio");
   const [avatar, setAvatar] = useState<AvatarState>({ on: false });
   const [saving, setSaving] = useState(false);
-  const [childId, setChildId] = useState<string>("");
   const [mobilePanel, setMobilePanel] = useState(true);
   const viewer = useRef<GarmentViewerHandle | null>(null);
   const ready = !!config;
@@ -154,7 +153,7 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
     setSaving(true);
     try {
       if (!s.projectId) {
-        const r = await api<{ design: { id: string; currentVersion: number; updatedAt: string; name: string } }>("/api/designs", { body: { name: s.name, modelId: s.config.modelId, audience: s.config.audience, mode: s.mode, config: s.config, childProfileId: childId || null } });
+        const r = await api<{ design: { id: string; currentVersion: number; updatedAt: string; name: string } }>("/api/designs", { body: { name: s.name, modelId: s.config.modelId, audience: s.config.audience, mode: s.mode, config: s.config } });
         s.markSaved({ projectId: r.design.id, version: r.design.currentVersion, savedAt: r.design.updatedAt, name: r.design.name });
         window.history.replaceState(null, "", `/design/${r.design.id}?mode=${s.mode}`);
         toast("Design saved");
@@ -170,7 +169,7 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
     } finally {
       setSaving(false);
     }
-  }, [user, router, childId]);
+  }, [user, router]);
   saveRef.current = save;
 
   async function addToCart() {
@@ -280,7 +279,7 @@ export function Editor({ initial, childProfiles = [] }: { initial: EditorInitial
   if (!ready) return <div className="grid h-dvh place-items-center"><BrandLoader label="Opening the studio" /></div>;
   return (
     <EditorLayout
-      {...{ tab, setTab, mode, setMode, name, setName, dirty, projectId, version, view, setView, undo, redo, canUndo, canRedo, saving, save, addToCart, view3d, setView3d, lighting, setLighting, avatar, setAvatar, viewer, patternTarget, setPatternTarget, childProfiles, childId, setChildId, mobilePanel, setMobilePanel, selectedId }}
+      {...{ tab, setTab, mode, setMode, name, setName, dirty, projectId, version, view, setView, undo, redo, canUndo, canRedo, saving, save, addToCart, view3d, setView3d, lighting, setLighting, avatar, setAvatar, viewer, patternTarget, setPatternTarget, mobilePanel, setMobilePanel, selectedId }}
     />
   );
 }
@@ -302,13 +301,12 @@ function EditorLayout(p: {
   view: "2d" | "3d" | "split"; setView: (v: "2d" | "3d" | "split") => void; undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean; saving: boolean;
   save: (o?: { asNewVersion?: boolean; note?: string }) => Promise<string | null>; addToCart: () => void; view3d: ViewPreset; setView3d: (v: ViewPreset) => void; lighting: LightingPreset; setLighting: (l: LightingPreset) => void;
   avatar: AvatarState; setAvatar: (a: AvatarState) => void; viewer: React.RefObject<GarmentViewerHandle | null>;
-  patternTarget: PanelId | null; setPatternTarget: (p: PanelId | null) => void; childProfiles: { id: string; nickname: string }[]; childId: string; setChildId: (s: string) => void;
+  patternTarget: PanelId | null; setPatternTarget: (p: PanelId | null) => void;
   mobilePanel: boolean; setMobilePanel: (b: boolean) => void; selectedId: string | null;
 }) {
   const production = useEditor((s) => s.production);
   const guides3d = useEditor((s) => s.guides3d);
   const config = useEditor((s) => s.config);
-  const { user } = useSession();
   const report = useLiveValidation();
   const price = useDesignPrice(config);
   const model = getModel(config.modelId);
@@ -340,15 +338,6 @@ function EditorLayout(p: {
             <p className="text-mute">{formatINR(price.unitPrice)} + GST {formatINR(price.gst)} (estimate) · size {config.size}</p>
             <details className="mt-2"><summary className="cursor-pointer text-[0.68rem] text-bone-2" data-testid="price-details">Itemised breakdown</summary><div className="mt-2"><PriceBreakdownView price={price} /></div></details>
           </div>
-          {config.audience === "kids" && !p.projectId && user && (
-            <label className="block text-xs"><span className="mv-label">Link to child profile (optional)</span>
-              <Select value={p.childId} onChange={(e) => p.setChildId(e.target.value)} className="!py-1.5 !text-xs">
-                <option value="">Not linked</option>
-                {p.childProfiles.map((c) => <option key={c.id} value={c.id}>{c.nickname}</option>)}
-              </Select>
-              {p.childProfiles.length === 0 && <span className="mt-1 block text-mute">Create guardian-managed child profiles in Account → Family.</span>}
-            </label>
-          )}
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => p.save()} loading={p.saving}><Save className="size-3.5" /> Save</Button>
             <Button variant="ghost" onClick={p.addToCart} disabled={report.status === "fail"} title={report.status === "fail" ? "Fix validation errors first" : undefined} data-testid="add-to-cart"><ShoppingBag className="size-3.5" /> Add to cart</Button>

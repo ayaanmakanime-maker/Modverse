@@ -73,7 +73,7 @@ describe("ModVerse Studio Library (original artwork)", () => {
 
   it("is searchable by interest, audience and colour", () => {
     const has = (word: string) => studio.filter((a) => a.tags.includes(word)).length;
-    for (const w of ["diwali", "cricket", "kids", "mandala", "pizza", "paisley", "teal", "retro", "sticker", "line art", "wedding", "gaming"]) expect(has(w), w).toBeGreaterThan(3);
+    for (const w of ["diwali", "cricket", "playful", "mandala", "pizza", "paisley", "teal", "retro", "sticker", "line art", "wedding", "gaming"]) expect(has(w), w).toBeGreaterThan(3);
   });
 
   it("contains no brand names, characters or trademarks in names or tags", () => {

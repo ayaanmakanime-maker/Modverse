@@ -47,7 +47,6 @@ export interface ValidationContext {
 const DISCLAIMER =
   "Automated pre-production checks based on ModVerse rules and estimated measurements. Passing validation does not make a design factory-ready: patterns, grading, fabric specs and artwork must be approved by the manufacturer.";
 
-const KIDS_BLOCKLIST = ["fuck", "shit", "bitch", "sex", "kill", "drugs", "weed", "bastard", "damn", "porn", "gun"];
 
 const zonePanel = (z: Zone): PanelId => z;
 
@@ -69,7 +68,6 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
   const body = { ...bodyForSize(config.audience, config.size), ...(ctx.body ?? {}) };
   const c = config.construction;
   const fabric = FABRIC_BY_ID.get(config.fabric.id);
-  const kids = config.audience === "kids";
 
   // ── Model & fabric ───────────────────────────────────────────
   if (!model) add({ code: "MODEL_UNKNOWN", severity: "error", category: "construction", message: `Unknown garment model "${config.modelId}".`, suggestion: "Choose a model from the catalogue." });
@@ -133,9 +131,6 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
       add({ code: "BUTTON_SPACING", severity: "warning", category: "construction", message: `Button spacing is ${spacing.toFixed(1)} cm.`, suggestion: `Shirts usually space buttons 7–10 cm apart — ${ideal} buttons suits this placket.`, fix: { label: `Use ${ideal} buttons`, patch: { kind: "set", path: "construction.buttons.count", value: ideal } } });
     }
   }
-  if (kids && body.height < 105 && c.buttons.count > 0 && c.buttons.sizeMm < 15)
-    add({ code: "KIDS_SMALL_PARTS", severity: "warning", category: "safety", message: "Small buttons on garments for children under 3–4 years can be a choking hazard.", suggestion: "Use buttons of 15 mm+ that pass pull-tests, or snaps, and verify with applicable child-safety standards." });
-  if (kids && c.buttons.material === "metal") add({ code: "KIDS_METAL", severity: "info", category: "safety", message: "Metal trims on kidswear must be nickel-free.", suggestion: "Confirm trim compliance with the supplier." });
 
   // ── Measurements ─────────────────────────────────────────────
   const knit = fabric?.construction === "knit";
@@ -153,7 +148,7 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
     add({ code: "SLEEVE_TOO_TIGHT", severity: "error", category: "fit", message: `Sleeve bicep (${m.bicep} cm) is too tight for a ${bicepBody.toFixed(0)} cm arm.`, suggestion: "Widen the sleeve.", fix: { label: "Widen sleeves", patch: { kind: "set", path: "adjustments.sleeveWidth", value: config.adjustments.sleeveWidth + 2 } } });
   if (c.sleeveLength === "short" && m.sleeveOpening * stretchFactor < bicepBody + 1)
     add({ code: "SLEEVE_OPENING_TIGHT", severity: "error", category: "fit", message: "Short-sleeve opening is narrower than the upper arm.", suggestion: "Widen the sleeve opening.", fix: { label: "Widen sleeves", patch: { kind: "set", path: "adjustments.sleeveWidth", value: config.adjustments.sleeveWidth + 2 } } });
-  if (c.sleeveLength === "long" && config.garmentType === "tshirt" && m.sleeveOpening * (c.cuff === "rib" ? 1.5 : 1.08) < (kids ? 15 : 21))
+  if (c.sleeveLength === "long" && config.garmentType === "tshirt" && m.sleeveOpening * (c.cuff === "rib" ? 1.5 : 1.08) < 21)
     add({ code: "CUFF_HAND_PASS", severity: "error", category: "fit", message: "Cuff opening may be too small for the hand to pass through.", suggestion: "Widen the sleeve or use a rib cuff." });
   if (config.garmentType === "tshirt") {
     const a = m.neckWidth / 2;
@@ -161,7 +156,7 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
     let perimeter = half(m.frontNeckDrop) + half(m.backNeckDrop);
     if (c.neckline === "henley") perimeter += m.placketLength * 1.6;
     const stretched = perimeter * (c.ribTrim ? 1.7 : 1.2);
-    const head = kids ? 44 + body.height * 0.06 : 57;
+    const head = 57;
     if (stretched < head)
       add({ code: "NECK_HEAD_PASS", severity: "error", category: "fit", message: `Neck opening (~${stretched.toFixed(0)} cm stretched) may not pass over the head (~${head} cm).`, suggestion: "Widen or lower the neckline.", fix: { label: "Widen neckline", patch: { kind: "set", path: "adjustments.neckWidth", value: config.adjustments.neckWidth + 2 } } });
   } else if (m.collarSize < body.neck + 1) {
@@ -251,8 +246,6 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
     if (l.type === "text") {
       fontsUsed.add(l.fontFamily);
       issues.push(...validateTextLayer(config, l, bg, method));
-      if (kids && KIDS_BLOCKLIST.some((w) => l.text.toLowerCase().includes(w)))
-        add({ code: "KIDS_CONTENT", severity: "error", category: "safety", layerId: l.id, message: "This text isn't appropriate for kidswear.", suggestion: "Choose age-appropriate wording." });
     }
   }
   for (const [key, b] of perZoneMethod) {

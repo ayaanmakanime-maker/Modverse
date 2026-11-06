@@ -36,8 +36,8 @@ function shade(hex: string, dl: number): string {
   return hslToHex(h, s, Math.max(0, Math.min(1, l + dl)));
 }
 
-export function sleevePlacement(m: GarmentMeasurements, styleKey: string, side: 1 | -1, kids = false, outline?: Pt[]) {
-  const slope = shoulderSlope(m, kids);
+export function sleevePlacement(m: GarmentMeasurements, styleKey: string, side: 1 | -1, outline?: Pt[]) {
+  const slope = shoulderSlope(m);
   const angle = SLEEVE_ANGLE[styleKey] ?? 58;
   const x = side * (m.shoulderWidth / 2 - m.bicep * 0.03);
   const rotate = -side * angle;
@@ -63,7 +63,7 @@ export function flatSleeveOutline(m: GarmentMeasurements, c: DesignConfig["const
 }
 
 /** Tight view box from the real torso outline and the transformed sleeve outlines. */
-export function flatViewBox(m: GarmentMeasurements, showSleeves = true, c?: DesignConfig["construction"], kids = false): [number, number, number, number] {
+export function flatViewBox(m: GarmentMeasurements, showSleeves = true, c?: DesignConfig["construction"]): [number, number, number, number] {
   let minX = -Math.max(m.chest / 4, m.hem / 4, m.shoulderWidth / 2);
   let maxX = -minX;
   let minY = -Math.max(5, m.collarHeight + 2.5);
@@ -71,7 +71,7 @@ export function flatViewBox(m: GarmentMeasurements, showSleeves = true, c?: Desi
   if (showSleeves && c) {
     const flatOutline = flatSleeveOutline(m, c);
     for (const side of [1, -1] as const) {
-      const p = sleevePlacement(m, c.sleeveStyle, side, kids, flatOutline);
+      const p = sleevePlacement(m, c.sleeveStyle, side, flatOutline);
       const r = (p.rotate * Math.PI) / 180;
       for (const [x, y] of flatOutline) {
         const X = p.x + x * Math.cos(r) - y * Math.sin(r);
@@ -88,8 +88,7 @@ export function flatViewBox(m: GarmentMeasurements, showSleeves = true, c?: Desi
 export function GarmentFlat({ config, view, className, children, patternFill = {}, defs, showSleeves = true, stroke, title, measurements, overlay, viewBoxOverride, svgProps }: FlatProps) {
   const m = measurements ?? computeMeasurements(config);
   const c = config.construction;
-  const kids = config.audience === "kids";
-  const torso = torsoShape(m, view, c, kids);
+  const torso = torsoShape(m, view, c);
   // A technical flat shows the sleeve folded flat: width = half the circumference.
   const sleeveRaw = sleeveShape(m, c);
   const sleeve = { ...sleeveRaw, outline: flatSleeveOutline(m, c), halfOpening: sleeveRaw.halfOpening * 0.5, halfBicep: sleeveRaw.halfBicep * 0.5 };
@@ -97,7 +96,7 @@ export function GarmentFlat({ config, view, className, children, patternFill = {
   const line = stroke ?? (isDark(body) ? shade(body, 0.32) : shade(body, -0.3));
   const stitchColor = c.stitching.contrast ? c.stitching.color : line;
   const stitchW = 0.12;
-  const vb = viewBoxOverride ?? flatViewBox(m, showSleeves, c, kids);
+  const vb = viewBoxOverride ?? flatViewBox(m, showSleeves, c);
   const fill = (panel: string, fallback: string) => (patternFill[panel] ? `url(#${patternFill[panel]})` : fallback);
   const shirt = config.garmentType === "shirt";
   const sleeveL = panelColor(config, "sleeveLeft");
@@ -110,7 +109,7 @@ export function GarmentFlat({ config, view, className, children, patternFill = {
   const cuffColor = panelColor(config, "cuffs");
 
   const sleeveEl = (side: 1 | -1, color: string, panel: string) => {
-    const p = sleevePlacement(m, c.sleeveStyle, side, kids, sleeve.outline);
+    const p = sleevePlacement(m, c.sleeveStyle, side, sleeve.outline);
     const pts = sleeve.outline.map(([x, y]) => [x, y] as Pt);
     return (
       <g transform={`translate(${p.x} ${p.y}) rotate(${p.rotate})`} key={panel}>
@@ -210,7 +209,7 @@ export function GarmentFlat({ config, view, className, children, patternFill = {
       <path d={polygonToPath(torso.outline)} fill={fill(view, body)} stroke={line} strokeWidth={0.28} strokeLinejoin="round" />
       <g clipPath={`url(#${clipId})`}>
         {c.sidePanels && [1, -1].map((s) => <path key={s} d={`M ${s * (m.chest / 4)} ${m.armholeDepth} L ${s * (m.chest / 4 - 5)} ${m.armholeDepth + 2} L ${s * (m.hem / 4 - 5)} ${m.bodyLength} L ${s * (m.hem / 4 + 2)} ${m.bodyLength} Z`} fill={sideColor} stroke={line} strokeWidth={0.12} />)}
-        {c.shoulderPanels && c.sleeveStyle !== "raglan" && <path d={`M ${-m.shoulderWidth / 2 - 2} -2 L ${m.shoulderWidth / 2 + 2} -2 L ${m.shoulderWidth / 2 + 2} ${shoulderSlope(m, kids) + 3.5} L ${-m.shoulderWidth / 2 - 2} ${shoulderSlope(m, kids) + 3.5} Z`} fill={shoulderColor} stroke={line} strokeWidth={0.12} />}
+        {c.shoulderPanels && c.sleeveStyle !== "raglan" && <path d={`M ${-m.shoulderWidth / 2 - 2} -2 L ${m.shoulderWidth / 2 + 2} -2 L ${m.shoulderWidth / 2 + 2} ${shoulderSlope(m) + 3.5} L ${-m.shoulderWidth / 2 - 2} ${shoulderSlope(m) + 3.5} Z`} fill={shoulderColor} stroke={line} strokeWidth={0.12} />}
         {torso.raglanSeam && [1, -1].map((s) => {
           const seam = torso.raglanSeam!.map(([x, y]) => [s * x, y] as Pt);
           const region: Pt[] = [...seam, [s * (m.neckWidth / 2), -3], [s * (m.chest / 4 + 6), -3], [s * (m.chest / 4 + 6), m.armholeDepth]];

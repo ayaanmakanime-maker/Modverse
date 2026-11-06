@@ -46,7 +46,6 @@ export function GarmentPanel() {
           const r = switchModel({ ...config, audience: a, size: sizesFor(a)[Math.floor(sizesFor(a).length / 2)] }, target);
           replace(r.config, `Category → ${a}`);
         }} options={AUDIENCES.map((a) => ({ value: a, label: AUDIENCE_LABELS[a] }))} />
-        {config.audience === "kids" && <p className="text-[0.68rem] text-mute">Kidswear uses child size charts and extra safety and content checks. Link it to a guardian-managed child profile when saving.</p>}
       </Group>
       <Group title="Garment">
         <Segmented label="Garment type" value={type} onChange={setType} options={[{ value: "tshirt", label: "T-shirts" }, { value: "shirt", label: "Shirts" }]} />
@@ -342,7 +341,6 @@ export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar
           </div>
         )}
       </Group>
-      {config.audience !== "kids" && (
         <Group title="Camera body scan" hint="Front, side and back views measured on this device; you review every value before it is used.">
           {scanning ? (
             <BodyScanner audience={config.audience} signedIn={!!user} onClose={() => setScanning(false)} onApply={(m, prov) => { setScanned({ body: m, provenance: prov as ProvenanceMap }); setAvatar({ ...avatar, body: { ...(avatar.body ?? {}), ...m } }); setScanning(false); }} />
@@ -351,7 +349,6 @@ export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar
           )}
           {scanned && !scanning && <p className="text-[0.65rem] text-mute">Using your reviewed scan ({Object.keys(scanned.body).length} values) for the fit check and the avatar.</p>}
         </Group>
-      )}
       {rec && (
         <Group title="Size recommendation">
           <div className="flex items-center gap-2"><span className="mv-display text-3xl">{rec.size}</span><Badge tone={rec.confidence === "high" ? "ok" : rec.confidence === "medium" ? "warn" : "neutral"}>{rec.confidence} confidence</Badge><Badge tone="info">estimate</Badge></div>
@@ -366,7 +363,7 @@ export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar
           <FitAnalysisView config={config} body={body} provenance={provenance} verified={verified} />
         </Group>
       )}
-      <Group title="Avatar — Atlas · Aura · Nova">
+      <Group title="Avatar — Atlas · Aura">
         <AvatarStudio config={config} avatar={avatar} setAvatar={setAvatar} />
       </Group>
     </div>

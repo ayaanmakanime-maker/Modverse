@@ -16,7 +16,6 @@ import { DEFAULT_PRICING } from "../garment/pricing";
 const CATEGORY_DEFS = [
   { id: "men", name: "Men", description: "T-shirts and shirts cut on men's blocks — from heavyweight oversized tees to formal shirts.", sort: 1 },
   { id: "women", name: "Women", description: "T-shirts and shirts on women's blocks with shaped, relaxed and cropped silhouettes.", sort: 2 },
-  { id: "kids", name: "Kids", description: "Guardian-managed kidswear with age-appropriate sizing, content and safety checks.", sort: 3 },
 ];
 
 function seedFingerprint(libraryGeneratedAt: string): string {
@@ -39,17 +38,19 @@ export async function seedReferenceData(db: Db): Promise<{ seeded: boolean }> {
 
   await db.transaction(async (tx) => {
     for (const c of CATEGORY_DEFS) await tx.insert(s.categories).values(c).onConflictDoUpdate({ target: s.categories.id, set: { name: c.name, description: c.description, sort: c.sort } });
+    // The Kids range is retired: hide any catalogue rows an older database still has (nothing is deleted).
+    await tx.update(s.categories).set({ active: false }).where(eq(s.categories.id, "kids"));
+    await tx.update(s.products).set({ active: false }).where(eq(s.products.categoryId, "kids"));
 
     for (const m of GARMENT_MODELS) {
       await tx.insert(s.garmentModels).values({ id: m.id, garmentType: m.garmentType, name: m.name, definition: m, geometryCompleteness: m.geometry.completeness })
         .onConflictDoUpdate({ target: s.garmentModels.id, set: { name: m.name, definition: m, garmentType: m.garmentType, geometryCompleteness: m.geometry.completeness } });
       for (const aud of m.audiences) {
         const id = `${aud}-${m.id}`;
-        const kidsF = aud === "kids" ? DEFAULT_PRICING.kidsFactor : 1;
         await tx.insert(s.products).values({
-          id, categoryId: aud, garmentModelId: m.id, slug: m.id, name: m.name, description: m.description, basePrice: Math.round(m.basePrice * kidsF),
+          id, categoryId: aud, garmentModelId: m.id, slug: m.id, name: m.name, description: m.description, basePrice: m.basePrice,
           featured: ["tee-oversized", "tee-classic-crew", "shirt-linen", "shirt-cuban-camp", "tee-raglan", "shirt-oxford-button-down"].includes(m.id),
-        }).onConflictDoUpdate({ target: s.products.id, set: { name: m.name, description: m.description, basePrice: Math.round(m.basePrice * kidsF) } });
+        }).onConflictDoUpdate({ target: s.products.id, set: { name: m.name, description: m.description, basePrice: m.basePrice } });
       }
     }
 

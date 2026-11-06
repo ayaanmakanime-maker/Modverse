@@ -18,7 +18,7 @@ import { addToCart, checkout, confirmSimulatedPayment, getCart, getOrder, staffU
 import { getPricingRules, savePricingRules, upsertDiscount, setCartDiscount, resetPricingRules } from "@/lib/services/pricing";
 import { reorder, redesignFromOrder } from "@/lib/services/commerce";
 import { DEFAULT_PRICING } from "@/lib/garment/pricing";
-import { createChild, upsertMeasurementProfile, deleteChild, listMeasurementProfiles, deleteAccount, submitFitFeedback, listFitFeedback } from "@/lib/services/account";
+import { upsertMeasurementProfile, listMeasurementProfiles, deleteAccount, submitFitFeedback, listFitFeedback } from "@/lib/services/account";
 import { saveCredentials, setEnabled, getActiveIntegration, listIntegrations, recordTest } from "@/lib/integrations/config";
 import { createDesign, createTextLayer } from "@/lib/garment/design";
 import { detectType, rasterSize, storeFont, listFonts, readUpload, deleteFont } from "@/lib/services/uploads";
@@ -99,17 +99,17 @@ describe("designs: save, versions, ownership", () => {
   });
 });
 
-describe("guardian-managed child profiles", () => {
-  it("requires a guardian child profile for kids measurements and deletes data with the profile", async () => {
-    await expect(upsertMeasurementProfile(alice, { name: "Kid", audience: "kids", measurements: { chest: 64, height: 128 }, fitPreference: "true" })).rejects.toMatchObject({ status: 400 });
-    const child = await createChild(alice, { nickname: "Ria", birthYear: new Date().getFullYear() - 8, consent: true, allowSharing: false });
-    expect(child.allowSharing).toBe(false);
-    const m = await upsertMeasurementProfile(alice, { name: "Ria", audience: "kids", measurements: { chest: 64, height: 128 }, fitPreference: "true", childProfileId: child.id });
-    expect(m.childProfileId).toBe(child.id);
-    await expect(upsertMeasurementProfile(bob, { name: "steal", audience: "kids", measurements: { chest: 64 }, fitPreference: "true", childProfileId: child.id })).rejects.toMatchObject({ status: 403 });
-    await expect(createProject(bob, { modelId: "tee-classic-crew", audience: "kids", childProfileId: child.id })).rejects.toMatchObject({ status: 403 });
-    await deleteChild(alice, child.id);
-    expect((await listMeasurementProfiles(alice)).filter((p) => p.childProfileId === child.id)).toHaveLength(0);
+describe("retired Kids range", () => {
+  it("no longer accepts kids profiles or designs, and hides legacy kids rows without deleting them", async () => {
+    await expect(upsertMeasurementProfile(alice, { name: "Kid", audience: "kids" as never, measurements: { chest: 64, height: 128 }, fitPreference: "true" })).rejects.toThrow();
+    // Even if a caller still sends "kids", the design is created in the adult Men's range — never with kids' sizing.
+    const { project } = await createProject(alice, { modelId: "tee-classic-crew", audience: "kids" as never });
+    expect(project.audience).toBe("men");
+    // A kids profile stored before the range was retired stays in the database but is not offered any more.
+    const db = await getDb();
+    const [legacy] = await db.insert(s.measurementProfiles).values({ userId: alice.id, name: "Old kid profile", audience: "kids" as never, measurements: { chest: 64 }, provenance: {}, fitPreference: "true" }).returning();
+    expect((await listMeasurementProfiles(alice)).some((p) => p.id === legacy.id)).toBe(false);
+    expect(await db.select().from(s.measurementProfiles).where(eq(s.measurementProfiles.id, legacy.id))).toHaveLength(1);
   });
 
   it("rejects implausible measurements", async () => {
@@ -287,9 +287,12 @@ describe("custom fonts", () => {
 describe("account deletion", () => {
   it("anonymises the user and removes personal data", async () => {
     const carol = await makeUser(em("carol@example.com"));
-    await createChild(carol, { nickname: "C", birthYear: new Date().getFullYear() - 5, consent: true, allowSharing: false });
-    await deleteAccount(carol);
     const db = await getDb();
+    // Guardian/child data stored before the Kids range was retired is still erased with the account.
+    await db.insert(s.guardianProfiles).values({ userId: carol.id, adultDeclaredAt: new Date(), consentPolicyVersion: "legacy" });
+    await db.insert(s.childProfiles).values({ guardianUserId: carol.id, nickname: "C", birthYear: new Date().getFullYear() - 5, consentGivenAt: new Date(), consentVersion: "legacy" });
+    expect(await db.select().from(s.childProfiles).where(eq(s.childProfiles.guardianUserId, carol.id))).toHaveLength(1);
+    await deleteAccount(carol);
     const [u] = await db.select().from(s.users).where(eq(s.users.id, carol.id));
     expect(u.status).toBe("deleted");
     expect(u.email).toMatch(/@deleted\.invalid$/);

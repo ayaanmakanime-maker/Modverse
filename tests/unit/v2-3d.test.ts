@@ -29,9 +29,8 @@ describe("V2 3D garment geometry", () => {
       const d = createDesign(m.id, m.audiences[0]);
       const geo = buildGarmentGeometry(d, { resolution: 48 });
       const meas = geo.measurements;
-      const kids = d.audience === "kids";
       for (const side of ["front", "back"] as const) {
-        const outline = torsoShape(meas, side, d.construction, kids).outline;
+        const outline = torsoShape(meas, side, d.construction).outline;
         const pos = side === "front" ? geo.front.positions : geo.back.positions;
         const g = seamGap(pos, outline, meas.armholeDepth + 1, meas.bodyLength - meas.hemCurve - 1 - (d.construction.sideSlits ? 8 : 0));
         expect(g.count, `${m.id} ${side} seam vertices`).toBeGreaterThan(10);
@@ -78,7 +77,7 @@ describe("V2 3D garment geometry", () => {
     const relief = zoneReliefSvg(d, "front", m, { density: 0.8, sharpness: 0.8, looseness: 0.2 });
     expect(relief.svg).toContain("stroke-dasharray"); // topstitching
     expect(relief.widthPx).toBeGreaterThan(200);
-    const t = torsoShape(m, "front", d.construction, false);
+    const t = torsoShape(m, "front", d.construction);
     expect(outlineHalfWidth(t.outline, m.armholeDepth + 5)).toBeGreaterThan(m.chest / 4 - 4);
   });
 

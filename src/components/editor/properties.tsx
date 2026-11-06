@@ -133,7 +133,7 @@ function CommonControls({ layer }: { layer: Layer }) {
   });
   const method = layerMethod(config, layer);
   const place = (p: PlacementPreset) => {
-    const pl = placementPreset(m, p, config.audience === "kids");
+    const pl = placementPreset(m, p);
     const fit = fitToPlacement(pl, layer.width / layer.height);
     const scale = Math.min(1, fit.width / layer.width);
     update(layer.id, { zone: fit.zone, x: fit.x, y: pl.top + (layer.height * scale) / 2, width: layer.width * scale, height: layer.height * scale, ...(layer.type === "text" ? { fontSize: +((layer as TextLayer).fontSize * scale).toFixed(2) } : {}) } as Partial<Layer>, { label: `Place ${PLACEMENT_LABELS[p]}` });
