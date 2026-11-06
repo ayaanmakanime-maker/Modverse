@@ -3,7 +3,7 @@ import { FONT_BY_FAMILY, missingScripts } from "../typography/fonts";
 import { FABRIC_BY_ID, PRINT_METHOD_INFO, getFabric } from "./fabrics";
 import { availableZones, layerMethod, panelColor, panelFabricId } from "./design";
 import { getModel, MODEL_BY_ID } from "./models";
-import { printableArea, rectContains, rectIntersects, rotatedBounds, type Rect } from "./panels";
+import { printableArea, rectContains, rectIntersects, rotatedBounds, safeArea, SAFE_MARGIN_CM, type Rect } from "./panels";
 import type { DesignConfig, Layer, TextLayer } from "./schema";
 import { bodyForSize, computeMeasurements } from "./sizing";
 import type { BodyMeasurements, GarmentMeasurements, PanelId, PrintMethod, Zone } from "./types";
@@ -192,6 +192,8 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
         suggestion: "Move it inside the dashed print boundary or reduce its size.",
         fix: { label: "Fit inside print area", patch: { kind: "layer", layerId: l.id, changes: fitInside(l, area) } },
       });
+    } else if (!rectContains(safeArea(area), b)) {
+      add({ code: "NEAR_PRINT_EDGE", severity: "info", category: "print", layerId: l.id, message: `"${l.name}" sits within ${SAFE_MARGIN_CM} cm of the print boundary.`, suggestion: "Print registration can shift artwork by a few millimetres — keep fine detail inside the dotted production-safe area." });
     }
     const pf = getFabric(panelFabricId(config, zonePanel(l.zone)));
     const suit = pf.printMethods[method];
@@ -213,6 +215,18 @@ export function validateDesign(config: DesignConfig, ctx: ValidationContext = {}
       add({ code: "EMBROIDERY_OPACITY", severity: "error", category: "print", layerId: l.id, message: "Embroidery cannot reproduce transparency.", suggestion: "Set opacity to 100% or use a print method.", fix: { label: "Set opacity 100%", patch: { kind: "layer", layerId: l.id, changes: { opacity: 1 } } } });
     else if (l.opacity < 1 && method === "screen")
       add({ code: "SCREEN_OPACITY", severity: "warning", category: "print", layerId: l.id, message: "Transparency in screen printing is reproduced with halftones.", suggestion: "Consider full opacity or DTG/DTF." });
+
+    // Atelier Pro effects (v3)
+    if (l.blendMode && l.blendMode !== "normal")
+      add({ code: "BLEND_PREVIEW", severity: "info", category: "print", layerId: l.id, message: `"${l.name}" uses the ${l.blendMode.replace("-", " ")} blend mode.`, suggestion: "Blending with the fabric colour is a preview: printed inks don't mix with the garment colour. The print file blends artwork layers with each other only." });
+    if (l.type === "text" && l.fill && method === "embroidery")
+      add({ code: "EMBROIDERY_GRADIENT", severity: "error", category: "print", layerId: l.id, message: "Gradient text can't be embroidered.", suggestion: "Use a solid thread colour or a print method." });
+    else if (l.type === "text" && l.fill && method === "screen")
+      add({ code: "SCREEN_GRADIENT", severity: "warning", category: "print", layerId: l.id, message: "Screen printing reproduces gradients with halftone dots.", suggestion: "Use DTG/DTF for a smooth gradient, or accept a halftone look." });
+    if (method === "embroidery" && (l.adjust || (l.filters ?? []).some((f) => f.enabled && ["grain", "halftone", "texture", "blur", "distort"].includes(f.type))))
+      add({ code: "EMBROIDERY_EFFECTS", severity: "warning", category: "print", layerId: l.id, message: `Photo adjustments and texture filters on "${l.name}" don't translate to thread.`, suggestion: "Embroidery uses solid thread colours — remove the effects or choose a print method." });
+    if (l.type === "drawing" && method === "embroidery" && l.strokes.some((s) => s.tool === "airbrush" || s.tool === "chalk" || s.hardness < 0.5))
+      add({ code: "EMBROIDERY_SOFT_STROKES", severity: "warning", category: "print", layerId: l.id, message: "Soft airbrush and chalk strokes can't be stitched.", suggestion: "Use hard brush strokes for embroidery." });
 
     if (l.type === "image") {
       // Effective pixels after cropping.

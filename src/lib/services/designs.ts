@@ -50,7 +50,7 @@ async function writeProjections(db: Db, versionId: string, config: DesignConfig)
       .values({ versionId, layerId: l.id, type: l.type, zone: l.zone, zIndex: i, name: l.name, method: l.method ?? config.printMethod, xCm: l.x, yCm: l.y, widthCm: l.width, heightCm: l.height, rotation: l.rotation })
       .returning({ id: s.designLayers.id });
     if (l.type === "text") await db.insert(s.textElements).values({ layerRowId: row.id, text: l.text, fontFamily: l.fontFamily, fontWeight: l.fontWeight, fontSizeCm: l.fontSize, color: l.color, curveMode: l.curve.mode });
-    else await db.insert(s.artworkElements).values({ layerRowId: row.id, source: l.source, assetId: l.assetId, url: l.url });
+    else if (l.type !== "drawing") await db.insert(s.artworkElements).values({ layerRowId: row.id, source: l.source, assetId: l.assetId, url: l.url });
   }
   for (const p of PANELS) {
     await db.insert(s.panelConfigurations).values({ versionId, panel: p, color: panelColor(config, p), fabricId: panelFabricId(config, p), patternId: config.panels[p].patternId, patternScale: config.panels[p].patternScale });

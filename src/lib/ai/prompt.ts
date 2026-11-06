@@ -10,7 +10,7 @@ import { proposalJsonSchema, PROPOSAL_VERSION, ADJUSTMENT_KEYS, PLACEMENTS } fro
 export function directorSystemPrompt(config: DesignConfig | null, opts: { compact?: boolean } = {}): string {
   const compact = !!opts.compact;
   return [
-    "You are The Muse, ModVerse's Fashion Director. You decide WHAT the customer wants and describe it as a structured design proposal.",
+    "You are AI Muse, ModVerse's Fashion Director. You decide WHAT the customer wants and describe it as a structured design proposal.",
     `Return ONLY a JSON object matching schema "${PROPOSAL_VERSION}". No prose, no markdown.`,
     "Keep existing design settings unless the customer asks to change them (intent \"edit\"). Use intent \"create\" for a new garment.",
     "Never invent geometry, coordinates, prices or capabilities. Put anything ModVerse cannot do into \"unsupported\".",

@@ -6,7 +6,8 @@ import { useEditor } from "@/lib/editor/store";
 import { GarmentFlat, flatViewBox } from "@/components/garment/GarmentFlat";
 import { computeMeasurements } from "@/lib/garment/sizing";
 import { printableArea, sleeveShape, zoneCanvas, polygonToPath, rotatedBounds, type Rect } from "@/lib/garment/panels";
-import { flatPatternFills, layerMarkup, patternDef, type AssetResolver } from "@/lib/render/compose";
+import { flatPatternFills, layerContext, layerMarkup, patternDef, safeArea, type AssetResolver } from "@/lib/render/compose";
+import { ProToolbar, ToolOptionsBar, useProShortcuts, useProTools } from "./pro-tools";
 import { assetVersion, ensureDesignAssets, getDataUrl, getPatternUrl, getSvg, subscribeAssets } from "@/lib/render/assets";
 import { availableZones, panelColor } from "@/lib/garment/design";
 import type { Layer } from "@/lib/garment/schema";
@@ -123,6 +124,8 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
     return { x: p.x, y: p.y };
   }, []);
 
+  const mode = useEditor((s) => s.mode);
+  const production = useEditor((s) => s.production);
   const cmPerPx = useMemo(() => {
     const svg = svgRef.current;
     if (!svg) return 0.1;
@@ -130,6 +133,8 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
     return ctm ? 1 / ctm.a : 0.1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom, pan.x, pan.y, vb[2], vb[3], tick, config]);
+  const pro = useProTools({ toCm, cmPerPx, zone, area, layers, assets: resolver });
+  useProShortcuts(mode === "pro" && !compact);
 
   /** Zoom by a factor keeping the point under (clientX, clientY) fixed on screen. */
   const zoomAt = useCallback((factor: number, client?: { clientX: number; clientY: number }) => {
@@ -265,6 +270,10 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
       return;
     }
     if (e.button !== 0) return;
+    if (pro.down(e, toCm(e))) {
+      (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+      return;
+    }
     const target = e.target as Element;
     const handle = target.closest("[data-handle]")?.getAttribute("data-handle");
     const layerEl = target.closest("[data-layer-id]");
@@ -302,6 +311,7 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
       zoomAt(target / zoom, { clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 });
       return;
     }
+    if (!gesture.current && pro.move(e, toCm(e))) return;
     const g = gesture.current;
     if (!g) return;
     if (g.kind === "pan") {
@@ -385,8 +395,17 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
 
   function onPointerUp(e: React.PointerEvent<SVGSVGElement>) {
     pointers.current.delete(e.pointerId);
+    if (!gesture.current && pro.up(e, toCm(e))) {
+      try {
+        (e.currentTarget as SVGSVGElement).releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
     if (pointers.current.size < 2) pinch.current = null;
     if (gesture.current) {
+      if (gesture.current.kind !== "pan") useEditor.getState().endGesture();
       gesture.current = null;
       setGuides({ v: null, h: null });
       try {
@@ -421,10 +440,11 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
           <rect x={area.x0} y={area.y0} width={area.x1 - area.x0} height={area.y1 - area.y0} fill="none" stroke={guideColor} strokeOpacity={0.5} strokeWidth={Math.max(0.06, cmPerPx * 1.2)} strokeDasharray={`${handle * 0.8} ${handle * 0.6}`} />
           <line x1={0} x2={0} y1={area.y0 - 2} y2={area.y1 + 2} stroke={guideColor} strokeOpacity={0.25} strokeWidth={cmPerPx} />
           <text x={area.x0} y={area.y0 - handle * 0.6} fontSize={handle * 1.1} fill={guideColor} opacity={0.6} fontFamily="Inter">Print area {(area.x1 - area.x0).toFixed(0)} × {(area.y1 - area.y0).toFixed(0)} cm</text>
+          {(() => { const sa = safeArea(area); return <rect x={sa.x0} y={sa.y0} width={sa.x1 - sa.x0} height={sa.y1 - sa.y0} fill="none" stroke="#C9B896" strokeOpacity={0.7} strokeWidth={Math.max(0.04, cmPerPx)} strokeDasharray={`${handle * 0.15} ${handle * 0.35}`} data-testid="safe-area"><title>Production-safe area: keep fine detail inside (print registration tolerance)</title></rect>; })()}
         </g>
       )}
       {layers.map((l) => (
-        <g key={l.id} data-layer-id={l.id} style={{ cursor: l.locked ? "not-allowed" : "move" }} dangerouslySetInnerHTML={{ __html: layerMarkup(l, resolver) }} />
+        <g key={l.id} data-layer-id={l.id} style={{ cursor: l.locked ? "not-allowed" : "move" }} dangerouslySetInnerHTML={{ __html: layerMarkup(l, resolver, { ...layerContext(config, l), production: production ? config.printMethod : null }) }} />
       ))}
       {guides.v !== null && <line x1={guides.v} x2={guides.v} y1={vb[1]} y2={vb[1] + vb[3]} stroke="#C9B896" strokeWidth={cmPerPx * 1.5} pointerEvents="none" />}
       {guides.h !== null && <line y1={guides.h} y2={guides.h} x1={vb[0]} x2={vb[0] + vb[2]} stroke="#C9B896" strokeWidth={cmPerPx * 1.5} pointerEvents="none" />}
@@ -445,6 +465,7 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
           )}
         </g>
       )}
+      {pro.overlay}
     </g>
   );
 
@@ -454,7 +475,7 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
     onPointerMove,
     onPointerUp,
     onPointerCancel: onPointerUp,
-    style: { touchAction: "none", width: "100%", height: "100%", cursor: hand || spaceHeld ? (gesture.current?.kind === "pan" ? "grabbing" : "grab") : undefined } as React.CSSProperties,
+    style: { touchAction: "none", width: "100%", height: "100%", cursor: hand || spaceHeld ? (gesture.current?.kind === "pan" ? "grabbing" : "grab") : pro.cursor } as React.CSSProperties,
     "data-testid": "canvas-2d",
   };
 
@@ -533,6 +554,9 @@ export function Canvas2D({ compact }: { compact?: boolean }) {
         <div className="flex h-full w-full items-center justify-center p-3">
           {content}
         </div>
+        {mode === "pro" && !compact && <ProToolbar />}
+        {mode === "pro" && !compact && <ToolOptionsBar assets={resolver} />}
+        {pro.busyNode}
         {dropping && <p className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-ink/80 px-3 py-1 text-[0.7rem] text-champagne">Drop onto the {ZONE_LABELS[zone].toLowerCase()}</p>}
         {layers.length === 0 && !dropping && <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-ink/70 px-3 py-1 text-[0.7rem] text-mute">Add or drag text, graphics and files here — drag to move, corners to resize, ● to rotate</p>}
       </div>

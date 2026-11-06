@@ -25,10 +25,14 @@ import { mailbox } from "@/lib/services/account";
 import * as Settle from "@/lib/services/settlements";
 import { PRINT_METHODS, AUDIENCES } from "@/lib/garment/types";
 
+/** Unique per run, so every integration file can share one PostgreSQL database (PGlite gives each file its own). */
+const RUN = Math.random().toString(36).slice(2, 8);
+const em = (address: string) => address.replace("@", `+${RUN}@`);
+
 async function makeUser(email: string, role: "customer" | "staff" | "admin" = "customer"): Promise<SessionUser> {
   const db = await getDb();
-  const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
-  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, sessionId: "test" };
+  const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0].split("+")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
+  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, isGuest: false, sessionId: "test" };
 }
 
 const address = { fullName: "Alice Private", phone: "9876500001", line1: "77 Secret Lane", city: "Pune", state: "Maharashtra", pincode: "411001" };
@@ -41,16 +45,16 @@ let orderId: string, artworkId: string;
 const orgs: Record<string, string> = {};
 
 beforeAll(async () => {
-  alice = await makeUser("alice@example.com");
-  admin = await makeUser("ops-admin@example.com", "admin");
-  staff = await makeUser("ops@example.com", "staff");
-  outsider = await makeUser("outsider@example.com");
-  m1 = await makeUser("owner@stitchworks.example");
-  m1b = await makeUser("floor@stitchworks.example");
-  m2 = await makeUser("owner@embroideryonly.example");
-  m3 = await makeUser("owner@firstpick.example");
-  l1 = await makeUser("owner@fastship.example");
-  l2 = await makeUser("owner@othership.example");
+  alice = await makeUser(em("alice@example.com"));
+  admin = await makeUser(em("ops-admin@example.com"), "admin");
+  staff = await makeUser(em("ops@example.com"), "staff");
+  outsider = await makeUser(em("outsider@example.com"));
+  m1 = await makeUser(em("owner@stitchworks.example"));
+  m1b = await makeUser(em("floor@stitchworks.example"));
+  m2 = await makeUser(em("owner@embroideryonly.example"));
+  m3 = await makeUser(em("owner@firstpick.example"));
+  l1 = await makeUser(em("owner@fastship.example"));
+  l2 = await makeUser(em("owner@othership.example"));
 
   // Alice orders a tee with her own uploaded artwork + text.
   const { project } = await createProject(alice, { modelId: "tee-classic-crew", audience: "men" });
@@ -68,22 +72,22 @@ beforeAll(async () => {
 
 describe("onboarding & approval", () => {
   it("applies, blocks pending/rejected partners and approves", async () => {
-    await expect(P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: "owner@stitchworks.example", gstin: "bad", capabilities: allCaps })).rejects.toThrow();
-    await expect(P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: "owner@stitchworks.example", gstin: "27AAPFU0939F1ZX", capabilities: allCaps })).rejects.toThrow(/check character/);
-    const a = await P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: "owner@stitchworks.example", gstin: "27AAPFU0939F1ZV", city: "Tiruppur", state: "Tamil Nadu", capabilities: allCaps });
+    await expect(P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: em("owner@stitchworks.example"), gstin: "bad", capabilities: allCaps })).rejects.toThrow();
+    await expect(P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: em("owner@stitchworks.example"), gstin: "27AAPFU0939F1ZX", capabilities: allCaps })).rejects.toThrow(/check character/);
+    const a = await P.applyAsPartner(m1, { type: "manufacturer", name: "StitchWorks", contactEmail: em("owner@stitchworks.example"), gstin: "27AAPFU0939F1ZV", city: "Tiruppur", state: "Tamil Nadu", capabilities: allCaps });
     expect(a.status).toBe("pending");
     await expect(P.applyAsPartner(m1, { type: "logistics", name: "Dup", contactEmail: "x@y.example", capabilities: { couriers: ["Delhivery"] } })).rejects.toMatchObject({ code: "already_partner" });
     await expect(P.listMyJobs(m1)).rejects.toMatchObject({ code: "partner_pending" });
     orgs.m1 = a.id;
-    orgs.m2 = (await P.applyAsPartner(m2, { type: "manufacturer", name: "EmbroideryOnly", contactEmail: "owner@embroideryonly.example", capabilities: { ...allCaps, methods: ["embroidery"], garmentTypes: ["shirt"] } })).id;
-    orgs.m3 = (await P.applyAsPartner(m3, { type: "manufacturer", name: "FirstPick", contactEmail: "owner@firstpick.example", capabilities: allCaps })).id;
-    orgs.l1 = (await P.applyAsPartner(l1, { type: "logistics", name: "FastShip", contactEmail: "owner@fastship.example", city: "Pune", capabilities: { couriers: ["Delhivery", "Blue Dart"], cod: true } })).id;
-    orgs.l2 = (await P.applyAsPartner(l2, { type: "logistics", name: "OtherShip", contactEmail: "owner@othership.example", capabilities: { couriers: ["Ecom Express"] } })).id;
+    orgs.m2 = (await P.applyAsPartner(m2, { type: "manufacturer", name: "EmbroideryOnly", contactEmail: em("owner@embroideryonly.example"), capabilities: { ...allCaps, methods: ["embroidery"], garmentTypes: ["shirt"] } })).id;
+    orgs.m3 = (await P.applyAsPartner(m3, { type: "manufacturer", name: "FirstPick", contactEmail: em("owner@firstpick.example"), capabilities: allCaps })).id;
+    orgs.l1 = (await P.applyAsPartner(l1, { type: "logistics", name: "FastShip", contactEmail: em("owner@fastship.example"), city: "Pune", capabilities: { couriers: ["Delhivery", "Blue Dart"], cod: true } })).id;
+    orgs.l2 = (await P.applyAsPartner(l2, { type: "logistics", name: "OtherShip", contactEmail: em("owner@othership.example"), capabilities: { couriers: ["Ecom Express"] } })).id;
     for (const id of Object.values(orgs)) await P.reviewOrganization(admin, id, "approve");
     expect((await P.listOrganizations({ status: "approved" })).length).toBe(5);
-    await P.addMember(m1, "floor@stitchworks.example");
-    expect((await P.listMembers(m1b)).map((m) => m.email).sort()).toEqual(["floor@stitchworks.example", "owner@stitchworks.example"]);
-    await expect(P.addMember(m1b, "outsider@example.com")).rejects.toMatchObject({ status: 403 });
+    await P.addMember(m1, em("floor@stitchworks.example"));
+    expect((await P.listMembers(m1b)).map((m) => m.email).sort()).toEqual([em("floor@stitchworks.example"), em("owner@stitchworks.example")]);
+    await expect(P.addMember(m1b, em("outsider@example.com"))).rejects.toMatchObject({ status: 403 });
     const db = await getDb();
     expect((await db.select().from(s.auditLogs).where(eq(s.auditLogs.action, "partner.approve"))).length).toBe(5);
     // Notifications: applicant confirmation + approval to the organisation, application alert to admins only.
@@ -125,7 +129,7 @@ describe("manufacturing workflow & isolation", () => {
 
     const view = await P.getMyJob(m1b, jobId);
     const json = JSON.stringify(view);
-    for (const secret of ["Secret Lane", "9876500001", "alice@example.com", "Alice Private", "unitPrice", "unitTotal"]) expect(json).not.toContain(secret);
+    for (const secret of ["Secret Lane", "9876500001", em("alice@example.com"), "Alice Private", "unitPrice", "unitTotal"]) expect(json).not.toContain(secret);
     expect(view.items[0].quantity).toBe(3);
     expect(view.items[0].spec.placements.length).toBe(2);
 

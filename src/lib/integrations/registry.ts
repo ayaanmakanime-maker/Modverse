@@ -35,7 +35,7 @@ export interface IntegrationDef {
 export const INTEGRATIONS: IntegrationDef[] = [
   {
     id: "ollama", category: "ai", name: "Ollama (local LLM)", envPrefix: "OLLAMA",
-    description: "Optional local language model for The Muse conversational editing. Output is validated as structured design operations.",
+    description: "Optional local language model for AI Muse conversational editing. Output is validated as structured design operations.",
     docsUrl: "https://github.com/ollama/ollama/blob/main/docs/api.md", billable: false, testable: true,
     fields: [
       { key: "baseUrl", label: "Base URL", secret: false, required: true, placeholder: "http://127.0.0.1:11434", pattern: "^https?://" },
@@ -45,7 +45,7 @@ export const INTEGRATIONS: IntegrationDef[] = [
   },
   {
     id: "openai", category: "ai", name: "OpenAI API", envPrefix: "OPENAI",
-    description: "Optional hosted language and image models for The Muse and artwork generation. Billable — test with low limits first.",
+    description: "Optional hosted language and image models for AI Muse and artwork generation. Billable — test with low limits first.",
     docsUrl: "https://platform.openai.com/docs/api-reference", billable: true, testable: true,
     fields: [
       { key: "apiKey", label: "API key", secret: true, required: true, placeholder: "sk-…", pattern: "^sk-" },
@@ -56,7 +56,7 @@ export const INTEGRATIONS: IntegrationDef[] = [
   },
   {
     id: "gemini", category: "ai", name: "Google Gemini API", envPrefix: "GEMINI",
-    description: "Optional hosted Gemini models as The Muse's Fashion Director (structured JSON design proposals). Free and paid tiers exist — check quotas, pricing and data-use terms before enabling. Gemini Nano (on-device, Chrome built-in AI) needs no key and is offered separately in the editor where the browser supports it.",
+    description: "Optional hosted Gemini models as AI Muse's Fashion Director (structured JSON design proposals). Free and paid tiers exist — check quotas, pricing and data-use terms before enabling. Gemini Nano (on-device, Chrome built-in AI) needs no key and is offered separately in the editor where the browser supports it.",
     docsUrl: "https://ai.google.dev/gemini-api/docs", billable: true, testable: true,
     fields: [
       { key: "apiKey", label: "API key", secret: true, required: true, placeholder: "AIza…", pattern: "^AIza" },

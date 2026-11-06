@@ -33,7 +33,7 @@ export interface DrapeProfile {
   method: "procedural-approximation";
 }
 
-const WEAVE_BEHAVIOUR: Record<WeaveTexture, { stiffness: number; wavelength: number; crease: number; sharp: number }> = {
+export const WEAVE_BEHAVIOUR: Record<WeaveTexture, { stiffness: number; wavelength: number; crease: number; sharp: number }> = {
   jersey: { stiffness: 0.25, wavelength: 8, crease: 0.2, sharp: 0.12 },
   slub: { stiffness: 0.28, wavelength: 8, crease: 0.3, sharp: 0.15 },
   interlock: { stiffness: 0.3, wavelength: 8.5, crease: 0.15, sharp: 0.1 },
@@ -53,7 +53,7 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
 export function drapeProfile(config: DesignConfig, m: GarmentMeasurements = computeMeasurements(config)): DrapeProfile {
   const fabric = getFabric(config.fabric.id);
-  const w = WEAVE_BEHAVIOUR[fabric.weave];
+  const w = { ...WEAVE_BEHAVIOUR[fabric.weave], ...fabric.drape };
   const gsmFactor = Math.sqrt(clamp(config.fabric.gsm / fabric.defaultGsm, 0.6, 1.8));
   const stiffness = clamp(w.stiffness * gsmFactor, 0.05, 0.95);
   const body = bodyForSize(config.audience, config.size);

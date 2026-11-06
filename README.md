@@ -4,7 +4,7 @@
 
 **AI-powered personalised fashion design and commerce platform — YOUR WORLD. YOUR STYLE.**
 
-ModVerse lets customers design the *garment itself* — silhouette, construction, proportions, fabric, every panel, typography and artwork — guided by **The Muse** (an AI Fashion Director whose proposals are compiled, validated and applied as one undoable step), previewed in realistic parametric **3D**, tried on with a **live camera**, checked by a **manufacturing rules engine**, priced from real manufacturing cost drivers, ordered through a full commerce flow and fulfilled by approved **manufacturer and logistics partners**. Initial market: India. Initial catalogue: Men's, Women's and Kids' T-shirts (15 models) and shirts (17 models).
+ModVerse lets customers design the *garment itself* — silhouette, construction, proportions, fabric, every panel, typography and artwork — guided by **AI Muse** (an AI Fashion Director whose proposals are compiled, validated and applied as one undoable step), previewed in realistic parametric **3D**, tried on with a **live camera**, checked by a **manufacturing rules engine**, priced from real manufacturing cost drivers, ordered through a full commerce flow and fulfilled by approved **manufacturer and logistics partners**. Initial market: India. Initial catalogue: Men's, Women's and Kids' T-shirts (15 models) and shirts (17 models).
 
 Everything runs **locally with no paid services or credentials**. External providers (OpenAI, Ollama, ComfyUI, Razorpay, Shiprocket, Resend, Google sign-in, …) are prepared behind an admin **Integration Manager** and stay inactive until tested and enabled.
 
@@ -31,12 +31,12 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | Garment engine | Fit, proportions, neckline/collar, placket, sleeves/cuffs, hem, pockets, yoke, pleats, darts, buttons, stitching, monogram, 11 independent panels. |
 | Typography | 34 OFL fonts (incl. Devanagari, Tamil, Bengali), curved/circular/vertical text, outline, shadow, background, skew; identical in 2D, 3D and print. |
 | Creative Library | The supplied v0.1 library (1,000 assets, 20 collections) **plus the ModVerse Studio Library** — ~970 original assets in 24 collections (festive & desi, mandala/rangoli, wildlife, pets, kids, sports, music, gaming, food, travel, wellness, botanical, surf, retro, celestial, streetwear, celebration, campus, eco, abstract, line art, stickers, badges, seamless patterns). Every graphic is recolourable (≤5 colours) and one-tap palette-swappable; place on any 2D/3D surface. |
-| The Muse | Local deterministic text-to-design + conversational editing that applies validated operations; optional Ollama/OpenAI. |
+| AI Muse | Local deterministic text-to-design + conversational editing that applies validated operations; optional Ollama/OpenAI. |
 | 3D | React Three Fiber parametric garments (lofted sleeves, collars, plackets, buttons, pockets, cuffs), fabric relief, avatar. |
 | Trial room | MediaPipe on-device pose tracking — Level A (2D), B (3D on landmarks), C (experimental occlusion). |
 | Manufacturing | Validation engine with fixes, tech pack PDF/JSON, BOM, measurement sheet, print-ready SVG / 300 DPI PNG, CAD exchange JSON. |
 | Commerce | Cart, checkout, order snapshots, simulated payments (labelled) or Razorpay test mode with signature verification, order tracking. |
-| Accounts | Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements, avatars, guardian-managed child profiles. |
+| Accounts | **Guest mode** (one-click account with every signed-in feature, savable later), Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements, avatars, guardian-managed child profiles. |
 | Admin | Analytics, orders + production approval, design reviews, production board, shipping, disputes, partner approval, pricing & discounts, users/roles, catalogue, library, Integration Manager, audit log, settings. |
 | **V2: AI pipeline** | Fashion Director (local rules, or Ollama / Gemini / OpenAI / on-device Gemini Nano when enabled) → artwork resolution → design compiler (validated, previewed, priced) → applied as one undoable transaction. |
 | **V2: fit & try-on** | Live trial room that doubles as a **fit check** — every size compared zone by zone with your measurements against the garment's design intent, best size, and a fit map on your live image; fit analysis keeps *estimated*, *simulated* and customer-*verified* fit separate. |

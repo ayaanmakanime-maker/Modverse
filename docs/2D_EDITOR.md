@@ -16,7 +16,28 @@
 * **State:** `useEditor` (Zustand). `commit()` creates an undo step; `checkpoint()` + `transient()` make a drag one undo step. All changes re-validate against the Zod schema and compatibility rules.
 
 ## Panels (by mode)
-Start (Studio guided steps + presets) · Garment · Construction · Proportions · Colour & fabric · Panels · Library · Text · Upload & AI · Layers · The Muse · Fit & avatar · Check & order · Versions · Tech pack.
+Start (Studio guided steps + presets) · Garment · Construction · Proportions · Colour & fabric · **Fabric Lab** (Atelier Pro) · Panels · Library · Text · Upload & AI · Layers · AI Muse · Fit & avatar · Check & order · History & versions · Tech pack.
+
+## Atelier Pro editing suite (design schema v3)
+Everything below is **non-destructive**: settings are stored on the layer in the shared `DesignConfig` and rendered by the same composer (`src/lib/render/compose.ts` → `src/lib/render/layer-fx-svg.ts`), so the 2D canvas, the 3D textures and the print files show the same result. Each gesture is one undo step. Code: `src/lib/garment/layer-fx.ts` (schema), `src/components/editor/pro-tools.tsx` (tools), `pro-panels.tsx` (panels), `src/lib/editor/selection.ts`, `raster-select.ts`.
+
+| Area | Implemented | Notes |
+|---|---|---|
+| Layers & compositing | Named **folders** (visibility, lock, opacity, collapse, rename), groups, ordering, visibility, locking, opacity, 16 **blend modes**, **layer masks**, **clipping masks** | Blending with the *fabric* colour is a preview: printed inks don't mix with the garment (validation note `BLEND_PREVIEW`). Folder opacity multiplies each member layer's opacity. |
+| Selection | Rectangular & elliptical marquee, lasso, polygonal lasso, **magic wand** (tolerance, contiguous), **colour range**, **AI object selection** (MediaPipe MagicTouch, on-device) | Pixel selections are traced to vector paths (marching squares + simplification). Actions: keep only, erase, reveal, to new layer, crop, invert, deselect; Shift adds, Alt subtracts; feather. |
+| Adjustments | Exposure, brightness, contrast, hue, saturation, vibrance, **levels**, **curves** (RGB + per channel), **colour balance** (shadows/midtones/highlights), **colour grading** (split toning) | Vibrance is approximated (gentler saturation); balance/grading use per-channel tonal ranges. |
+| Drawing | Brush (round, marker, airbrush, calligraphy nib, chalk), **pencil**, **eraser**, pressure-sensitive strokes, **saved custom brushes**, retouch brushes: **blur, sharpen, smudge, clone stamp, healing** | Strokes are vectors (sharp at any print size). Eraser erases earlier strokes on drawing layers and paints the mask on other layers. Smudge and healing are approximations of their pixel-editor counterparts. |
+| Typography | Editable text, custom fonts, curved/circular/vertical text, spacing, alignment, **gradient fills**, outlines, shadows, layered effects, **distortion** (warp presets apply to text) | Gradients are flagged for screen print (halftones) and embroidery (not possible). |
+| Transformations | Crop, crop to selection, resize, rotate, flip, **perspective (corner pin)**, **warp presets** (arc, arch, bulge, flag, wave, fish, rise, squeeze, inflate, twist), **5×5 mesh**, **align / distribute** | Warps render as a fine piecewise-affine mesh; on-canvas handles for perspective and mesh. |
+| Filters | Blur, sharpen (unsharp), grain, **halftone** (dot/line, screen angle), distortion (wave, ripple, glitch, roughen), texture (distressed, vintage, canvas, crackle), posterise, threshold, duotone, **outline (sticker)**, emboss/puff, invert | Up to 8 per layer, reorderable, toggleable. |
+| History & saving | Undo/redo, **editable history panel** (jump to any step, redo greyed steps), shortcuts (V M L W A B N E R U S J, `[` `]`, ⌘D, ⌘⇧I), zoom & pan, local draft autosave, **account autosave** 45 s after the last change for saved designs (Atelier modes) | Fixed: undo after a slider drag now returns to the state before the drag. |
+
+## Garment-aware editing
+* Zones: front, back, sleeves, collar, cuffs, pocket, yoke; panels carry their own colour, fabric and pattern.
+* **Apply to other regions:** copy artwork to several regions at once, keeping size, colours, rotation and typography (only shrunk when a region is smaller; mirrored across sleeves) — `src/lib/garment/regions.ts`.
+* **Print boundary** (dashed) and **production-safe area** (dotted, 1 cm inside) in 2D, optionally drawn on the 3D garment; `NEAR_PRINT_EDGE` note and existing out-of-area errors with one-click fixes.
+* **Production preview:** embroidery thread, screen ink, DTG, DTF film and sublimation appearance in 2D and 3D (visual approximation; never in print files).
+* Artwork positions are stored in centimetres per zone, so they stay exactly in place when size, fit, fabric or the avatar change (unit-tested).
 
 ## Layers & compositions
 Visibility, lock, reorder, group/ungroup, multi-select, save selection as a reusable **composition** (stored per user), insert compositions from the Library panel.

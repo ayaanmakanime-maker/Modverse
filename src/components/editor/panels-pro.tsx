@@ -377,7 +377,7 @@ export function MusePanel() {
   const selectedId = useEditor((s) => s.selectedId);
   const applyOps = useEditor((s) => s.applyOps);
   const undo = useEditor((s) => s.undo);
-  const [msgs, setMsgs] = useState<ChatMsg[]>([{ role: "muse", text: "I'm The Muse — describe a garment or a change in plain words. I'll propose a structured design change, show you exactly what will change (and the price impact), and apply it as one undoable step. Ask me for colours, fabrics, fonts, critique or fit.", source: "local-rules" }]);
+  const [msgs, setMsgs] = useState<ChatMsg[]>([{ role: "muse", text: "I'm AI Muse — describe a garment or a change in plain words. I'll propose a structured design change, show you exactly what will change (and the price impact), and apply it as one undoable step. Ask me for colours, fabrics, fonts, critique or fit.", source: "local-rules" }]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState({ preview: true, onDevice: false });
@@ -400,7 +400,7 @@ export function MusePanel() {
     void end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [msgs]);
   function applyTransaction(index: number, t: MuseTransaction, label: string) {
-    const res = applyOps(t.ops, t.assets, `The Muse: ${label.slice(0, 48)}`);
+    const res = applyOps(t.ops, t.assets, `AI Muse: ${label.slice(0, 48)}`);
     const unsupported = res.rejected.map((x) => `Couldn't apply: ${x.reason}`);
     setMsgs((all) => all.map((m, i) => (i === index ? { ...m, state: "applied", unsupported: [...(m.unsupported ?? []), ...unsupported] } : m)));
   }
@@ -443,7 +443,7 @@ export function MusePanel() {
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 mv-scroll" aria-live="polite">
         {msgs.map((m, i) => (
           <div key={i} className={clsx("rounded-2xl px-3 py-2 text-xs", m.role === "user" ? "ml-6 bg-surface-3" : "mr-2 border border-line bg-ink-2")}>
-            {m.role === "muse" && <p className="mb-1 flex items-center gap-1 text-[0.6rem] uppercase tracking-wider text-champagne"><Sparkles className="size-3" /> The Muse {m.source && <Badge tone={m.source === "local-rules" ? "neutral" : "accent"} className="!text-[0.55rem]">{m.source === "local-rules" ? "local rules" : (m.providerLabel ?? m.source)}</Badge>}</p>}
+            {m.role === "muse" && <p className="mb-1 flex items-center gap-1 text-[0.6rem] uppercase tracking-wider text-champagne"><Sparkles className="size-3" /> AI Muse {m.source && <Badge tone={m.source === "local-rules" ? "neutral" : "accent"} className="!text-[0.55rem]">{m.source === "local-rules" ? "local rules" : (m.providerLabel ?? m.source)}</Badge>}</p>}
             <p className="whitespace-pre-wrap text-bone-2">{m.text}</p>
             {m.fallbackReason && <p className="mt-1 text-[0.62rem] text-warn">{m.fallbackReason}</p>}
             {m.understood && m.understood.length > 0 && <ul className="mt-1.5 space-y-0.5">{m.understood.map((u) => <li key={u} className="flex gap-1 text-ok"><CheckCircle2 className="mt-0.5 size-3 shrink-0" />{u}</li>)}</ul>}
@@ -474,7 +474,7 @@ export function MusePanel() {
         </label>
       </div>
       <form className="mt-1 flex gap-1.5" onSubmit={(e) => { e.preventDefault(); send(input); }}>
-        <input className="mv-input !py-2 !text-xs" placeholder="Describe a design or change…" value={input} onChange={(e) => setInput(e.target.value)} aria-label="Message The Muse" data-testid="muse-input" />
+        <input className="mv-input !py-2 !text-xs" placeholder="Describe a design or change…" value={input} onChange={(e) => setInput(e.target.value)} aria-label="Message AI Muse" data-testid="muse-input" />
         <button type="submit" className="mv-btn mv-btn-primary !px-3" disabled={busy || !input.trim()} aria-label="Send"><Send className="size-3.5" /></button>
       </form>
     </div>

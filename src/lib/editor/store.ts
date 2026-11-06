@@ -4,9 +4,17 @@ import { applyOperations, type DesignOp, type ResolvedAsset } from "../garment/o
 import { duplicateLayer, newLayerId, normalizeDesign } from "../garment/design";
 import { designConfigSchema, type DesignConfig, type Layer } from "../garment/schema";
 import type { Zone } from "../garment/types";
+import type { BrushTool, MaskShape } from "../garment/layer-fx";
 
 export type EditorMode = "studio" | "atelier" | "pro";
 export type CanvasView = "2d" | "3d" | "split";
+
+/** Atelier Pro canvas tools. */
+export type ProTool = "move" | "marquee" | "ellipse" | "lasso" | "polygon" | "wand" | "range" | "ai" | "brush" | "pencil" | "eraser" | "blur" | "sharpen" | "smudge" | "clone" | "heal";
+export interface BrushSettings { kind: Exclude<BrushTool, "eraser" | "pencil">; size: number; hardness: number; opacity: number; color: string; angle: number }
+export interface ToolOptions { tolerance: number; contiguous: boolean; selMode: "new" | "add" | "subtract"; feather: number; retouchSize: number; strength: number; rangeColor: string }
+/** A pending selection on one layer, in its normalised content space. */
+export interface Selection { layerId: string; shapes: MaskShape[] }
 
 export interface EditorState {
   projectId: string | null;
@@ -23,7 +31,33 @@ export interface EditorState {
   zone: Zone;
   view: CanvasView;
   lastChange: string;
+  tool: ProTool;
+  brush: BrushSettings;
+  toolOpts: ToolOptions;
+  selection: Selection | null;
+  cloneSource: { layerId: string; u: number; v: number } | null;
+  warpEdit: boolean;
+  /** Show decoration methods as they will look (thread, ink, film) in 2D and 3D. */
+  production: boolean;
+  /** Draw print boundaries and safe areas on the 3D garment. */
+  guides3d: boolean;
 
+  setTool(t: ProTool): void;
+  setProduction(on: boolean): void;
+  setGuides3d(on: boolean): void;
+  setBrush(p: Partial<BrushSettings>): void;
+  setToolOpts(p: Partial<ToolOptions>): void;
+  setSelection(s: Selection | null): void;
+  setCloneSource(c: { layerId: string; u: number; v: number } | null): void;
+  setWarpEdit(on: boolean): void;
+  /** Jump through the edit history: negative = undo n steps, positive = redo n steps (one action). */
+  jumpHistory(steps: number): void;
+  /** End a drag/typing gesture that started with checkpoint(). */
+  endGesture(): void;
+  /** @internal state before the first un-checkpointed transient change (slider drags). */
+  gestureBase: DesignConfig | null;
+  /** @internal a gesture opened by checkpoint() is in progress. */
+  gestureOpen: boolean;
   init(p: { projectId: string | null; name: string; mode: EditorMode; version: number; config: DesignConfig; savedAt?: string | null }): void;
   setMode(m: EditorMode): void;
   setName(n: string): void;
@@ -75,11 +109,55 @@ export const useEditor = create<EditorState>((set, get) => ({
   zone: "front",
   view: "split",
   lastChange: "",
+  tool: "move",
+  brush: { kind: "brush", size: 0.6, hardness: 0.85, opacity: 1, color: "#111111", angle: 45 },
+  toolOpts: { tolerance: 32, contiguous: true, selMode: "new", feather: 0, retouchSize: 1.2, strength: 0.6, rangeColor: "#111111" },
+  selection: null,
+  cloneSource: null,
+  warpEdit: false,
+  production: false,
+  guides3d: false,
+  gestureBase: null,
+  gestureOpen: false,
 
-  init: (p) => set({ projectId: p.projectId, name: p.name, mode: p.mode, version: p.version, config: p.config, savedAt: p.savedAt ?? null, past: [], future: [], selectedId: null, multi: [], dirty: false, zone: "front" }),
+  setTool: (tool) => set({ tool }),
+  setProduction: (production) => set({ production }),
+  setGuides3d: (guides3d) => set({ guides3d }),
+  endGesture: () => set({ gestureBase: null, gestureOpen: false }),
+  setBrush: (p) => set({ brush: { ...get().brush, ...p } }),
+  setToolOpts: (p) => set({ toolOpts: { ...get().toolOpts, ...p } }),
+  setSelection: (selection) => set({ selection }),
+  setCloneSource: (cloneSource) => set({ cloneSource }),
+  setWarpEdit: (warpEdit) => set({ warpEdit }),
+  jumpHistory: (steps) => {
+    let { past, future, config } = get();
+    let label = "";
+    for (let i = 0; i < Math.abs(steps); i++) {
+      if (steps < 0) {
+        const prev = past[past.length - 1];
+        if (!prev) break;
+        future = [{ config, label: prev.label }, ...future];
+        past = past.slice(0, -1);
+        config = prev.config;
+        label = `Back to before "${prev.label}"`;
+      } else {
+        const next = future[0];
+        if (!next) break;
+        past = [...past, { config, label: next.label }];
+        future = future.slice(1);
+        config = next.config;
+        label = `Forward to "${next.label}"`;
+      }
+    }
+    if (label) set({ config, past, future, dirty: true, lastChange: label, gestureBase: null, gestureOpen: false });
+  },
+
+  init: (p) => set({ projectId: p.projectId, name: p.name, mode: p.mode, version: p.version, config: p.config, savedAt: p.savedAt ?? null, past: [], future: [], selectedId: null, multi: [], dirty: false, zone: "front", selection: null, cloneSource: null, warpEdit: false, gestureBase: null, gestureOpen: false }),
   setMode: (mode) => set({ mode }),
   setName: (name) => set({ name, dirty: true }),
-  setZone: (zone) => set({ zone, selectedId: null, multi: [] }),
+  setZone: (zone) => {
+    if (get().zone !== zone) set({ zone, selectedId: null, multi: [], selection: null, warpEdit: false });
+  },
   setView: (view) => set({ view }),
 
   commit: (label, fn) => {
@@ -88,7 +166,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     fn(draft);
     try {
       const { config: next, corrections } = finalize(draft);
-      set({ config: next, past: [...past.slice(-HISTORY), { config, label }], future: [], dirty: true, lastChange: label });
+      set({ config: next, past: [...past.slice(-HISTORY), { config, label }], future: [], dirty: true, lastChange: label, gestureBase: null, gestureOpen: false });
       return corrections;
     } catch (e) {
       console.warn("[editor] rejected change", label, e);
@@ -96,14 +174,17 @@ export const useEditor = create<EditorState>((set, get) => ({
     }
   },
   checkpoint: (label) => {
-    const { config, past } = get();
-    set({ past: [...past.slice(-HISTORY), { config, label }], future: [], dirty: true, lastChange: label });
+    // Called either BEFORE a gesture (drags, typing) or AFTER live changes (sliders):
+    // after live changes, the state from before them is what undo must return to.
+    const { config, past, gestureBase } = get();
+    set({ past: [...past.slice(-HISTORY), { config: gestureBase ?? config, label }], future: [], dirty: true, lastChange: label, gestureBase: null, gestureOpen: !gestureBase });
   },
   transient: (fn) => {
-    const draft = structuredClone(get().config);
+    const { config, gestureBase, gestureOpen } = get();
+    const draft = structuredClone(config);
     fn(draft);
     const parsed = designConfigSchema.safeParse(draft);
-    if (parsed.success) set({ config: parsed.data, dirty: true });
+    if (parsed.success) set({ config: parsed.data, dirty: true, ...(!gestureOpen && !gestureBase ? { gestureBase: config } : {}) });
   },
   applyOps: (ops, assets = {}, label = "Assistant change") => {
     const { config, past, selectedId } = get();
@@ -111,7 +192,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     if (r.applied.length) {
       const touched = r.touchedLayerIds[r.touchedLayerIds.length - 1];
       const zone = touched ? r.config.layers.find((l) => l.id === touched)?.zone : undefined;
-      set({ config: r.config, past: [...past.slice(-HISTORY), { config, label }], future: [], dirty: true, lastChange: label, ...(touched ? { selectedId: touched } : {}), ...(zone ? { zone } : {}) });
+      set({ config: r.config, past: [...past.slice(-HISTORY), { config, label }], future: [], dirty: true, lastChange: label, gestureBase: null, gestureOpen: false, ...(touched ? { selectedId: touched } : {}), ...(zone ? { zone } : {}) });
     }
     return r;
   },
@@ -119,13 +200,13 @@ export const useEditor = create<EditorState>((set, get) => ({
     const { past, future, config } = get();
     const prev = past[past.length - 1];
     if (!prev) return;
-    set({ config: prev.config, past: past.slice(0, -1), future: [{ config, label: prev.label }, ...future], dirty: true, lastChange: `Undo ${prev.label}` });
+    set({ config: prev.config, past: past.slice(0, -1), future: [{ config, label: prev.label }, ...future], dirty: true, lastChange: `Undo ${prev.label}`, gestureBase: null, gestureOpen: false });
   },
   redo: () => {
     const { past, future, config } = get();
     const next = future[0];
     if (!next) return;
-    set({ config: next.config, future: future.slice(1), past: [...past, { config, label: next.label }], dirty: true, lastChange: `Redo ${next.label}` });
+    set({ config: next.config, future: future.slice(1), past: [...past, { config, label: next.label }], dirty: true, lastChange: `Redo ${next.label}`, gestureBase: null, gestureOpen: false });
   },
   select: (id, additive) => {
     if (!id) return set({ selectedId: null, multi: [] });
@@ -169,7 +250,13 @@ export const useEditor = create<EditorState>((set, get) => ({
       }
       return c;
     });
-    get().commit("Duplicate", (d) => void d.layers.push(...copies));
+    get().commit("Duplicate", (d) => {
+      d.layers.push(...copies);
+      for (const [from, to] of groupMap) {
+        const f = d.folders?.find((x) => x.id === from);
+        if (f) d.folders = [...d.folders, { ...f, id: to, name: `${f.name} copy`.slice(0, 80) }].slice(-30);
+      }
+    });
     set({ selectedId: copies[copies.length - 1]?.id ?? null, multi: copies.map((c) => c.id) });
   },
   reorder: (id, dir) =>
@@ -186,11 +273,20 @@ export const useEditor = create<EditorState>((set, get) => ({
     const gid = newLayerId("grp");
     get().commit("Group layers", (d) => {
       for (const l of d.layers) if (multi.includes(l.id)) l.groupId = gid;
+      // Keep folder members together in the stacking order (at the topmost member).
+      const members = d.layers.filter((l) => l.groupId === gid);
+      const top = Math.max(...members.map((m) => d.layers.indexOf(m)));
+      const rest = d.layers.filter((l) => l.groupId !== gid);
+      const insertAt = rest.indexOf(d.layers.slice(top + 1).find((l) => l.groupId !== gid) as Layer) ;
+      rest.splice(insertAt < 0 ? rest.length : insertAt, 0, ...members);
+      d.layers = rest;
+      d.folders = [...(d.folders ?? []), { id: gid, name: `Folder ${(d.folders?.length ?? 0) + 1}`, collapsed: false, visible: true, locked: false, opacity: 1 }].slice(-30);
     });
   },
   ungroup: (groupId) =>
     void get().commit("Ungroup", (d) => {
       for (const l of d.layers) if (l.groupId === groupId) l.groupId = null;
+      d.folders = (d.folders ?? []).filter((f) => f.id !== groupId);
     }),
   setMeasured: (id, width, height) => {
     const { config } = get();
@@ -205,7 +301,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   markSaved: (p) => set({ projectId: p.projectId, version: p.version, savedAt: p.savedAt, dirty: false, ...(p.name ? { name: p.name } : {}) }),
   replaceConfig: (config, label) => {
     const { config: cur, past } = get();
-    set({ config, past: [...past.slice(-HISTORY), { config: cur, label }], future: [], dirty: true, selectedId: null, multi: [], lastChange: label });
+    set({ config, past: [...past.slice(-HISTORY), { config: cur, label }], future: [], dirty: true, selectedId: null, multi: [], lastChange: label, gestureBase: null, gestureOpen: false });
   },
 }));
 

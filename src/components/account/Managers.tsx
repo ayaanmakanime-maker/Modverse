@@ -1,4 +1,5 @@
 "use client";
+import { BodyScanner } from "@/components/tryon/BodyScanner";
 import dynamic from "next/dynamic";
 import { ThemePicker } from "@/components/theme";
 import { useRouter } from "next/navigation";
@@ -50,8 +51,14 @@ export function MeasurementsManager() {
       setBusy(false);
     }
   }
+  const [scan, setScan] = useState<"men" | "women" | "kids" | null>(null);
   return (
     <div className="space-y-4" data-testid="measurements">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-bone-2">Measure with your camera (front, side, back — on this device):</span>
+        {(["men", "women"] as const).map((a) => <Button key={a} size="sm" variant="ghost" onClick={() => setScan(a)} data-testid={`scan-open-${a}`}>Scan · {a === "men" ? "Atlas fit" : "Aura fit"}</Button>)}
+      </div>
+      {scan && <BodyScanner audience={scan} signedIn onClose={() => { setScan(null); reload(); }} />}
       <div className="flex items-center justify-between"><h1 className="mv-display text-3xl">Measurements</h1><Button size="sm" onClick={() => setEdit({ audience: "men", measurements: {}, fitPreference: "true" })} data-testid="add-measurements">Add profile</Button></div>
       <Notice tone="info">Measure your body (not a garment) in centimetres. ModVerse compares your measurements with real garment dimensions to recommend sizes — always labelled as an estimate. Values you entered are shown plainly; camera estimates from the trial room are marked with their ± tolerance. Editing a value makes it yours.</Notice>
       {!items ? <Spinner /> : items.length === 0 ? <EmptyState title="No measurement profiles" /> : items.map((p) => {
@@ -100,7 +107,7 @@ export function AvatarsManager() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between"><h1 className="mv-display text-3xl">Avatars</h1><Button size="sm" onClick={() => setEdit({ appearance: { skinTone: SKIN_TONES[3], build: "average", height: 172, hair: "short", pose: "a-pose", bodyType: "masculine" } })}>New avatar</Button></div>
-      <Notice tone="info">Avatars are parametric visual representations for previewing garments — not exact physical scans of your body.</Notice>
+      <Notice tone="info">Your avatar uses the ModVerse flagship models — Atlas, Aura or Nova — reshaped from your measurement profile. It is a rigged, parametric 3D body for previewing garments, not an exact scan of your body.</Notice>
       {!items ? <Spinner /> : items.length === 0 ? <EmptyState title="No avatars yet" /> : items.map((a) => (
         <div key={a.id} className="mv-card flex items-center justify-between p-4">
           <span className="flex items-center gap-3"><span className="size-8 rounded-full" style={{ background: a.appearance.skinTone }} /><span><span className="block">{a.name}</span><span className="text-xs text-mute">{a.appearance.bodyType} · {a.appearance.build} · {a.appearance.height} cm</span></span></span>
@@ -113,7 +120,7 @@ export function AvatarsManager() {
             <div className="space-y-3">
               <Field label="Name">{(id) => <Input id={id} value={edit.name ?? ""} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />}</Field>
               <Field label="Measurement profile">{(id) => <Select id={id} value={edit.measurementProfileId ?? ""} onChange={(e) => setEdit({ ...edit, measurementProfileId: e.target.value || null })}><option value="">Use size chart</option>{(profiles ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select>}</Field>
-              <Segmented label="Body type" value={edit.appearance.bodyType} onChange={(v) => setEdit({ ...edit, appearance: { ...edit.appearance!, bodyType: v } })} options={[{ value: "masculine", label: "Masculine" }, { value: "feminine", label: "Feminine" }, { value: "child", label: "Child" }]} />
+              <Segmented label="Body type" value={edit.appearance.bodyType} onChange={(v) => setEdit({ ...edit, appearance: { ...edit.appearance!, bodyType: v } })} options={[{ value: "masculine", label: "Atlas (male)" }, { value: "feminine", label: "Aura (female)" }, { value: "child", label: "Nova (kids)" }]} />
               <Segmented label="Build" value={edit.appearance.build} onChange={(v) => setEdit({ ...edit, appearance: { ...edit.appearance!, build: v } })} options={(["slim", "average", "athletic", "broad", "curvy"] as const).map((b) => ({ value: b, label: b }))} />
               <ColorPicker label="Skin tone" swatches={SKIN_TONES} value={edit.appearance.skinTone} onChange={(c) => setEdit({ ...edit, appearance: { ...edit.appearance!, skinTone: c } })} />
               <Segmented label="Hair" value={edit.appearance.hair} onChange={(v) => setEdit({ ...edit, appearance: { ...edit.appearance!, hair: v } })} options={(["short", "medium", "long", "bun", "none"] as const).map((b) => ({ value: b, label: b }))} />

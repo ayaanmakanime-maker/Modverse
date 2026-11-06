@@ -36,6 +36,14 @@ export interface Fabric {
   priceDelta: number;
   description: string;
   suggestedColors: string[];
+  /** Fabric Lab: overrides of the weave's 3D look (roughness, sheen, relief …) for this cloth. */
+  look?: Partial<{ roughness: number; roughnessVar: number; sheen: number; sheenRoughness: number; sheenWhite: number; bumpScale: number; normalScale: number; specular: number }>;
+  /** Fabric Lab: overrides of the weave's drape behaviour. */
+  drape?: Partial<{ stiffness: number; wavelength: number; crease: number; sharp: number }>;
+  /** Fabric Lab: scale of the micro weave/knit structure (1 = weave default; >1 coarser yarn). */
+  yarnScale?: number;
+  /** Fabric Lab: strength of yarn-level colour mottling (heather/slub) relative to the weave default. */
+  mottle?: number;
 }
 
 const P = (dtg: Suitability, screen: Suitability, dtf: Suitability, sublimation: Suitability, embroidery: Suitability): Record<PrintMethod, Suitability> => ({ dtg, screen, dtf, sublimation, embroidery });
@@ -47,6 +55,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("good", "good", "good", "no", "good"), shrinkagePct: 5, breathability: "high", season: ["summer", "all"],
     care: "Machine wash cold, inside out. Do not tumble dry hot.", priceDelta: 0, description: "Soft, breathable everyday jersey — ideal for Indian summers.",
     suggestedColors: ["#0B0B0B", "#F5F3EE", "#1F2A44", "#7A1F2B", "#6B7B5E", "#C9B79C"],
+    look: { roughness: 0.9, sheen: 0.38, bumpScale: 0.95 }, yarnScale: 1, mottle: 1.25,
   },
   {
     id: "organic-cotton-jersey", name: "Organic Cotton Jersey", category: "organic-cotton", construction: "knit", composition: "100% organic cotton (certification to be verified per supplier)", polyesterPct: 0,
@@ -61,6 +70,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("good", "good", "good", "no", "good"), shrinkagePct: 4, breathability: "medium", season: ["all", "winter"],
     care: "Machine wash cold. Do not bleach.", priceDelta: 200, description: "Dense, structured jersey for oversized and boxy streetwear silhouettes.",
     suggestedColors: ["#111111", "#E9E4DA", "#4A4A48", "#5B3A29", "#2E3B2F"],
+    look: { roughness: 0.93, sheen: 0.3, bumpScale: 1.35, normalScale: 1.1 }, drape: { stiffness: 0.48, wavelength: 11, crease: 0.12, sharp: 0.1 }, yarnScale: 1.45, mottle: 1.5,
   },
   {
     id: "slub-cotton-jersey", name: "Slub Cotton Jersey", category: "cotton", construction: "knit", composition: "100% slub cotton", polyesterPct: 0,
@@ -75,6 +85,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("good", "limited", "good", "no", "limited"), shrinkagePct: 3, breathability: "medium", season: ["all"],
     care: "Machine wash cold. Do not iron prints.", priceDelta: 120, description: "Recovery-rich stretch jersey for slim and fitted silhouettes.",
     suggestedColors: ["#0D0D0D", "#FFFFFF", "#2C3E50", "#7B7B7B"],
+    look: { roughness: 0.7, sheen: 0.7, sheenRoughness: 0.4, sheenWhite: 0.55, bumpScale: 0.55, specular: 0.5 }, drape: { stiffness: 0.12, wavelength: 6.5, crease: 0.1, sharp: 0.06 }, yarnScale: 0.75, mottle: 0.3,
   },
   {
     id: "polycotton-jersey", name: "Poly-Cotton Jersey", category: "blend", construction: "knit", composition: "65% polyester, 35% cotton", polyesterPct: 65,
@@ -89,6 +100,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("no", "limited", "good", "good", "limited"), shrinkagePct: 1, breathability: "medium", season: ["summer", "monsoon"],
     care: "Machine wash cold. No fabric softener.", priceDelta: 60, description: "Moisture-wicking knit; the only base suited to full sublimation all-over prints.",
     suggestedColors: ["#FFFFFF", "#0F172A", "#1E3A8A", "#F97316"],
+    look: { roughness: 0.55, sheen: 0.55, sheenRoughness: 0.3, sheenWhite: 0.75, bumpScale: 0.45, specular: 0.75 }, drape: { stiffness: 0.2, wavelength: 7, crease: 0.08, sharp: 0.08 }, yarnScale: 0.8, mottle: 0.12,
   },
   {
     id: "cotton-pique", name: "Cotton Piqué", category: "pique", construction: "knit", composition: "100% cotton piqué", polyesterPct: 0,
@@ -110,6 +122,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("limited", "good", "good", "no", "good"), shrinkagePct: 2, breathability: "high", season: ["all", "summer"],
     care: "Machine wash 30°C. Iron while damp.", priceDelta: 0, description: "Crisp, smooth poplin for formal and business shirts.",
     suggestedColors: ["#FFFFFF", "#DCE7F3", "#F4E1E1", "#1F2937", "#E8E1D3"],
+    look: { roughness: 0.68, sheen: 0.1, bumpScale: 0.4, specular: 0.5 }, drape: { stiffness: 0.42, wavelength: 6, crease: 0.32, sharp: 0.62 }, yarnScale: 0.8, mottle: 0.45,
   },
   {
     id: "stretch-poplin", name: "Stretch Poplin", category: "blend", construction: "woven", composition: "97% cotton, 3% elastane", polyesterPct: 0,
@@ -124,6 +137,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("limited", "good", "good", "no", "good"), shrinkagePct: 3, breathability: "high", season: ["all"],
     care: "Machine wash 30°C.", priceDelta: 100, description: "Basketweave oxford — the classic button-down cloth.",
     suggestedColors: ["#FFFFFF", "#AFC8E6", "#F1D7D5", "#E9E3D5"],
+    look: { roughness: 0.84, bumpScale: 1.1 }, drape: { stiffness: 0.58, wavelength: 8, crease: 0.22, sharp: 0.42 }, yarnScale: 1.15, mottle: 1.2,
   },
   {
     id: "cotton-twill", name: "Cotton Twill", category: "cotton", construction: "woven", composition: "100% cotton twill", polyesterPct: 0,
@@ -131,6 +145,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("limited", "good", "good", "no", "good"), shrinkagePct: 3, breathability: "medium", season: ["all"],
     care: "Machine wash 30°C.", priceDelta: 60, description: "Diagonal-weave twill with soft drape and subtle sheen.",
     suggestedColors: ["#F3F1EA", "#3B4252", "#6B4F3A", "#2F4F4F"],
+    look: { roughness: 0.76, bumpScale: 1.05, specular: 0.45 }, drape: { stiffness: 0.66, wavelength: 9, crease: 0.18, sharp: 0.4 }, yarnScale: 1.1, mottle: 1,
   },
   {
     id: "pure-linen", name: "Pure Linen", category: "linen", construction: "woven", composition: "100% linen (flax)", polyesterPct: 0,
@@ -138,6 +153,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("limited", "limited", "limited", "no", "good"), shrinkagePct: 5, breathability: "high", season: ["summer"],
     care: "Gentle wash 30°C. Embrace the crease.", priceDelta: 450, description: "Breathable flax linen — the hot-weather essential.",
     suggestedColors: ["#E8DCC6", "#FFFFFF", "#A9B5A0", "#3A5A78", "#C2A27C"],
+    look: { roughness: 0.86, roughnessVar: 0.22, bumpScale: 1.25, normalScale: 1.35 }, drape: { stiffness: 0.5, wavelength: 5.5, crease: 0.85, sharp: 0.85 }, yarnScale: 1.2, mottle: 1.25,
   },
   {
     id: "linen-cotton", name: "Linen-Cotton Blend", category: "blend", construction: "woven", composition: "55% linen, 45% cotton", polyesterPct: 0,
@@ -152,6 +168,7 @@ export const FABRICS: Fabric[] = [
     printMethods: P("no", "limited", "limited", "no", "good"), shrinkagePct: 4, breathability: "medium", season: ["winter", "all"],
     care: "Wash cold, inside out, separately.", priceDelta: 380, description: "Rugged twill denim for workwear and western shirts.",
     suggestedColors: ["#1E3A5F", "#2B4C7E", "#5B7DB1", "#1B1B1F"],
+    look: { roughness: 0.88, roughnessVar: 0.18, bumpScale: 1.6, normalScale: 1.2 }, drape: { stiffness: 0.86, wavelength: 11, crease: 0.24, sharp: 0.55 }, yarnScale: 1.25, mottle: 1,
   },
   {
     id: "chambray", name: "Chambray", category: "cotton", construction: "woven", composition: "100% cotton chambray", polyesterPct: 0,

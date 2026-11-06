@@ -36,4 +36,4 @@ Margins per category · GST low/high rate and threshold · shipping flat rate an
 `discount_codes` (migration 0003): percent (≤ 90 %) or fixed, minimum subtotal, maximum discount, start/end dates, total usage limit, per-customer limit, active flag. Codes are validated when applied to the cart and again at every cart read and at checkout (expired / not yet active / minimum not met / limit reached / already used). Orders store `discount` and `discount_code`.
 
 ## Where prices appear
-Editor (top bar, Check & order → itemised breakdown; uses the admin rules via `GET /api/pricing/rules` and the real artwork colours), tech pack panel and PDF (price table + estimated customisation cost), The Muse transaction preview (price before → after), cart (per-line breakdown, discount, shipping rule), checkout, order page.
+Editor (top bar, Check & order → itemised breakdown; uses the admin rules via `GET /api/pricing/rules` and the real artwork colours), tech pack panel and PDF (price table + estimated customisation cost), AI Muse transaction preview (price before → after), cart (per-line breakdown, discount, shipping rule), checkout, order page.

@@ -43,6 +43,38 @@ function SocialButtons() {
   );
 }
 
+/** "Continue as guest": a one-click real account with all signed-in features (shown only when guest mode is on). */
+function GuestButton({ next }: { next: string }) {
+  const router = useRouter();
+  const { setUser } = useSession();
+  const [on, setOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    api<{ enabled: boolean }>("/api/auth/guest").then((r) => setOn(r.enabled)).catch(() => setOn(false));
+  }, []);
+  if (!on) return null;
+  return (
+    <div className="mt-4 space-y-2">
+      <Button type="button" variant="ghost" loading={busy} className="w-full" data-testid="continue-as-guest" onClick={async () => {
+        setBusy(true);
+        setError(null);
+        try {
+          const r = await api<{ user: ClientUser }>("/api/auth/guest", { method: "POST" });
+          setUser(r.user);
+          router.push(next);
+          router.refresh();
+        } catch (e) {
+          setError(errorMessage(e));
+          setBusy(false);
+        }
+      }}>Continue as guest</Button>
+      <p className="text-center text-xs text-mute">Try everything without an email — designs, cart and orders are saved to a guest account you can turn into a real one anytime.</p>
+      {error && <Notice tone="bad">{error}</Notice>}
+    </div>
+  );
+}
+
 export function LoginForm() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -78,6 +110,7 @@ export function LoginForm() {
         <Button type="submit" loading={busy} className="w-full" data-testid="login-submit">Sign in</Button>
       </form>
       <SocialButtons />
+      <GuestButton next={next} />
       <div className="mt-6 flex justify-between text-sm">
         <Link href="/forgot-password" className="text-mute hover:text-bone">Forgot password?</Link>
         <Link href={`/register${next !== "/account" ? `?next=${encodeURIComponent(next)}` : ""}`} className="text-bone-2 hover:text-bone">Create account</Link>
@@ -128,6 +161,7 @@ export function RegisterForm() {
         <Button type="submit" loading={busy} className="w-full" data-testid="register-submit">Create account</Button>
       </form>
       <SocialButtons />
+      <GuestButton next={next} />
       <p className="mt-6 text-sm text-mute">Already have an account? <Link href="/login" className="text-bone-2 hover:text-bone">Sign in</Link></p>
     </div>
   );

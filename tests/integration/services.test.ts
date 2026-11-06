@@ -25,14 +25,18 @@ import { detectType, rasterSize, storeFont, listFonts, readUpload, deleteFont } 
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
+/** Unique per run, so every integration file can share one PostgreSQL database (PGlite gives each file its own). */
+const RUN = Math.random().toString(36).slice(2, 8);
+const em = (address: string) => address.replace("@", `+${RUN}@`);
+
 let alice: SessionUser;
 let bob: SessionUser;
 let staff: SessionUser;
 
 async function makeUser(email: string, role: "customer" | "staff" | "admin" = "customer"): Promise<SessionUser> {
   const db = await getDb();
-  const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
-  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, sessionId: "test" };
+  const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0].split("+")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
+  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, isGuest: false, sessionId: "test" };
 }
 
 const address = { fullName: "Alice Example", phone: "9876543210", line1: "12 MG Road", city: "Bengaluru", state: "Karnataka", pincode: "560001" };
@@ -41,9 +45,9 @@ beforeAll(async () => {
   const db = await getDb();
   const [{ n }] = (await db.select({ n: s.creativeAssets.id }).from(s.creativeAssets).limit(1)) as { n: string }[];
   expect(n).toMatch(/^MV/);
-  alice = await makeUser("alice@example.com");
-  bob = await makeUser("bob@example.com");
-  staff = await makeUser("staff@example.com", "staff");
+  alice = await makeUser(em("alice@example.com"));
+  bob = await makeUser(em("bob@example.com"));
+  staff = await makeUser(em("staff@example.com"), "staff");
 }, 120_000);
 
 describe("seed & auth", () => {
@@ -169,8 +173,8 @@ describe("commerce: cart → simulated checkout → production approval", () => 
 describe("dynamic pricing, discounts, reorder", () => {
   it("applies admin rules server-side, validates discounts, refuses stale totals and snapshots prices", async () => {
     const adminRow = (await (await getDb()).select().from(s.users).where(eq(s.users.role, "admin")))[0];
-    const admin: SessionUser = { id: adminRow.id, email: adminRow.email, name: adminRow.name, role: "admin", emailVerified: true, sessionId: "t" };
-    const dana = await makeUser("dana@example.com");
+    const admin: SessionUser = { id: adminRow.id, email: adminRow.email, name: adminRow.name, role: "admin", emailVerified: true, isGuest: false, sessionId: "t" };
+    const dana = await makeUser(em("dana@example.com"));
     const { project } = await createProject(dana, { modelId: "tee-classic-crew", audience: "men" });
     const cfg = createDesign("tee-classic-crew", "men");
     cfg.layers = [createTextLayer(cfg, "PRICE", "center-chest")];
@@ -282,7 +286,7 @@ describe("custom fonts", () => {
 
 describe("account deletion", () => {
   it("anonymises the user and removes personal data", async () => {
-    const carol = await makeUser("carol@example.com");
+    const carol = await makeUser(em("carol@example.com"));
     await createChild(carol, { nickname: "C", birthYear: new Date().getFullYear() - 5, consent: true, allowSharing: false });
     await deleteAccount(carol);
     const db = await getDb();

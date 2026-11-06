@@ -13,6 +13,8 @@ import { computeMeasurements } from "../garment/sizing";
 import { pocketPlacement, shoulderSlope, sleeveShape, torsoShape, zoneCanvas, type Pt, type Rect } from "../garment/panels";
 import type { DesignConfig } from "../garment/schema";
 import type { GarmentMeasurements } from "../garment/types";
+import { getFabric } from "../garment/fabrics";
+import { thicknessFactor } from "../garment/fabric-lab";
 import { drapeProfile, type DrapeProfile } from "../garment/drape";
 
 export interface MeshData {
@@ -48,6 +50,8 @@ export interface GarmentGeometry {
   cuffs: MeshData[];
   placket: MeshData | null;
   pockets: MeshData[];
+  /** Shirt sleeve (gauntlet) plackets above the cuffs, [left, right]. */
+  sleevePlackets: MeshData[];
   buttons: ButtonData[];
   buttonholes: ButtonholeData[];
   sleeveAngleDeg: number;
@@ -378,6 +382,8 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
   const c = config.construction;
   const kids = config.audience === "kids";
   const res = opts.resolution ?? 64;
+  // Fabric Lab: trims (collar, cuffs, placket, pockets) are as thick as the chosen cloth.
+  const tk = thicknessFactor(getFabric(config.fabric.id), config.fabric.gsm);
   const front = torsoShape(m, "front", c, kids);
   const back = torsoShape(m, "back", c, kids);
   const drape = drapeProfile(config, m);
@@ -564,7 +570,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         }
       }
       // Leaves get real thickness (two plies + edge) so the collar edge reads in close-ups.
-      collars.push(shellMesh(rowsLeaf, 0.16, (p) => norm([centroid[0] - p[0], 0.4, centroid[2] - p[2]]), (i, j) => [i / KS, 1 - j / VS], { j1: true, i0: true, i1: true }));
+      collars.push(shellMesh(rowsLeaf, 0.16 * tk, (p) => norm([centroid[0] - p[0], 0.4, centroid[2] - p[2]]), (i, j) => [i / KS, 1 - j / VS], { j1: true, i0: true, i1: true }));
       if (c.collar === "button-down") {
         for (const k of [Math.round(KS * 0.035), Math.round(KS * 0.965)]) {
           const pt = rowsLeaf[VS - 1][k];
@@ -579,6 +585,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
 
   // ── Cuffs (rings at sleeve ends) ─────────────────────────────
   const cuffs: MeshData[] = [];
+  const sleevePlackets: MeshData[] = [];
   if (!["hem", "none"].includes(c.cuff)) {
     // UVs follow the unrolled cuff canvas (x along circumference, 0 = outer face; y from top edge),
     // so the "cuffs" artwork zone maps 1:1 from the 2D editor.
@@ -608,7 +615,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const along = mul(s.dir, rel[0] * s.dir[0] + rel[1] * s.dir[1] + rel[2] * s.dir[2]);
         return norm(mul(sub(rel, along), -1));
       };
-      cuffs.push(shellMesh(rows, c.cuff === "rib" ? 0.22 : 0.3, axisAt, uv, { j0: true, j1: true }));
+      cuffs.push(shellMesh(rows, (c.cuff === "rib" ? 0.22 : 0.3) * tk, axisAt, uv, { j0: true, j1: true }));
       if (shirt && c.cuff !== "rib" && c.buttons.count > 0) {
         // Cuff button on the back of the wrist (towards the little finger), mid-height.
         let bi = 0;
@@ -618,6 +625,26 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const p = rows[2][bi];
         const o = mul(axisAt(p), -1);
         if (c.cuff !== "french") buttons.push({ position: add(p, mul(o, 0.32)), normal: o, radius: c.buttons.sizeMm / 22, site: "cuff" });
+        // Gauntlet (sleeve) placket: the opening above the cuff on the back of the sleeve, with its own small button.
+        if (c.sleeveLength === "long") {
+          const top = rows[0][bi];
+          const out = mul(axisAt(top), -1);
+          const up = mul(s.dir, -1);
+          const across = norm([up[1] * out[2] - up[2] * out[1], up[2] * out[0] - up[0] * out[2], up[0] * out[1] - up[1] * out[0]]);
+          const L = kids ? 8.5 : 12.5;
+          const W = kids ? 1.8 : 2.3;
+          const steps = 6;
+          const prow: V3[][] = [];
+          for (let i = 0; i <= steps; i++) {
+            const d = (L * i) / steps;
+            // the sleeve widens above the cuff; sit just proud of the surface
+            const base = add(add(top, mul(up, d)), mul(out, 0.1 + 0.035 * d));
+            prow.push([-W / 2, 0, W / 2].map((u) => add(base, mul(across, u))));
+          }
+          sleevePlackets.push(shellMesh(prow, 0.12 * tk, () => axisAt(top), (i, j) => [j / 2, 1 - i / steps], { j0: true, j1: true, i1: true }));
+          const bd = L * 0.62;
+          buttons.push({ position: add(add(top, mul(up, bd)), mul(out, 0.1 + 0.035 * bd + 0.12 * tk + 0.12)), normal: out, radius: (c.buttons.sizeMm / 22) * 0.8, site: "cuff" });
+        }
         const nb = rows[2][(bi + 3) % rows[2].length];
         buttonholes.push({ position: add(nb, mul(o, 0.33)), normal: o, along: norm(sub(rows[2][(bi + 4) % rows[2].length], rows[2][(bi + 2) % rows[2].length])), length: c.buttons.sizeMm / 10 + 0.3, width: 0.32 });
       }
@@ -638,7 +665,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       for (let i = 0; i <= 4; i++) row.push(body.map("front", -m.placketWidth / 2 + (m.placketWidth * i) / 4, y, 0.2));
       rows.push(row);
     }
-    placket = shellMesh(rows, 0.16, () => [0, 0, -1], (i, j) => [i / 4, 1 - j / steps], { i0: true, i1: true, j1: true });
+    placket = shellMesh(rows, 0.16 * tk, () => [0, 0, -1], (i, j) => [i / 4, 1 - j / steps], { i0: true, i1: true, j1: true });
   }
   if (c.buttons.count > 0 && c.placket !== "hidden") {
     const top = m.frontNeckDrop + (shirt ? 1.4 : 1.8);
@@ -671,7 +698,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       }
       rows.push(row);
     }
-    pockets.push(shellMesh(rows, 0.1, () => [0, 0, -1], (i, j) => {
+    pockets.push(shellMesh(rows, 0.1 * tk, () => [0, 0, -1], (i, j) => {
       const xx = -m.pocketWidth / 2 + (m.pocketWidth * i) / steps;
       const yy = (m.pocketHeight * j) / steps;
       return [(xx - pocketCanvas.x0) / (pocketCanvas.x1 - pocketCanvas.x0), 1 - (yy - pocketCanvas.y0) / (pocketCanvas.y1 - pocketCanvas.y0)];
@@ -688,7 +715,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         }
         fr.push(row);
       }
-      pockets.push(shellMesh(fr, 0.12, () => [0, 0, -1], (i, j) => [i / 8, 1 - j / 3], { i0: true, i1: true, j1: true }));
+      pockets.push(shellMesh(fr, 0.12 * tk, () => [0, 0, -1], (i, j) => [i / 8, 1 - j / 3], { i0: true, i1: true, j1: true }));
       if (c.buttons.count > 0) buttons.push({ position: body.map("front", pl.x, pl.y + 2.8, 0.55), normal: body.normal("front", pl.x, pl.y + 2.8), radius: c.buttons.sizeMm / 22, site: "pocket" });
     }
   }
@@ -703,6 +730,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
     cuffs,
     placket,
     pockets,
+    sleevePlackets,
     buttons,
     buttonholes,
     sleeveAngleDeg: dropDeg,

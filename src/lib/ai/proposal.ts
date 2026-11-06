@@ -1,7 +1,7 @@
 /**
  * Layer 1 → Layer 3 contract: the Fashion Director's structured design proposal.
  *
- * The Director (The Muse — local rules, an LLM, or an on-device model) decides
+ * The Director (AI Muse — local rules, an LLM, or an on-device model) decides
  * WHAT the customer wants and returns this typed, versioned document. It never
  * contains geometry, mesh data, code or prices. The design compiler
  * (compiler.ts) validates it and turns it into deterministic DesignOps.

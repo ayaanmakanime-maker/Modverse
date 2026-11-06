@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: { params: Promise<{ catego
               <p className="mt-2 text-xs text-mute">Also available: {altFabrics.filter((f) => f.id !== fabric.id).map((f) => f.name).join(", ")}.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="mv-card p-4"><Sparkles className="size-4 text-champagne" /><p className="mt-2 font-medium">Design Studio</p><p className="text-xs text-mute">Guided, with templates and The Muse.</p></div>
+              <div className="mv-card p-4"><Sparkles className="size-4 text-champagne" /><p className="mt-2 font-medium">Design Studio</p><p className="text-xs text-mute">Guided, with templates and AI Muse.</p></div>
               <div className="mv-card p-4"><Layers className="size-4 text-champagne" /><p className="mt-2 font-medium">Atelier</p><p className="text-xs text-mute">Panels, collars, cuffs, layers.</p></div>
               <div className="mv-card p-4"><Ruler className="size-4 text-champagne" /><p className="mt-2 font-medium">Atelier Pro</p><p className="text-xs text-mute">Measurements, tech pack, BOM.</p></div>
             </div>

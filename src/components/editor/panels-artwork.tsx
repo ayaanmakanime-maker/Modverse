@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Eye, EyeOff, Lock, Unlock, ChevronUp, ChevronDown, Star, Upload, Wand2, Type, Group as GroupIcon, Ungroup, Save, Trash2, Copy, ClipboardPaste, GripVertical } from "lucide-react";
+import { Eye, EyeOff, Lock, Unlock, ChevronUp, ChevronDown, ChevronRight, Star, Upload, Wand2, Type, Group as GroupIcon, Ungroup, Save, Trash2, Copy, ClipboardPaste, GripVertical, Folder as FolderIcon, CornerLeftDown } from "lucide-react";
 import { useEditor } from "@/lib/editor/store";
 import { createTextLayer, newLayerId, availablePanels, availableZones } from "@/lib/garment/design";
 import { computeMeasurements } from "@/lib/garment/sizing";
@@ -397,8 +397,30 @@ export function LayersPanel() {
   const ungroup = useEditor((s) => s.ungroup);
   const remove = useEditor((s) => s.removeLayers);
   const setZone = useEditor((s) => s.setZone);
+  const commit = useEditor((s) => s.commit);
+  const mode = useEditor((s) => s.mode);
   const { user } = useSession();
   const layers = [...config.layers].reverse();
+  const folders = config.folders ?? [];
+  // Rows: a folder header at its topmost member, followed by all its members (top first).
+  const rows: ({ kind: "folder"; id: string } | { kind: "layer"; layer: Layer; nested: boolean })[] = [];
+  const seen = new Set<string>();
+  for (const l of layers) {
+    if (l.groupId) {
+      if (seen.has(l.groupId)) continue;
+      seen.add(l.groupId);
+      rows.push({ kind: "folder", id: l.groupId });
+      const f = folders.find((x) => x.id === l.groupId);
+      if (!f?.collapsed) for (const m of layers) if (m.groupId === l.groupId) rows.push({ kind: "layer", layer: m, nested: true });
+    } else rows.push({ kind: "layer", layer: l, nested: false });
+  }
+  const editFolder = (id: string, patch: Partial<import("@/lib/garment/layer-fx").Folder>, label: string) =>
+    commit(label, (d) => {
+      const list = d.folders ?? [];
+      const f = list.find((x) => x.id === id);
+      d.folders = f ? list.map((x) => (x.id === id ? { ...x, ...patch } : x)) : [...list, { id, name: "Group", collapsed: false, visible: true, locked: false, opacity: 1, ...patch }];
+      if (patch.locked !== undefined) for (const l of d.layers) if (l.groupId === id) l.locked = patch.locked;
+    });
   const sel = config.layers.find((l) => l.id === selectedId);
   const [canPaste, setCanPaste] = useState(false);
   useEffect(() => {
@@ -421,7 +443,7 @@ export function LayersPanel() {
       <div className="flex flex-wrap gap-1">
         <button className="mv-chip" disabled={!multi.length} onClick={() => { const n = copySelection(); if (n) toast(`Copied ${n} layer${n > 1 ? "s" : ""}`, "info"); }} title="Copy (⌘C)"><Copy className="size-3" /> Copy</button>
         <button className="mv-chip" onClick={() => { if (!pasteClipboard()) toast("Nothing copied yet", "info"); }} title="Paste (⌘V) · paste in place ⇧⌘V" data-testid="paste-layers" disabled={!canPaste}><ClipboardPaste className="size-3" /> Paste</button>
-        <button className="mv-chip" disabled={multi.length < 2} onClick={group}><GroupIcon className="size-3" /> Group</button>
+        <button className="mv-chip" disabled={multi.length < 2} onClick={group} data-testid="group-layers"><GroupIcon className="size-3" /> Group into folder</button>
         {sel?.groupId && <button className="mv-chip" onClick={() => ungroup(sel.groupId!)}><Ungroup className="size-3" /> Ungroup</button>}
         {user && <button className="mv-chip" disabled={!multi.length} onClick={saveComposition}><Save className="size-3" /> Save as composition</button>}
         <button className="mv-chip text-bad" disabled={!multi.length} onClick={() => remove(multi)}><Trash2 className="size-3" /> Delete</button>
@@ -429,20 +451,43 @@ export function LayersPanel() {
       <p className="text-[0.65rem] text-mute">Shift-click to multi-select. Top of the list prints on top. ⌘C / ⌘X / ⌘V copy, cut and paste — also between designs.</p>
       {layers.length === 0 && <p className="py-6 text-center text-xs text-mute">No layers yet.</p>}
       <ul className="space-y-1">
-        {layers.map((l) => (
-          <li key={l.id} className={clsx("flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs", multi.includes(l.id) ? "border-champagne/60 bg-surface-2" : "border-line")}>
-            <button className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={(e) => { setZone(l.zone); select(l.id, e.shiftKey); }}>
-              <span className="w-10 shrink-0 text-[0.6rem] uppercase text-mute">{l.type}</span>
-              <span className="truncate">{l.type === "text" ? l.text : l.name}</span>
-              <span className="shrink-0 text-[0.6rem] text-mute">{ZONE_LABELS[l.zone]}</span>
-              {l.groupId && <GroupIcon className="size-3 shrink-0 text-champagne" />}
-            </button>
-            <button aria-label="Toggle visibility" onClick={() => update(l.id, { visible: !l.visible })} className="text-mute hover:text-bone">{l.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}</button>
-            <button aria-label="Toggle lock" onClick={() => update(l.id, { locked: !l.locked })} className="text-mute hover:text-bone">{l.locked ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}</button>
-            <button aria-label="Move up" onClick={() => reorder(l.id, "up")} className="text-mute hover:text-bone"><ChevronUp className="size-3.5" /></button>
-            <button aria-label="Move down" onClick={() => reorder(l.id, "down")} className="text-mute hover:text-bone"><ChevronDown className="size-3.5" /></button>
-          </li>
-        ))}
+        {rows.map((r) => {
+          if (r.kind === "folder") {
+            const f = folders.find((x) => x.id === r.id) ?? { id: r.id, name: "Group", collapsed: false, visible: true, locked: false, opacity: 1 };
+            const members = config.layers.filter((l) => l.groupId === r.id);
+            return (
+              <li key={`f-${r.id}`} className="flex items-center gap-1.5 rounded-lg border border-line bg-surface-2/60 px-2 py-1.5 text-xs" data-testid="folder-row">
+                <button aria-label={f.collapsed ? "Expand folder" : "Collapse folder"} onClick={() => editFolder(r.id, { collapsed: !f.collapsed }, f.collapsed ? "Expand folder" : "Collapse folder")} className="text-mute hover:text-bone">{f.collapsed ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}</button>
+                <FolderIcon className="size-3.5 shrink-0 text-champagne" />
+                <input aria-label="Folder name" className="min-w-0 flex-1 bg-transparent text-xs text-bone outline-none focus:underline" defaultValue={f.name} key={f.name} onBlur={(e) => { const v = e.target.value.trim().slice(0, 80); if (v && v !== f.name) editFolder(r.id, { name: v }, "Rename folder"); }} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} data-testid="folder-name" />
+                <span className="shrink-0 text-[0.6rem] text-mute">{members.length}</span>
+                {mode === "pro" && <input type="number" min={0} max={100} aria-label="Folder opacity" title="Folder opacity (%)" className="w-11 rounded border border-line bg-transparent px-1 text-[0.62rem] tabular-nums" value={Math.round(f.opacity * 100)} onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v)) editFolder(r.id, { opacity: Math.max(0, Math.min(1, v / 100)) }, "Folder opacity"); }} />}
+                <button aria-label="Toggle folder visibility" onClick={() => editFolder(r.id, { visible: !f.visible }, f.visible ? "Hide folder" : "Show folder")} className="text-mute hover:text-bone" data-testid="folder-visibility">{f.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}</button>
+                <button aria-label="Toggle folder lock" onClick={() => editFolder(r.id, { locked: !f.locked }, f.locked ? "Unlock folder" : "Lock folder")} className="text-mute hover:text-bone">{f.locked ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}</button>
+              </li>
+            );
+          }
+          const l = r.layer;
+          const fx = l.filters.length + (l.adjust ? 1 : 0) + (l.warp ? 1 : 0) + l.retouch.length;
+          return (
+            <li key={l.id} className={clsx("flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs", r.nested && "ml-4", multi.includes(l.id) ? "border-champagne/60 bg-surface-2" : "border-line")} data-testid="layer-row">
+              <button className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={(e) => { setZone(l.zone); select(l.id, e.shiftKey); }}>
+                {l.clip && <CornerLeftDown className="size-3 shrink-0 text-champagne" aria-label="Clipped to the layer below" />}
+                <span className="w-10 shrink-0 text-[0.6rem] uppercase text-mute">{l.type === "drawing" ? "draw" : l.type}</span>
+                <span className="truncate">{l.type === "text" ? l.text : l.name}</span>
+                <span className="shrink-0 text-[0.6rem] text-mute">{ZONE_LABELS[l.zone]}</span>
+                {l.blendMode !== "normal" && <span className="shrink-0 rounded bg-surface-3 px-1 text-[0.55rem] capitalize text-bone-2" title="Blend mode">{l.blendMode.replace("-", " ")}</span>}
+                {l.mask && <span className="shrink-0 text-[0.6rem] text-champagne" title="Layer mask">◐</span>}
+                {fx > 0 && <span className="shrink-0 text-[0.55rem] text-champagne" title="Adjustments, filters, warp or retouching">fx{fx > 1 ? fx : ""}</span>}
+                {l.groupId && !r.nested && <GroupIcon className="size-3 shrink-0 text-champagne" />}
+              </button>
+              <button aria-label="Toggle visibility" onClick={() => update(l.id, { visible: !l.visible })} className="text-mute hover:text-bone">{l.visible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}</button>
+              <button aria-label="Toggle lock" onClick={() => update(l.id, { locked: !l.locked })} className="text-mute hover:text-bone">{l.locked ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}</button>
+              <button aria-label="Move up" onClick={() => reorder(l.id, "up")} className="text-mute hover:text-bone"><ChevronUp className="size-3.5" /></button>
+              <button aria-label="Move down" onClick={() => reorder(l.id, "down")} className="text-mute hover:text-bone"><ChevronDown className="size-3.5" /></button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -468,7 +513,7 @@ export function StartPanel({ goto }: { goto: (tab: string) => void }) {
     { n: 1, t: "Choose your garment", d: "Category, model, fit and size.", tab: "garment" },
     { n: 2, t: "Colour & fabric", d: "Pick a colour and a fabric that suits the season.", tab: "fabric" },
     { n: 3, t: "Add graphics or text", d: "Creative Library, your own words, or uploads.", tab: "library" },
-    { n: 4, t: "Ask The Muse", d: "Describe changes in plain words.", tab: "muse" },
+    { n: 4, t: "Ask AI Muse", d: "Describe changes in plain words.", tab: "muse" },
     { n: 5, t: "Check & order", d: "Validate, save and add to cart.", tab: "check" },
   ];
   return (

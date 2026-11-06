@@ -4,6 +4,7 @@ import { computeMeasurements, DEFAULT_SIZE, sizesFor } from "./sizing";
 import { fitToPlacement, placementPreset, type PlacementPreset } from "./panels";
 import type { Construction, DesignConfig, GraphicLayer, ImageLayer, Layer, PanelStyle, TextLayer } from "./schema";
 import { adjustmentsSchema, designConfigSchema, DESIGN_SCHEMA_VERSION } from "./schema";
+import { LAYER_FX_DEFAULTS } from "./layer-fx";
 import {
   COLLARS, CUFFS, PANELS, PLACKETS, type Audience, type Collar, type Cuff, type GarmentMeasurements, type Neckline,
   type PanelId, type Placket, type PrintMethod, type SleeveLength, type Zone,
@@ -170,6 +171,7 @@ export function createDesign(modelId: string, audience: Audience, size?: string)
     fabric: { id: model.fabricId, gsm: model.gsm, color: model.color },
     panels,
     layers: [],
+    folders: [],
     printMethod: defaultPrintMethod(model.fabricId),
     measurementProfileId: null,
     notes: "",
@@ -239,6 +241,7 @@ export function createTextLayer(config: DesignConfig, text: string, preset: Plac
     method: null,
     flipX: false,
     flipY: false,
+    ...LAYER_FX_DEFAULTS,
     text,
     fontFamily: DEFAULT_FONT,
     fontWeight: 700,
@@ -258,6 +261,7 @@ export function createTextLayer(config: DesignConfig, text: string, preset: Plac
     skewX: 0,
     effects: [],
     fontAssetId: null,
+    fill: null,
     ...overrides,
   };
 }
@@ -285,6 +289,7 @@ export function createGraphicLayer(
     method: null,
     flipX: false,
     flipY: false,
+    ...LAYER_FX_DEFAULTS,
     source,
     assetId: asset.id,
     url: asset.url,
@@ -315,6 +320,7 @@ export function createImageLayer(
     method: null,
     flipX: false,
     flipY: false,
+    ...LAYER_FX_DEFAULTS,
     source,
     assetId: img.id,
     url: img.url,

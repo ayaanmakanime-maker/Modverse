@@ -20,6 +20,7 @@ export interface SessionUser {
   name: string;
   role: Role;
   emailVerified: boolean;
+  isGuest: boolean;
   sessionId: string;
 }
 
@@ -69,7 +70,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
       /* cookies are read-only during server component render */
     }
   }
-  return { id: row.u.id, email: row.u.email, name: row.u.name, role: row.u.role, emailVerified: !!row.u.emailVerifiedAt, sessionId: id };
+  return { id: row.u.id, email: row.u.email, name: row.u.name, role: row.u.role, emailVerified: !!row.u.emailVerifiedAt, isGuest: row.u.isGuest, sessionId: id };
 });
 
 export async function destroySession(): Promise<void> {

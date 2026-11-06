@@ -42,8 +42,15 @@ Key (shadow-casting), soft fill, two **rim lights** from behind, top spot and he
 ## Quality benchmarks
 `/lab/3d?model=…&color=…&view=…&quality=low|balanced|high` (not linked from the storefront). Benchmarks and screenshots are in `docs/QUALITY_AND_PROVIDER_EVALUATION.md` (`docs/images/benchmarks/`): classic formal shirt, oversized T-shirt, regular-fit T-shirt (+ linen shirt for fabric contrast).
 
-## Avatar (`src/lib/three/avatar.ts`)
-Parametric mannequin from body measurements (height, chest, waist, hip, shoulder, arm, neck, bicep, wrist), body type, build, skin tone and hair. Arms follow the sleeve angle. It is a **visual representation**, not a body scan.
+## Flagship avatars — Atlas, Aura, Nova (`src/lib/three/flagship-avatar.ts`)
+The older generic lathe mannequin was removed. The flagship avatars are **procedural, rigged bodies generated from measurements** (height, chest, waist, hip, shoulder, arm length, neck, bicep, wrist, inseam): every proportion slider rebuilds the geometry. Cross-sections are solved from circumferences with body-shape depth ratios; Aura has bust shaping; **Nova** uses child proportions (larger head ratio, shorter legs, no adult shaping). One skeleton (hips → spine → chest → neck → head; shoulders → arms → hands; thighs → shins → feet) skins the body, hair, black cargo trousers and white sneakers; poses (garment pose, relaxed, T-pose) are bone rotations, and GLB export includes the skinned avatar. Stored avatar profiles map onto the models (masculine → Atlas, feminine → Aura, child → Nova).
+**Honesty:** stylised head without facial likeness; a parametric body, not a scan; the garment is not cloth-simulated over it — fit is judged by the measurement fit check.
+
+## Fabric Lab materials
+Each cloth can override its weave's look and drape (`look`, `drape`, `yarnScale`, `mottle` in `src/lib/garment/fabrics.ts`), so the nine flagship profiles (cotton, heavyweight cotton, stretch jersey, linen, denim, poplin, Oxford, polyester, twill) differ in roughness, sheen, relief, yarn size, colour mottling, stiffness, fold wavelength, creasing and **trim thickness** (collar, cuffs, placket and pockets scale with the cloth's thickness) — not just colour. Labelled as a simulated appearance.
+
+## Flagship garment construction
+Classic tee and oversized tee: rib neckband with rib relief, set-in vs dropped shoulders, double-needle hems. Classic formal shirt: collar stand + spread leaf, placket with buttons and buttonholes, barrel cuffs with buttons, **sleeve (gauntlet) plackets with buttons**, yoke, back pleats, curved tail with **side-seam gussets**, topstitching relief.
 
 ## Limitations
 No cloth physics or collision; folds/creases are procedural approximations; geometry is a proportional visualisation, not a graded sewing pattern; very extreme adjustments can produce stylised shapes (validation flags them). Frame-rate figures from this repository's CI are software-rendered (SwiftShader) and are not representative of real GPUs — benchmark on target devices.

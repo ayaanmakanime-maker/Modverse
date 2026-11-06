@@ -11,7 +11,7 @@ Credentials are normally entered in **Admin → Integration Manager** (encrypted
 ## Provider notes
 * **Ollama (free, local):** install Ollama, `ollama pull llama3.1:8b`, base URL `http://127.0.0.1:11434`. Validate on your Mac's hardware; smaller models give less reliable JSON (invalid output falls back to local rules).
 * **OpenAI (billable):** create a project key with usage limits; chat model e.g. `gpt-4.1-mini`, optional image model. Set a spend cap first.
-* **Gemini (free tier / billable):** create a key in Google AI Studio, model e.g. `gemini-2.5-flash`. The connection test only lists models (no tokens used). Review the free tier's data-use terms before customer traffic. **Gemini Nano** needs no key — customers with a supporting Chrome can opt in from The Muse panel.
+* **Gemini (free tier / billable):** create a key in Google AI Studio, model e.g. `gemini-2.5-flash`. The connection test only lists models (no tokens used). Review the free tier's data-use terms before customer traffic. **Gemini Nano** needs no key — customers with a supporting Chrome can opt in from AI Muse panel.
 * **ComfyUI (free, local GPU):** run ComfyUI, export a workflow in *API format*, put `{{prompt}}` in the positive prompt text; check model licences for commercial apparel use.
 * **Razorpay:** use `rzp_test_…` keys; add a webhook to `https://<your-domain>/api/webhooks/razorpay` with events `payment.captured`, `payment.failed` and paste its secret. Payments are confirmed only by signature verification.
 * **Google OAuth:** create a Web client, authorised redirect `http://localhost:3000/api/auth/oauth/google/callback` (and your domain). The button appears only after a passing test and enablement.

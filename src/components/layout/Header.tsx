@@ -57,7 +57,7 @@ export function Header() {
             <div className="relative">
               <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2 rounded-full border border-line px-2 py-1 text-sm hover:border-line-2" aria-haspopup="menu" aria-expanded={menu}>
                 <span className="grid size-7 place-items-center rounded-full bg-surface-3 text-xs uppercase">{user.name.slice(0, 1)}</span>
-                <span className="hidden max-w-28 truncate text-xs text-bone-2 md:block">{user.name}</span>
+                <span className="hidden max-w-28 truncate text-xs text-bone-2 md:block">{user.isGuest ? "Guest" : user.name}</span>
               </button>
               {menu && (
                 <div role="menu" className="mv-card absolute right-0 mt-2 w-56 overflow-hidden p-1 text-sm shadow-2xl">

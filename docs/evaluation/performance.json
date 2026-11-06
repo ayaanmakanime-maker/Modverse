@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-11-06T03:37:17.122Z",
+  "measuredAt": "2026-11-06T18:18:14.213Z",
   "baseUrl": "http://localhost:3200",
   "environment": {
     "platform": "linux x64",
@@ -12,58 +12,58 @@
   "pageLoads": [
     {
       "url": "/",
-      "ttfbMs": 28,
-      "fcpMs": 100,
-      "lcpMs": 100,
-      "domContentLoadedMs": 102,
-      "loadMs": 139,
-      "jsKb": 118,
-      "totalKb": 181,
-      "requests": 43
+      "ttfbMs": 21,
+      "fcpMs": 128,
+      "lcpMs": 128,
+      "domContentLoadedMs": 52,
+      "loadMs": 147,
+      "jsKb": 120,
+      "totalKb": 185,
+      "requests": 47
     },
     {
       "url": "/shop/men",
       "ttfbMs": 51,
-      "fcpMs": 132,
-      "lcpMs": 132,
-      "domContentLoadedMs": 170,
-      "loadMs": 170,
-      "jsKb": 116,
-      "totalKb": 258,
-      "requests": 36
+      "fcpMs": 144,
+      "lcpMs": 144,
+      "domContentLoadedMs": 128,
+      "loadMs": 174,
+      "jsKb": 118,
+      "totalKb": 259,
+      "requests": 40
     },
     {
       "url": "/library",
-      "ttfbMs": 9,
-      "fcpMs": 64,
-      "lcpMs": 64,
-      "domContentLoadedMs": 40,
-      "loadMs": 95,
-      "jsKb": 171,
-      "totalKb": 346,
-      "requests": 120
+      "ttfbMs": 10,
+      "fcpMs": 72,
+      "lcpMs": 72,
+      "domContentLoadedMs": 50,
+      "loadMs": 120,
+      "jsKb": 175,
+      "totalKb": 355,
+      "requests": 124
     },
     {
       "url": "/design/new?model=tee-classic-crew&audience=men&mode=studio",
-      "ttfbMs": 7,
-      "fcpMs": 40,
-      "lcpMs": 224,
-      "domContentLoadedMs": 22,
-      "loadMs": 104,
-      "jsKb": 540,
-      "totalKb": 561,
-      "requests": 33
+      "ttfbMs": 8,
+      "fcpMs": 48,
+      "lcpMs": 232,
+      "domContentLoadedMs": 38,
+      "loadMs": 126,
+      "jsKb": 593,
+      "totalKb": 616,
+      "requests": 36
     },
     {
       "url": "/try-on",
       "ttfbMs": 11,
       "fcpMs": 80,
       "lcpMs": 80,
-      "domContentLoadedMs": 30,
-      "loadMs": 123,
-      "jsKb": 484,
-      "totalKb": 511,
-      "requests": 45
+      "domContentLoadedMs": 38,
+      "loadMs": 134,
+      "jsKb": 508,
+      "totalKb": 537,
+      "requests": 46
     }
   ],
   "viewer3d": {
@@ -71,50 +71,50 @@
     "runs": [
       {
         "quality": "auto",
-        "timeToCanvasMs": 336,
-        "fps": 2,
-        "stats": "2 fps · 106 meshes · 52k tris · low",
-        "heapMb": 11.5
+        "timeToCanvasMs": 2330,
+        "fps": 1,
+        "stats": "1 fps · 122 meshes · 52k tris · low",
+        "heapMb": 11.7
       },
       {
         "quality": "low",
-        "timeToCanvasMs": 567,
+        "timeToCanvasMs": 592,
         "fps": 1,
-        "stats": "1 fps · 106 meshes · 52k tris · low",
-        "heapMb": 11.3
+        "stats": "1 fps · 122 meshes · 52k tris · low",
+        "heapMb": 12.4
       },
       {
         "quality": "balanced",
-        "timeToCanvasMs": 585,
+        "timeToCanvasMs": 623,
         "fps": 1,
-        "stats": "1 fps · 106 meshes · 52k tris · balanced",
-        "heapMb": 12.1
+        "stats": "1 fps · 122 meshes · 52k tris · balanced",
+        "heapMb": 12.9
       }
     ]
   },
   "editor": [
     {
       "view": "split",
-      "addTextMs": 2251,
-      "addLibraryGraphicMs": 2524,
-      "undoMedianMs": 1776,
-      "dragMsPerPointerMove": 0.24,
-      "heapMb": 12.6
+      "addTextMs": 1030,
+      "addLibraryGraphicMs": 2098,
+      "undoMedianMs": 1437,
+      "dragMsPerPointerMove": 0.63,
+      "heapMb": 13.1
     },
     {
       "view": "2d",
-      "addTextMs": 98,
-      "addLibraryGraphicMs": 70,
-      "undoMedianMs": 46,
-      "dragMsPerPointerMove": 0.18,
-      "heapMb": 8.5
+      "addTextMs": 133,
+      "addLibraryGraphicMs": 87,
+      "undoMedianMs": 39,
+      "dragMsPerPointerMove": 0.21,
+      "heapMb": 9.2
     }
   ],
   "trialRoom": {
-    "cameraStartToTrackingMs": 4898,
+    "cameraStartToTrackingMs": 5172,
     "fps": 23,
-    "inferenceMs": 251.6,
-    "heapMb": 9.4,
+    "inferenceMs": 275.6,
+    "heapMb": 9.9,
     "note": "Fake camera device + software WebGL; inference latency is per-frame MediaPipe pose time on CPU."
   }
 }

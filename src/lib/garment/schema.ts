@@ -3,6 +3,7 @@ import {
   AUDIENCES, BUTTON_MATERIALS, COLLARS, CUFFS, FITS, GARMENT_TYPES, HEM_FINISHES, HEM_SHAPES, NECKLINES,
   PANELS, PLACKETS, POCKET_STYLES, PRINT_METHODS, SLEEVE_LENGTHS, SLEEVE_STYLES, ZONES,
 } from "./types";
+import { brushStrokeSchema, folderSchema, layerFxFields, textFillSchema } from "./layer-fx";
 
 export const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Colour must be #RRGGBB");
 const cm = (min: number, max: number) => z.number().finite().min(min).max(max);
@@ -83,6 +84,8 @@ const layerBase = {
   method: z.enum(PRINT_METHODS).nullable().default(null),
   flipX: z.boolean().default(false),
   flipY: z.boolean().default(false),
+  /** v3 (Atelier Pro): blend mode, clipping, mask, adjustments, filters, warp, retouching. */
+  ...layerFxFields,
 };
 
 /** Normalised crop window (0…1 of the source asset). */
@@ -139,6 +142,8 @@ export const textLayerSchema = z.object({
   effects: z.array(textEffectSchema).max(4).default([]),
   /** Customer-uploaded font (v2). When set, fontFamily is the registered custom family name. */
   fontAssetId: z.string().max(64).nullable().default(null),
+  /** Gradient fill (v3); null = solid `color`. */
+  fill: textFillSchema.nullable().default(null),
 });
 export type TextLayer = z.infer<typeof textLayerSchema>;
 
@@ -168,7 +173,15 @@ export const imageLayerSchema = z.object({
 });
 export type ImageLayer = z.infer<typeof imageLayerSchema>;
 
-export const layerSchema = z.discriminatedUnion("type", [textLayerSchema, graphicLayerSchema, imageLayerSchema]);
+/** Freehand brush / pencil / marker strokes (v3). Eraser strokes erase what was drawn before them. */
+export const drawingLayerSchema = z.object({
+  ...layerBase,
+  type: z.literal("drawing"),
+  strokes: z.array(brushStrokeSchema).max(200).default([]),
+});
+export type DrawingLayer = z.infer<typeof drawingLayerSchema>;
+
+export const layerSchema = z.discriminatedUnion("type", [textLayerSchema, graphicLayerSchema, imageLayerSchema, drawingLayerSchema]);
 export type Layer = z.infer<typeof layerSchema>;
 
 /**
@@ -177,14 +190,17 @@ export type Layer = z.infer<typeof layerSchema>;
  *  2 — cuff artwork zone, crop for graphics/images, layered text effects,
  *      custom fonts, true title case. All additions have defaults, so v1
  *      documents upgrade losslessly (see upgradeDesignConfig).
+ *  3 — Atelier Pro: blend modes, clipping masks, layer masks, adjustments,
+ *      filters, perspective/warp/mesh, retouching, drawing layers, text
+ *      gradients and named layer folders. Additive with defaults.
  */
-export const DESIGN_SCHEMA_VERSION = 2 as const;
+export const DESIGN_SCHEMA_VERSION = 3 as const;
 
 /** Upgrade older stored design documents to the current schema version. */
 export function upgradeDesignConfig(raw: unknown): unknown {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
   const r = raw as Record<string, unknown>;
-  if (r.schemaVersion === 1) return { ...r, schemaVersion: 2 };
+  if (r.schemaVersion === 1 || r.schemaVersion === 2) return { ...r, schemaVersion: DESIGN_SCHEMA_VERSION };
   return raw;
 }
 
@@ -200,6 +216,7 @@ const designConfigObject = z.object({
   fabric: z.object({ id: z.string().max(64), gsm: z.number().int().min(60).max(500), color: hexColor }),
   panels: z.object(Object.fromEntries(PANELS.map((p) => [p, panelStyleSchema])) as Record<(typeof PANELS)[number], typeof panelStyleSchema>),
   layers: z.array(layerSchema).max(60),
+  folders: z.array(folderSchema).max(30).default([]),
   printMethod: z.enum(PRINT_METHODS),
   measurementProfileId: z.string().max(64).nullable().default(null),
   notes: z.string().max(2000).default(""),

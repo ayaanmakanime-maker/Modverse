@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Logo } from "@/components/brand/Logo";
 import { getMembership } from "@/lib/services/partners";
+import { GuestBanner } from "./GuestBanner";
 
 const NAV = [
   ["/account", "Dashboard"], ["/account/designs", "Designs"], ["/account/orders", "Orders"], ["/account/measurements", "Measurements"],
@@ -26,7 +27,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
           {partner && <Link href="/partner" className="shrink-0 rounded-lg px-3 py-2 text-sm text-champagne hover:bg-surface-2">Partner portal</Link>}
           {user.role !== "customer" && <Link href="/admin" className="shrink-0 rounded-lg px-3 py-2 text-sm text-champagne hover:bg-surface-2">Admin</Link>}
         </nav>
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0 space-y-6"><GuestBanner />{children}</div>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import { GARMENT_MODELS } from "@/lib/garment/models";
 
 const lib = createLibraryLookup(JSON.parse(readFileSync(path.resolve(__dirname, "../../src/data/creative-library.index.json"), "utf8")) as LibraryIndex);
 
-describe("The Muse", () => {
+describe("AI Muse", () => {
   it("every suggestion with ops applies through the real engine without rejection", () => {
     for (const m of GARMENT_MODELS.slice(0, 32)) {
       const d = createDesign(m.id, m.audiences[0]);

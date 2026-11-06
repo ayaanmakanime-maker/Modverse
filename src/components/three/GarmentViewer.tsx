@@ -19,9 +19,11 @@ import { panelColor, panelFabricId } from "@/lib/garment/design";
 import { getFabric } from "@/lib/garment/fabrics";
 import { weaveCanvas, WEAVE_PERIOD_CM } from "@/lib/three/fabric-textures";
 import { dataTexture, enableDualNormal, FABRIC_LOOK, heightToNormal, roughnessCanvas, trimNormal } from "@/lib/three/fabric-materials";
-import { avatarSpec, DEFAULT_APPEARANCE, type AvatarAppearance } from "@/lib/three/avatar";
+import { DEFAULT_APPEARANCE, type AvatarAppearance } from "@/lib/three/avatar";
+import { AVATAR_INFO, buildAvatar, modelForAudience, modelForBodyType, type AvatarBody, type AvatarStyle } from "@/lib/three/flagship-avatar";
+import { FlagshipAvatar } from "./FlagshipAvatar";
 import { bodyForSize } from "@/lib/garment/sizing";
-import type { BodyMeasurements, PanelId, Zone } from "@/lib/garment/types";
+import type { PanelId, Zone } from "@/lib/garment/types";
 import { isDark, mixHex, pbrAlbedo } from "@/lib/color";
 
 export type ViewPreset = "front" | "back" | "left" | "right" | "three-quarter";
@@ -37,7 +39,11 @@ export interface GarmentViewerProps {
   lighting?: LightingPreset;
   exposure?: number;
   showAvatar?: boolean;
-  avatar?: { body?: Partial<BodyMeasurements>; appearance?: AvatarAppearance };
+  /** Decoration-method appearance preview (embroidery thread, ink, film). */
+  production?: boolean;
+  /** Print boundaries and production-safe areas drawn on the garment. */
+  guides?: boolean;
+  avatar?: { body?: Partial<AvatarBody>; appearance?: AvatarAppearance };
   transparentBackground?: boolean;
   /** In-viewer controls: "full" (views + details), "details" (reset + detail inspection), "none". */
   controls?: "full" | "details" | "none";
@@ -108,7 +114,7 @@ interface PanelTextures {
  * topstitching, hem turn-ups, procedural creases). Yoke artwork is drawn into
  * the back texture.
  */
-function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: number, relief: boolean): PanelTextures {
+function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: number, relief: boolean, production = false, guides = false): PanelTextures {
   const [textures, setTextures] = useState<PanelTextures>({ maps: {}, relief: {} });
   const [assetTick, setAssetTick] = useState(0);
   useEffect(() => subscribeAssets(() => setAssetTick((t) => t + 1)), []);
@@ -128,7 +134,7 @@ function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: nu
       await Promise.all([
         ...jobs.map(async ([key, z, includeLayers]) => {
           try {
-            const { svg, widthPx, heightPx } = zoneTextureSvg(merged, z, geo.measurements, resolver, { pxPerCm: z === "collar" || z === "pocket" || z === "cuffs" ? 24 : pxPerCm, fontCss, includeLayers, fabricLook: true });
+            const { svg, widthPx, heightPx } = zoneTextureSvg(merged, z, geo.measurements, resolver, { pxPerCm: z === "collar" || z === "pocket" || z === "cuffs" ? 24 : pxPerCm, fontCss, includeLayers, fabricLook: true, production, guides: guides && includeLayers });
             out.maps[key] = await svgToTexture(svg, widthPx, heightPx);
           } catch {
             /* keep previous texture */
@@ -159,7 +165,7 @@ function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: nu
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [config, geo, pxPerCm, assetTick, relief]);
+  }, [config, geo, pxPerCm, assetTick, relief, production, guides]);
   return textures;
 }
 
@@ -167,8 +173,8 @@ function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: nu
 function useWeaveMaps(fabricId: string, repeatW: number, repeatH: number) {
   return useMemo(() => {
     const f = getFabric(fabricId);
-    const look = FABRIC_LOOK[f.weave];
-    const period = WEAVE_PERIOD_CM[f.weave];
+    const look = { ...FABRIC_LOOK[f.weave], ...f.look };
+    const period = WEAVE_PERIOD_CM[f.weave] * (f.yarnScale ?? 1);
     const rep: [number, number] = [repeatW / period, repeatH / period];
     const bump = new THREE.CanvasTexture(weaveCanvas(f.weave));
     bump.wrapS = bump.wrapT = THREE.RepeatWrapping;
@@ -275,16 +281,16 @@ function Buttonhole({ h, thread }: { h: ButtonholeData; thread: string }) {
   );
 }
 
-export function Garment({ config, centered = true, relief = true }: { config: DesignConfig; centered?: boolean; relief?: boolean }) {
+export function Garment({ config, centered = true, relief = true, production = false, guides = false }: { config: DesignConfig; centered?: boolean; relief?: boolean; production?: boolean; guides?: boolean }) {
   const geo = useMemo(() => buildGarmentGeometry(config), [config]);
   const m = geo.measurements;
-  const { maps, relief: reliefMaps } = useZoneTextures(config, geo, 14, relief);
+  const { maps, relief: reliefMaps } = useZoneTextures(config, geo, 14, relief, production, guides);
   const g = useMemo(() => ({
     front: toGeometry(geo.front), back: toGeometry(geo.back), sleeveLeft: toGeometry(geo.sleeveLeft), sleeveRight: toGeometry(geo.sleeveRight),
-    collar: geo.collar.map(toGeometry), cuffs: geo.cuffs.map(toGeometry), placket: geo.placket ? toGeometry(geo.placket) : null, pockets: geo.pockets.map(toGeometry),
+    collar: geo.collar.map(toGeometry), cuffs: geo.cuffs.map(toGeometry), placket: geo.placket ? toGeometry(geo.placket) : null, pockets: geo.pockets.map(toGeometry), sleevePlackets: geo.sleevePlackets.map(toGeometry),
   }), [geo]);
   useEffect(() => () => {
-    [g.front, g.back, g.sleeveLeft, g.sleeveRight, ...g.collar, ...g.cuffs, ...g.pockets, g.placket].forEach((x) => x?.dispose());
+    [g.front, g.back, g.sleeveLeft, g.sleeveRight, ...g.collar, ...g.cuffs, ...g.pockets, ...g.sleevePlackets, g.placket].forEach((x) => x?.dispose());
   }, [g]);
   const torsoRepeat: [number, number] = [m.chest / 2 + 6, m.bodyLength + 5];
   const sleeveRepeat: [number, number] = [m.bicep + 4, m.sleeveLength + 3];
@@ -309,6 +315,11 @@ export function Garment({ config, centered = true, relief = true }: { config: De
           <FabricMaterial config={config} panel="cuffs" map={i === 0 ? maps.cuffs : maps.cuffsPlain} normalMap={relief ? (ribCuffs ? trimNormal("rib", Math.round(m.sleeveOpening * 2.2)) : trimNormal("cuff")) : undefined} repeat={[m.sleeveOpening, 6]} />
         </mesh>
       ))}
+      {g.sleevePlackets.map((sg, i) => (
+        <mesh key={`sp${i}`} geometry={sg} castShadow receiveShadow name="panel-sleeve-placket">
+          <FabricMaterial config={config} panel={i === 0 ? "sleeveLeft" : "sleeveRight"} normalMap={relief ? trimNormal("placket") : undefined} repeat={[3, 14]} />
+        </mesh>
+      ))}
       {g.placket && <mesh geometry={g.placket} castShadow receiveShadow name="panel-placket"><FabricMaterial config={config} panel="placket" color={panelColor(config, c.placket === "contrast" || config.panels.placket.color ? "placket" : "front")} normalMap={relief ? trimNormal("placket") : undefined} repeat={[3, m.bodyLength]} /></mesh>}
       {g.pockets.map((pg, i) => <mesh key={`pocket${i}`} geometry={pg} castShadow receiveShadow name="panel-pocket"><FabricMaterial config={config} panel="pocket" map={i === 0 || (i === 2 && c.pocketCount === 2 && c.pocketStyle === "patch") ? maps.pocket : undefined} normalMap={relief ? trimNormal("pocket") : undefined} repeat={[m.pocketWidth, m.pocketHeight]} /></mesh>)}
       {geo.buttonholes.map((h, i) => <Buttonhole key={`bh${i}`} h={h} thread={thread} />)}
@@ -317,39 +328,20 @@ export function Garment({ config, centered = true, relief = true }: { config: De
   );
 }
 
-function Avatar({ config, body, appearance, armDrop }: { config: DesignConfig; body?: Partial<BodyMeasurements>; appearance?: AvatarAppearance; armDrop: number }) {
+/** Flagship avatar under the garment: Atlas (men), Aura (women) or Nova (kids), proportioned from the body measurements. */
+function Avatar({ config, body, appearance, armDrop }: { config: DesignConfig; body?: Partial<AvatarBody>; appearance?: AvatarAppearance; armDrop: number }) {
   const m = useMemo(() => buildGarmentGeometry(config, { resolution: 12, folds: false }).measurements, [config]);
-  const spec = useMemo(() => avatarSpec({ ...bodyForSize(config.audience, config.size), ...(body ?? {}) } as BodyMeasurements, appearance ?? { ...DEFAULT_APPEARANCE, bodyType: config.audience === "women" ? "feminine" : config.audience === "kids" ? "child" : "masculine" }, armDrop), [config.audience, config.size, body, appearance, armDrop]);
-  const skin = appearance?.skinTone ?? DEFAULT_APPEARANCE.skinTone;
-  const torso = useMemo(() => {
-    const pts = spec.torsoProfile.map(([r, y]) => new THREE.Vector2(Math.max(0.1, r), y)).reverse();
-    const geom = new THREE.LatheGeometry(pts, 48);
-    geom.scale(1, 1, spec.depthRatio);
-    return geom;
-  }, [spec]);
-  const limb = (from: number[], to: number[], r0: number, r1: number, key: string) => {
-    const a = new THREE.Vector3(...from);
-    const b = new THREE.Vector3(...to);
-    const mid = a.clone().add(b).multiplyScalar(0.5);
-    const dir = b.clone().sub(a);
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-    return (
-      <mesh key={key} position={mid} quaternion={q} castShadow>
-        <cylinderGeometry args={[r1, r0, dir.length(), 24]} />
-        <meshStandardMaterial color={skin} roughness={0.65} />
-      </mesh>
-    );
-  };
-  return (
-    <group position={[0, m.bodyLength / 2 - 4 - 0.6, -0.2]}>
-      <mesh geometry={torso} castShadow><meshStandardMaterial color={skin} roughness={0.65} /></mesh>
-      <mesh position={[0, (spec.neck.y0 + spec.neck.y1) / 2, 0]}><cylinderGeometry args={[spec.neck.r * 0.9, spec.neck.r, spec.neck.y1 - spec.neck.y0, 24]} /><meshStandardMaterial color={skin} roughness={0.65} /></mesh>
-      <mesh position={[0, spec.head.y, 0]} scale={[0.86, 1.08, 0.95]} castShadow><sphereGeometry args={[spec.head.r, 32, 32]} /><meshStandardMaterial color={skin} roughness={0.6} /></mesh>
-      {spec.hair && <mesh position={[0, spec.hair.y, -1]} scale={[1, spec.hair.ry / spec.hair.rx, 1]}><sphereGeometry args={[spec.hair.rx * 0.92, 32, 16, 0, Math.PI * 2, 0, Math.PI / 1.7]} /><meshStandardMaterial color="#1d1612" roughness={0.9} /></mesh>}
-      {spec.arms.map((a, i) => limb(a.from, a.to, a.r0, a.r1, `arm${i}`))}
-      {spec.legs.map((l, i) => limb(l.from, l.to, l.r0, l.r1, `leg${i}`))}
-    </group>
-  );
+  const full = useMemo(() => ({ ...bodyForSize(config.audience, config.size), ...(body ?? {}) }) as AvatarBody, [config.audience, config.size, body]);
+  const model = appearance?.model ?? (appearance?.bodyType ? modelForBodyType(appearance.bodyType) : modelForAudience(config.audience));
+  const style = useMemo<AvatarStyle>(() => ({
+    model,
+    skinTone: appearance?.skinTone ?? DEFAULT_APPEARANCE.skinTone,
+    hair: appearance?.hair ?? AVATAR_INFO[model].hair,
+    build: appearance?.build ?? "average",
+    armDropDeg: armDrop,
+    pose: appearance?.pose ?? "fit",
+  }), [model, appearance?.skinTone, appearance?.hair, appearance?.build, appearance?.pose, armDrop]);
+  return <FlagshipAvatar body={full} style={style} position={[0, m.bodyLength / 2 - 4 - 0.6, -0.2]} />;
 }
 
 const VIEW_DIRS: Record<ViewPreset, [number, number, number]> = {
@@ -509,7 +501,7 @@ function defaultQuality(compact?: boolean): RenderQuality {
 }
 
 export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>(function GarmentViewer(
-  { config, autoRotate, compact, view = "three-quarter", lighting = "studio", exposure = 1, showAvatar, avatar, transparentBackground, controls: controlsMode, quality: qualityProp, showStats, onReady },
+  { config, autoRotate, compact, view = "three-quarter", lighting = "studio", exposure = 1, showAvatar, avatar, production = false, guides = false, transparentBackground, controls: controlsMode, quality: qualityProp, showStats, onReady },
   ref,
 ) {
   const controls = useRef<OrbitControlsImpl | null>(null);
@@ -545,9 +537,16 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
   }, []);
   const widthNeeded = geo.measurements.chest / 2 + geo.measurements.sleeveLength * 1.5 + 6; // body + both sleeves hanging outwards
   const fitDistance = (widthNeeded * 1.08) / (2 * Math.tan((32 / 2) * (Math.PI / 180)) * aspect);
-  const distance = Math.max((compact ? 2.1 : 2.4) * size, fitDistance) + (showAvatar ? 40 : 0);
+  // With an avatar, frame head to knee (scroll out for the full figure).
+  const distance = Math.max((compact ? 2.1 : 2.4) * size, fitDistance) + (showAvatar ? 95 : 0);
+  const avatarFloor = useMemo(() => {
+    if (!showAvatar) return 0;
+    const body = { ...bodyForSize(config.audience, config.size), ...(avatar?.body ?? {}) } as AvatarBody;
+    const rig = buildAvatar(body, { model: modelForAudience(config.audience), skinTone: "#000000", hair: "none", build: "average", armDropDeg: 50 });
+    return geo.measurements.bodyLength / 2 - 4.6 + rig.floorY;
+  }, [showAvatar, config.audience, config.size, avatar?.body, geo.measurements.bodyLength]);
   const centreOffset = geo.measurements.bodyLength / 2 - 4;
-  const viewGoal = useCallback((v: ViewPreset): Omit<CameraGoal, "id"> => ({ position: new THREE.Vector3(...VIEW_DIRS[v]).normalize().multiplyScalar(distance).toArray() as [number, number, number], target: [0, 0, 0] }), [distance]);
+  const viewGoal = useCallback((v: ViewPreset): Omit<CameraGoal, "id"> => ({ position: new THREE.Vector3(...VIEW_DIRS[v]).normalize().multiplyScalar(distance).add(new THREE.Vector3(0, showAvatar ? -18 : 0, 0)).toArray() as [number, number, number], target: [0, showAvatar ? -18 : 0, 0] }), [distance, showAvatar]);
   const [goal, setGoal] = useState<CameraGoal | null>(null);
   const goalId = useRef(0);
   const go = useCallback((g: Omit<CameraGoal, "id">) => setGoal({ ...g, id: ++goalId.current }), []);
@@ -641,10 +640,10 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
           <Lightformer form="circle" intensity={0.7} position={[0, 8, -6]} scale={6} />
         </Environment>
         <group ref={garmentRef}>
-          <Garment config={config} relief={quality !== "low"} />
+          <Garment config={config} relief={quality !== "low"} production={production} guides={guides} />
         </group>
         {showAvatar && <Avatar config={config} body={avatar?.body} appearance={avatar?.appearance} armDrop={geo.sleeveAngleDeg} />}
-        <ContactShadows position={[0, -geo.measurements.bodyLength / 2 - (showAvatar ? 90 : 4), 0]} opacity={0.5} scale={200} blur={2.6} far={120} resolution={512} />
+        <ContactShadows position={[0, showAvatar ? avatarFloor : -geo.measurements.bodyLength / 2 - 4, 0]} opacity={0.5} scale={200} blur={2.6} far={120} resolution={512} />
         <OrbitControls ref={controls} makeDefault enablePan enableDamping autoRotate={spin} autoRotateSpeed={0.8} minDistance={size * 0.25} maxDistance={size * 5} />
         <CameraRig goal={goal} controls={controls} />
         {quality !== "low" && <PostFX quality={quality} composerRef={composerRef} />}

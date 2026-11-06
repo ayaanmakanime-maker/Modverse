@@ -23,18 +23,22 @@ import { mailbox } from "@/lib/services/account";
 import * as C from "@/lib/services/courier";
 import { shiprocketSim } from "../stubs/shiprocket-sim";
 
+/** Unique per run, so every integration file can share one PostgreSQL database (PGlite gives each file its own). */
+const RUN = Math.random().toString(36).slice(2, 8);
+const em = (address: string) => address.replace("@", `+${RUN}@`);
+
 async function makeUser(email: string, role: "customer" | "staff" | "admin" = "customer"): Promise<SessionUser> {
   const db = await getDb();
-  const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
-  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, sessionId: "test" };
+  const [u] = await db.insert(s.users).values({ email, name: email.split("@")[0].split("+")[0], passwordHash: await hashPassword("Correct-Horse-Battery-9"), role }).returning();
+  return { id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: false, isGuest: false, sessionId: "test" };
 }
 
 let alice: SessionUser, admin: SessionUser, orderId: string;
 const TOKEN = "sr-webhook-token-0123456789";
 
 beforeAll(async () => {
-  alice = await makeUser("alice@example.com");
-  admin = await makeUser("ops-admin@example.com", "admin");
+  alice = await makeUser(em("alice@example.com"));
+  admin = await makeUser(em("ops-admin@example.com"), "admin");
   const { project } = await createProject(alice, { modelId: "tee-classic-crew", audience: "men" });
   const cfg = createDesign("tee-classic-crew", "men");
   cfg.layers = [createTextLayer(cfg, "KOCHI", "center-chest")];

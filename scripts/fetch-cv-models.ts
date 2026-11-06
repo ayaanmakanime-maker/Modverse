@@ -1,7 +1,8 @@
 /**
  * Sets up local computer-vision assets for the virtual trial room:
  *  - copies the MediaPipe Tasks Vision WASM runtime from node_modules to public/mediapipe/wasm
- *  - downloads the Pose Landmarker (lite) and Selfie Segmenter models (Apache-2.0) to public/models
+ *  - downloads the Pose Landmarker (lite), Selfie Segmenter, Selfie Multiclass and MagicTouch
+ *    interactive segmenter models (Apache-2.0) to public/models
  * Both directories are git-ignored. Without them, the trial room falls back to the public CDNs.
  *
  * Usage: npm run models:fetch
@@ -16,6 +17,10 @@ const MODELS_OUT = path.join(ROOT, "public/models");
 const MODELS: [string, string][] = [
   ["pose_landmarker_lite.task", "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"],
   ["selfie_segmenter.tflite", "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite"],
+  // Body scanner: hair / skin / clothes / accessories classes (detects loose clothing and held objects).
+  ["selfie_multiclass_256x256.tflite", "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite"],
+  // Atelier Pro: AI object selection (tap an object to select it).
+  ["magic_touch.tflite", "https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite"],
 ];
 
 async function main() {

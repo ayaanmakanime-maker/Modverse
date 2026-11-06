@@ -20,7 +20,7 @@ const schema = z.object({
 });
 
 /**
- * The Muse. Questions → suggestions. Instructions → the four-layer pipeline:
+ * AI Muse. Questions → suggestions. Instructions → the four-layer pipeline:
  * Fashion Director (model provider if configured, else local rules) → artwork
  * → design compiler → a previewed, undoable transaction the editor applies.
  */
