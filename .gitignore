@@ -32,3 +32,6 @@ npm-debug.log*
 # local computer-vision runtime & models (npm run models:fetch)
 public/mediapipe/
 public/models/
+
+# supplied character models (licence unconfirmed → kept out of the public repository; see public/avatars/README.md)
+public/avatars/*.fbx

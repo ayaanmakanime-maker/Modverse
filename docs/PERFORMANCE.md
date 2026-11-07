@@ -61,5 +61,16 @@ The fake camera shows a test pattern (no person), so this verifies the pipeline,
 
 Warp meshes (128–200 clipped copies) and stacked filters cost more to rasterise than plain layers; they are only generated for layers that use them. All figures are software-rendered in a GPU-less container — measure on real devices.
 
+## Supplied characters (V2.2) — cost of wearing a garment on the FBX avatars
+Measured in the same GPU-less container with the development build (unminified, so a production build and a real CPU are faster), through the `performance` marks the viewer records (`performance.getEntriesByType("measure")`):
+| Step | Man (Atlas) | Woman (Aura) | Notes |
+|---|---|---|---|
+| Download + FBXLoader parse of the 6.6 / 5.9 MB file (`mv-avatar-fbx-parse-*`) | 1.5–2.6 s | 2.2 s | once per page, main thread; the character is cached for later avatars |
+| Texture decode + preparation (`mv-avatar-textures-*`, `mv-avatar-prepare-*`) | 0.3–0.7 s | 0.3–0.4 s | outfit split, skin fill, collision surface, weight source, clips |
+| Garment bind (`mv-garment-bind`): collision push + skin weights | ≈ 0.9–1.2 s | ≈ 1.0 s | first bind per garment geometry; a colour / artwork edit reuses the bound geometry (cached by content signature). A size, fit or body change re-binds once, 140 ms after the last slider move |
+| Steady state | | | 9 draw calls for the body, ≈ 11 garment meshes, 78–110k triangles; continuous rendering only while Idle / Walk / Run plays |
+
+The first version of the bind took 2.8–4.9 s (every body vertex was a collision point and normals were smoothed per vertex); decimating the collision surface to one point per 0.8 cm voxel and the weight source to 0.5 cm cut it to about a second. The FBX files are the dominant download (≈ 12 MB for both); they are fetched only when an avatar is shown.
+
 ## Not measured here
 Real mobile devices, network throttling, GPU frame times, long-session memory growth. These need physical hardware.

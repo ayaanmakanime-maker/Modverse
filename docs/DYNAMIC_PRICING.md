@@ -6,7 +6,7 @@
 
 ## Model
 ```
-unit price = model base price (retail, × kids factor)
+unit price = model base price (retail)
            + Σ material      components  (cost × material margin)
            + Σ construction  components  (cost × construction margin)
            + Σ decoration    components  (cost × decoration margin)
@@ -30,7 +30,7 @@ Every component is an itemised line with a category, a customer-readable detail 
 * Order items store a **price snapshot** (itemised breakdown, rules version, placements) — later rule changes never alter past orders.
 
 ## Configuration (admin)
-Margins per category · GST low/high rate and threshold · shipping flat rate and free-shipping threshold · kids factor · plus-size surcharge · fabric cost per m² by category · GSM step cost · consumption threshold · construction cost table · decoration per-cm², minimum and setup per method · screen cost per colour · embroidery cost per 1,000 stitches and stitch density · illustrative label. A live preview shows example designs before and after changes; changes are audited and can be reset to defaults. Stored as the `pricing` platform setting (versioned, Zod-validated; V1 values fall back to defaults; the legacy `shipping` setting is honoured until v2 rules are saved).
+Margins per category · GST low/high rate and threshold · shipping flat rate and free-shipping threshold · plus-size surcharge · fabric cost per m² by category · GSM step cost · consumption threshold · construction cost table · decoration per-cm², minimum and setup per method · screen cost per colour · embroidery cost per 1,000 stitches and stitch density · illustrative label. A live preview shows example designs before and after changes; changes are audited and can be reset to defaults. Stored as the `pricing` platform setting (versioned, Zod-validated; V1 values fall back to defaults; the legacy `shipping` setting is honoured until v2 rules are saved).
 
 ## Discounts
 `discount_codes` (migration 0003): percent (≤ 90 %) or fixed, minimum subtotal, maximum discount, start/end dates, total usage limit, per-customer limit, active flag. Codes are validated when applied to the cart and again at every cart read and at checkout (expired / not yet active / minimum not met / limit reached / already used). Orders store `discount` and `discount_code`.

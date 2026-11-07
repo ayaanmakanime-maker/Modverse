@@ -1,7 +1,7 @@
 "use client";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, createPortal, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -12,7 +12,8 @@ import { isSoftwareRenderer } from "@/lib/three/capabilities";
 import { useResolvedTheme } from "@/components/theme";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import type { DesignConfig } from "@/lib/garment/schema";
-import { buildGarmentGeometry, type ButtonData, type ButtonholeData, type GarmentGeometry, type MeshData } from "@/lib/three/garment-geometry";
+import { buildGarmentGeometry, SLEEVE_DROP_DEG, type ButtonData, type ButtonholeData, type GarmentGeometry, type MeshData } from "@/lib/three/garment-geometry";
+import { bakeGarment, GarmentSkin, instantiate, loadAvatarAsset, placementFor, setFace, SHOULDER_X, type AvatarAsset, type FbxModel } from "@/lib/three/fbx-avatar";
 import { zoneReliefSvg, zoneTextureSvg, NO_ASSETS, type AssetResolver } from "@/lib/render/compose";
 import { ensureDesignAssets, embeddedFontCss, fontNeeds, getDataUrl, getPatternUrl, getSvg, subscribeAssets } from "@/lib/render/assets";
 import { panelColor, panelFabricId } from "@/lib/garment/design";
@@ -62,8 +63,17 @@ export interface GarmentViewerHandle {
 
 const resolver: AssetResolver = { svg: getSvg, dataUrl: getDataUrl, patternUrl: getPatternUrl };
 
+/** Cheap content signature: equal geometry (e.g. after a colour or artwork edit) keeps its skinned copy. */
+function meshSig(d: MeshData): string {
+  const p = d.positions;
+  let h = 0;
+  for (let i = 0; i < p.length; i += 21) h += p[i] * 13 + p[i + 1] * 17 + p[i + 2] * 19;
+  return `${p.length}:${h.toFixed(3)}`;
+}
+
 function toGeometry(d: MeshData): THREE.BufferGeometry {
   const g = new THREE.BufferGeometry();
+  g.userData.sig = meshSig(d);
   g.setAttribute("position", new THREE.BufferAttribute(d.positions, 3));
   g.setAttribute("uv", new THREE.BufferAttribute(d.uvs, 2));
   g.setIndex(new THREE.BufferAttribute(d.indices, 1));
@@ -281,7 +291,44 @@ function Buttonhole({ h, thread }: { h: ButtonholeData; thread: string }) {
   );
 }
 
-export function Garment({ config, centered = true, relief = true, production = false, guides = false }: { config: DesignConfig; centered?: boolean; relief?: boolean; production?: boolean; guides?: boolean }) {
+/** A garment mesh: static, or skinned onto the supplied character's skeleton when `skin` is set. */
+function Piece({ geometry, skin, name, children }: { geometry: THREE.BufferGeometry; skin: GarmentSkin | null; name: string; children: ReactNode }) {
+  // bound copies are owned (and disposed) by the skin
+  const bound = useMemo(() => (skin ? skin.bind(geometry, String(geometry.userData.sig ?? geometry.uuid)) : null), [skin, geometry]);
+  if (!skin || !bound) return <mesh geometry={geometry} castShadow receiveShadow name={name}>{children}</mesh>;
+  return (
+    <skinnedMesh geometry={bound} ref={(m: THREE.SkinnedMesh | null) => { if (m) skin.attach(m); }} castShadow receiveShadow name={name}>
+      {children}
+    </skinnedMesh>
+  );
+}
+
+/** Trim (buttons, buttonholes) that rides on the bone nearest to it when the garment is worn by the character. */
+function Mounted({ skin, at, children }: { skin: GarmentSkin | null; at: [number, number, number]; children: ReactNode }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const holder = useMemo(() => {
+    const g = new THREE.Group();
+    g.name = "mv-mount";
+    g.matrixAutoUpdate = false;
+    return g;
+  }, []);
+  useLayoutEffect(() => {
+    if (!skin) return;
+    const { bone, matrix } = skin.mountFor(at);
+    holder.matrix.copy(matrix);
+    holder.matrixWorldNeedsUpdate = true;
+    bone.add(holder);
+    skin.mounts.add(holder);
+    invalidate();
+    return () => {
+      bone.remove(holder);
+      skin.mounts.delete(holder);
+    };
+  }, [skin, at, holder, invalidate]);
+  return skin ? createPortal(children, holder) : <>{children}</>;
+}
+
+export function Garment({ config, centered = true, relief = true, production = false, guides = false, skin = null }: { config: DesignConfig; centered?: boolean; relief?: boolean; production?: boolean; guides?: boolean; skin?: GarmentSkin | null }) {
   const geo = useMemo(() => buildGarmentGeometry(config), [config]);
   const m = geo.measurements;
   const { maps, relief: reliefMaps } = useZoneTextures(config, geo, 14, relief, production, guides);
@@ -292,6 +339,13 @@ export function Garment({ config, centered = true, relief = true, production = f
   useEffect(() => () => {
     [g.front, g.back, g.sleeveLeft, g.sleeveRight, ...g.collar, ...g.cuffs, ...g.pockets, ...g.sleevePlackets, g.placket].forEach((x) => x?.dispose());
   }, [g]);
+  // Worn by the supplied character: skin and collision-resolve every piece together before the pieces render.
+  useMemo(() => {
+    if (!skin) return;
+    const primary = [g.front, g.back, g.sleeveLeft, g.sleeveRight];
+    const all = [...primary, ...g.collar, ...g.cuffs, ...g.pockets, ...g.sleevePlackets, g.placket].filter((x): x is THREE.BufferGeometry => !!x);
+    skin.prepare(all.map((geo) => ({ geo, sig: String(geo.userData.sig ?? geo.uuid), primary: primary.includes(geo) })));
+  }, [skin, g]);
   const torsoRepeat: [number, number] = [m.chest / 2 + 6, m.bodyLength + 5];
   const sleeveRepeat: [number, number] = [m.bicep + 4, m.sleeveLength + 3];
   const c = config.construction;
@@ -301,38 +355,154 @@ export function Garment({ config, centered = true, relief = true, production = f
   const ribCuffs = c.cuff === "rib";
   return (
     <group position={centered ? [0, m.bodyLength / 2 - 4, 0] : [0, 0, 0]}>
-      <mesh geometry={g.front} castShadow receiveShadow name="panel-front"><FabricMaterial config={config} panel="front" map={maps.front} normalMap={reliefMaps.front} repeat={torsoRepeat} /></mesh>
-      <mesh geometry={g.back} castShadow receiveShadow name="panel-back"><FabricMaterial config={config} panel="back" map={maps.back} normalMap={reliefMaps.back} repeat={torsoRepeat} /></mesh>
-      <mesh geometry={g.sleeveLeft} castShadow receiveShadow name="panel-sleeve-left"><FabricMaterial config={config} panel="sleeveLeft" map={maps.sleeveLeft} normalMap={reliefMaps.sleeveLeft} repeat={sleeveRepeat} /></mesh>
-      <mesh geometry={g.sleeveRight} castShadow receiveShadow name="panel-sleeve-right"><FabricMaterial config={config} panel="sleeveRight" map={maps.sleeveRight} normalMap={reliefMaps.sleeveRight} repeat={sleeveRepeat} /></mesh>
+      <Piece geometry={g.front} skin={skin} name="panel-front"><FabricMaterial config={config} panel="front" map={maps.front} normalMap={reliefMaps.front} repeat={torsoRepeat} /></Piece>
+      <Piece geometry={g.back} skin={skin} name="panel-back"><FabricMaterial config={config} panel="back" map={maps.back} normalMap={reliefMaps.back} repeat={torsoRepeat} /></Piece>
+      <Piece geometry={g.sleeveLeft} skin={skin} name="panel-sleeve-left"><FabricMaterial config={config} panel="sleeveLeft" map={maps.sleeveLeft} normalMap={reliefMaps.sleeveLeft} repeat={sleeveRepeat} /></Piece>
+      <Piece geometry={g.sleeveRight} skin={skin} name="panel-sleeve-right"><FabricMaterial config={config} panel="sleeveRight" map={maps.sleeveRight} normalMap={reliefMaps.sleeveRight} repeat={sleeveRepeat} /></Piece>
       {g.collar.map((cg, i) => (
-        <mesh key={`collar${i}`} geometry={cg} castShadow receiveShadow name="panel-collar">
+        <Piece key={`collar${i}`} geometry={cg} skin={skin} name="panel-collar">
           <FabricMaterial config={config} panel="collar" map={i === 0 ? maps.collar : undefined} normalMap={relief ? (shirt ? trimNormal(i === 0 ? "stand" : "leaf") : trimNormal("rib", Math.round(m.collarSize * 2.2))) : undefined} normalScale={shirt ? 1 : 0.8} repeat={[m.collarSize, 6]} />
-        </mesh>
+        </Piece>
       ))}
       {g.cuffs.map((cg, i) => (
-        <mesh key={`cuff${i}`} geometry={cg} castShadow receiveShadow name="panel-cuffs">
+        <Piece key={`cuff${i}`} geometry={cg} skin={skin} name="panel-cuffs">
           <FabricMaterial config={config} panel="cuffs" map={i === 0 ? maps.cuffs : maps.cuffsPlain} normalMap={relief ? (ribCuffs ? trimNormal("rib", Math.round(m.sleeveOpening * 2.2)) : trimNormal("cuff")) : undefined} repeat={[m.sleeveOpening, 6]} />
-        </mesh>
+        </Piece>
       ))}
       {g.sleevePlackets.map((sg, i) => (
-        <mesh key={`sp${i}`} geometry={sg} castShadow receiveShadow name="panel-sleeve-placket">
+        <Piece key={`sp${i}`} geometry={sg} skin={skin} name="panel-sleeve-placket">
           <FabricMaterial config={config} panel={i === 0 ? "sleeveLeft" : "sleeveRight"} normalMap={relief ? trimNormal("placket") : undefined} repeat={[3, 14]} />
-        </mesh>
+        </Piece>
       ))}
-      {g.placket && <mesh geometry={g.placket} castShadow receiveShadow name="panel-placket"><FabricMaterial config={config} panel="placket" color={panelColor(config, c.placket === "contrast" || config.panels.placket.color ? "placket" : "front")} normalMap={relief ? trimNormal("placket") : undefined} repeat={[3, m.bodyLength]} /></mesh>}
-      {g.pockets.map((pg, i) => <mesh key={`pocket${i}`} geometry={pg} castShadow receiveShadow name="panel-pocket"><FabricMaterial config={config} panel="pocket" map={i === 0 || (i === 2 && c.pocketCount === 2 && c.pocketStyle === "patch") ? maps.pocket : undefined} normalMap={relief ? trimNormal("pocket") : undefined} repeat={[m.pocketWidth, m.pocketHeight]} /></mesh>)}
-      {geo.buttonholes.map((h, i) => <Buttonhole key={`bh${i}`} h={h} thread={thread} />)}
-      {geo.buttons.map((b, i) => <GarmentButton key={`btn${i}`} b={b} color={c.buttons.color} material={c.buttons.material} thread={thread} />)}
+      {g.placket && <Piece geometry={g.placket} skin={skin} name="panel-placket"><FabricMaterial config={config} panel="placket" color={panelColor(config, c.placket === "contrast" || config.panels.placket.color ? "placket" : "front")} normalMap={relief ? trimNormal("placket") : undefined} repeat={[3, m.bodyLength]} /></Piece>}
+      {g.pockets.map((pg, i) => <Piece key={`pocket${i}`} geometry={pg} skin={skin} name="panel-pocket"><FabricMaterial config={config} panel="pocket" map={i === 0 || (i === 2 && c.pocketCount === 2 && c.pocketStyle === "patch") ? maps.pocket : undefined} normalMap={relief ? trimNormal("pocket") : undefined} repeat={[m.pocketWidth, m.pocketHeight]} /></Piece>)}
+      {geo.buttonholes.map((h, i) => <Mounted key={`bh${i}`} skin={skin} at={h.position}><Buttonhole h={h} thread={thread} /></Mounted>)}
+      {geo.buttons.map((b, i) => <Mounted key={`btn${i}`} skin={skin} at={b.position}><GarmentButton b={b} color={c.buttons.color} material={c.buttons.material} thread={thread} /></Mounted>)}
     </group>
   );
+}
+
+/** Fine alignment of the garment's shoulder line to the supplied characters' (cm, world space). */
+const FBX_SHOULDER_LIFT = 0;
+const FBX_Z_SHIFT = 0;
+
+/** y of the garment's shoulder line (outer surface at SHOULDER_X from the centre), in garment space. */
+function shoulderLineY(geo: GarmentGeometry): number {
+  let y = -Infinity;
+  for (const mesh of [geo.front, geo.back]) {
+    const p = mesh.positions;
+    for (let i = 0; i < p.length; i += 3) if (Math.abs(Math.abs(p[i]) - SHOULDER_X) <= 1.5 && p[i + 1] > y) y = p[i + 1];
+  }
+  return isFinite(y) ? y : 0;
+}
+
+type FbxStatus = "idle" | "loading" | "ready" | "missing";
+
+/** Loads the supplied FBX character for a model once (cached app-wide); "missing" when the file is not installed. */
+function useFbxAsset(model: FbxModel | null): { asset: AvatarAsset | null; status: FbxStatus } {
+  const [state, setState] = useState<{ model: FbxModel | null; asset: AvatarAsset | null; status: FbxStatus }>({ model: null, asset: null, status: "idle" });
+  useEffect(() => {
+    if (!model) return;
+    let live = true;
+    loadAvatarAsset(model).then((asset) => {
+      if (live) setState({ model, asset, status: asset ? "ready" : "missing" });
+    });
+    return () => {
+      live = false;
+    };
+  }, [model]);
+  if (!model) return { asset: null, status: "idle" };
+  return state.model === model ? state : { asset: null, status: "loading" };
+}
+
+/** A value that follows `value` after it has been stable for `ms` (slider drags re-skin the garment once, not on every tick). */
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
+const avatarModelOf = (config: DesignConfig, appearance?: AvatarAppearance) => appearance?.model ?? (appearance?.bodyType ? modelForBodyType(appearance.bodyType) : modelForAudience(config.audience));
+
+/**
+ * The supplied FBX character (Man → Atlas, Woman → Aura) wearing the designed garment: the garment is skinned to the
+ * character's skeleton (weights copied from the nearest body vertices), so every pose and animation moves it.
+ */
+function FbxRig({ asset, appearance, body, dropDeg, sleeveEnd, anchorWorld, origin, onSkin }: { asset: AvatarAsset; appearance?: AvatarAppearance; body: AvatarBody; dropDeg: number; sleeveEnd: [number, number, number]; anchorWorld: THREE.Vector3; origin: THREE.Vector3; onSkin: (s: GarmentSkin | null) => void }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const inst = useMemo(() => instantiate(asset), [asset]);
+  useEffect(() => () => inst.dispose(), [inst]);
+  const motion = appearance?.motion ?? "rest";
+  const expression = appearance?.expression ?? "neutral";
+  const placement = useMemo(() => placementFor(asset.info, body.height, anchorWorld), [asset, body.height, anchorWorld]);
+  const target = useMemo(() => ({ height: body.height, chest: body.chest, waist: body.waist, hip: body.hip }), [body.height, body.chest, body.waist, body.hip]);
+  const tone = appearance?.skinTone && appearance.skinTone.toLowerCase() !== DEFAULT_APPEARANCE.skinTone.toLowerCase() ? appearance.skinTone : null;
+  useLayoutEffect(() => {
+    inst.shape(target);
+    invalidate();
+  }, [inst, target, invalidate]);
+  useLayoutEffect(() => {
+    inst.place(placement);
+    invalidate();
+  }, [inst, placement, invalidate]);
+  useLayoutEffect(() => {
+    inst.tint(tone);
+    invalidate();
+  }, [inst, tone, invalidate]);
+  // Arms point from the shoulder joint at the centre of the sleeve opening, so they sit in the sleeves instead of beside them.
+  const aim = useMemo(() => {
+    const j = placement.position.clone().add(asset.info.armJoint.clone().multiplyScalar(placement.scale)).sub(origin); // joint in garment space
+    const dx = sleeveEnd[0] - j.x, dy = sleeveEnd[1] - j.y;
+    if (Math.hypot(dx, dy) < 8 || dx <= 0 || dy >= 0) return dropDeg;
+    return Math.round(Math.min(80, Math.max(30, (Math.atan2(-dy, dx) * 180) / Math.PI)) * 2) / 2;
+  }, [asset, placement, origin, sleeveEnd, dropDeg]);
+  const mixer = useMemo(() => new THREE.AnimationMixer(inst.root), [inst]);
+  useEffect(() => () => {
+    mixer.stopAllAction();
+    mixer.uncacheRoot(inst.root);
+  }, [mixer, inst]);
+  // static garment pose, or a looping clip (the garment is bound to the garment pose, so it follows either)
+  useLayoutEffect(() => {
+    mixer.stopAllAction();
+    inst.poseForGarment(aim);
+    const clip = motion === "rest" ? undefined : asset.clips[motion];
+    if (clip) mixer.clipAction(clip).reset().play();
+    mixer.update(0);
+    invalidate();
+  }, [mixer, inst, asset, motion, aim, invalidate]);
+  useLayoutEffect(() => {
+    if (motion === "rest") setFace(inst.face, expression, 0);
+    invalidate();
+  }, [inst, expression, motion, invalidate]);
+  const blink = useRef({ t: 0, next: 2.2 });
+  useFrame((_, dt) => {
+    if (motion === "rest") return;
+    mixer.update(Math.min(dt, 0.05));
+    const b = blink.current;
+    b.t += dt;
+    const k = Math.max(0, 1 - Math.abs(b.t - b.next) / 0.09);
+    if (b.t > b.next + 0.09) b.next = b.t + 2.5 + Math.random() * 3;
+    setFace(inst.face, expression, k);
+  });
+  const skin = useMemo(() => new GarmentSkin(asset, inst, origin, placement, aim, target), [asset, inst, origin, placement, aim, target]);
+  useEffect(() => {
+    onSkin(skin);
+    return () => {
+      onSkin(null);
+      skin.dispose();
+    };
+  }, [skin, onSkin]);
+  return <primitive object={inst.root} />;
 }
 
 /** Flagship avatar under the garment: Atlas (men) or Aura (women), proportioned from the body measurements. */
 function Avatar({ config, body, appearance, armDrop }: { config: DesignConfig; body?: Partial<AvatarBody>; appearance?: AvatarAppearance; armDrop: number }) {
   const m = useMemo(() => buildGarmentGeometry(config, { resolution: 12, folds: false }).measurements, [config]);
   const full = useMemo(() => ({ ...bodyForSize(config.audience, config.size), ...(body ?? {}) }) as AvatarBody, [config.audience, config.size, body]);
-  const model = appearance?.model ?? (appearance?.bodyType ? modelForBodyType(appearance.bodyType) : modelForAudience(config.audience));
+  const model = avatarModelOf(config, appearance);
   const style = useMemo<AvatarStyle>(() => ({
     model,
     skinTone: appearance?.skinTone ?? DEFAULT_APPEARANCE.skinTone,
@@ -537,16 +707,32 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
   }, []);
   const widthNeeded = geo.measurements.chest / 2 + geo.measurements.sleeveLength * 1.5 + 6; // body + both sleeves hanging outwards
   const fitDistance = (widthNeeded * 1.08) / (2 * Math.tan((32 / 2) * (Math.PI / 180)) * aspect);
-  // With an avatar, frame head to knee (scroll out for the full figure).
-  const distance = Math.max((compact ? 2.1 : 2.4) * size, fitDistance) + (showAvatar ? 95 : 0);
+  // The supplied FBX character when its file is installed (public/avatars), otherwise the procedural Atlas / Aura.
+  const fbx = useFbxAsset(showAvatar ? avatarModelOf(config, avatar?.appearance) : null);
+  const [fbxSkin, setFbxSkin] = useState<GarmentSkin | null>(null);
+  const fbxSkinRef = useRef<GarmentSkin | null>(null);
+  fbxSkinRef.current = fbxSkin;
+  const liveBody = useMemo(() => ({ ...bodyForSize(config.audience, config.size), ...(avatar?.body ?? {}) }) as AvatarBody, [config.audience, config.size, avatar?.body]);
+  // the supplied character is re-shaped and the garment re-bound only when the sliders settle
+  const settledBody = useDebounced(liveBody, 140);
+  const fullBody = fbx.asset ? settledBody : liveBody;
+  const garmentOrigin = useMemo(() => new THREE.Vector3(0, geo.measurements.bodyLength / 2 - 4, 0), [geo.measurements.bodyLength]);
+  const anchorWorld = useMemo(() => garmentOrigin.clone().add(new THREE.Vector3(0, shoulderLineY(geo) + FBX_SHOULDER_LIFT, FBX_Z_SHIFT)), [garmentOrigin, geo]);
+  const animating = !!showAvatar && !!fbx.asset && (avatar?.appearance?.motion ?? "rest") !== "rest";
   const avatarFloor = useMemo(() => {
     if (!showAvatar) return 0;
-    const body = { ...bodyForSize(config.audience, config.size), ...(avatar?.body ?? {}) } as AvatarBody;
-    const rig = buildAvatar(body, { model: modelForAudience(config.audience), skinTone: "#000000", hair: "none", build: "average", armDropDeg: 50 });
+    if (fbx.asset) return placementFor(fbx.asset.info, fullBody.height, anchorWorld).position.y;
+    const rig = buildAvatar(fullBody, { model: modelForAudience(config.audience), skinTone: "#000000", hair: "none", build: "average", armDropDeg: 50 });
     return geo.measurements.bodyLength / 2 - 4.6 + rig.floorY;
-  }, [showAvatar, config.audience, config.size, avatar?.body, geo.measurements.bodyLength]);
+  }, [showAvatar, fbx.asset, fullBody, anchorWorld, config.audience, geo.measurements.bodyLength]);
+  // With an avatar, frame the figure from just above the head to the knees (scroll out for the whole body).
+  const figure = showAvatar && fbx.asset ? { top: avatarFloor + fullBody.height + 5, bottom: avatarFloor + fullBody.height * 0.3 } : null;
+  const focusY = figure ? (figure.top + figure.bottom) / 2 : showAvatar ? -18 : 0;
+  const distance = figure
+    ? Math.max(((figure.top - figure.bottom) / 2) * 1.06 / Math.tan((32 / 2) * (Math.PI / 180)), fitDistance * 1.25)
+    : Math.max((compact ? 2.1 : 2.4) * size, fitDistance) + (showAvatar ? 95 : 0);
   const centreOffset = geo.measurements.bodyLength / 2 - 4;
-  const viewGoal = useCallback((v: ViewPreset): Omit<CameraGoal, "id"> => ({ position: new THREE.Vector3(...VIEW_DIRS[v]).normalize().multiplyScalar(distance).add(new THREE.Vector3(0, showAvatar ? -18 : 0, 0)).toArray() as [number, number, number], target: [0, showAvatar ? -18 : 0, 0] }), [distance, showAvatar]);
+  const viewGoal = useCallback((v: ViewPreset): Omit<CameraGoal, "id"> => ({ position: new THREE.Vector3(...VIEW_DIRS[v]).normalize().multiplyScalar(distance).add(new THREE.Vector3(0, focusY, 0)).toArray() as [number, number, number], target: [0, focusY, 0] }), [distance, focusY]);
   const [goal, setGoal] = useState<CameraGoal | null>(null);
   const goalId = useRef(0);
   const go = useCallback((g: Omit<CameraGoal, "id">) => setGoal({ ...g, id: ++goalId.current }), []);
@@ -573,7 +759,10 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
       const root = garmentRef.current;
       if (!root) return null;
       const { GLTFExporter } = await import("three/examples/jsm/exporters/GLTFExporter.js");
-      const result = await new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true });
+      // Worn by the supplied character the garment is skinned: export it as the static shape it has right now.
+      const skin = fbxSkinRef.current;
+      const target = skin ? bakeGarment(root, skin.mounts) : root;
+      const result = await new GLTFExporter().parseAsync(target, { binary: true, onlyVisible: true });
       return new Blob([result as ArrayBuffer], { type: "model/gltf-binary" });
     },
   }));
@@ -586,13 +775,13 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
     return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-mute">3D preview needs WebGL, which isn&apos;t available in this browser. The 2D editor and all other features still work.</div>;
   const btn = "rounded-full px-2.5 py-1 text-[0.66rem] text-bone-2 transition hover:bg-surface-3 hover:text-bone";
   return (
-    <div ref={wrapRef} className="relative h-full w-full" data-testid="garment-viewer">
+    <div ref={wrapRef} className="relative h-full w-full" data-testid="garment-viewer" data-avatar={!showAvatar ? "none" : fbx.status === "ready" ? "character" : fbx.status === "missing" ? "procedural" : "loading"} data-motion={animating ? avatar?.appearance?.motion : "rest"} data-garment={showAvatar && fbx.asset && fbxSkin ? "skinned" : "static"}>
       <Canvas
         shadows
         // Render on demand: frames are drawn only when the design, camera, lighting or size changes
         // (continuous only while auto-rotating or measuring FPS). Saves battery and keeps the editor
         // responsive on devices without a fast GPU.
-        frameloop={spin || showStats ? "always" : "demand"}
+        frameloop={spin || showStats || animating ? "always" : "demand"}
         dpr={[1, quality === "low" ? 1.5 : 2]}
         camera={{ position: viewGoal(view).position, fov: 32, near: 1, far: 5000 }}
         gl={{ preserveDrawingBuffer: true, antialias: true, toneMappingExposure: exposure }}
@@ -640,11 +829,12 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
           <Lightformer form="circle" intensity={0.7} position={[0, 8, -6]} scale={6} />
         </Environment>
         <group ref={garmentRef}>
-          <Garment config={config} relief={quality !== "low"} production={production} guides={guides} />
+          <Garment config={config} relief={quality !== "low"} production={production} guides={guides} skin={showAvatar && fbx.asset ? fbxSkin : null} />
         </group>
-        {showAvatar && <Avatar config={config} body={avatar?.body} appearance={avatar?.appearance} armDrop={geo.sleeveAngleDeg} />}
+        {showAvatar && fbx.asset && <FbxRig asset={fbx.asset} appearance={avatar?.appearance} body={fullBody} dropDeg={SLEEVE_DROP_DEG[config.construction.sleeveStyle] ?? 54} sleeveEnd={geo.anchors.cuff} anchorWorld={anchorWorld} origin={garmentOrigin} onSkin={setFbxSkin} />}
+        {showAvatar && fbx.status === "missing" && <Avatar config={config} body={avatar?.body} appearance={avatar?.appearance} armDrop={geo.sleeveAngleDeg} />}
         <ContactShadows position={[0, showAvatar ? avatarFloor : -geo.measurements.bodyLength / 2 - 4, 0]} opacity={0.5} scale={200} blur={2.6} far={120} resolution={512} />
-        <OrbitControls ref={controls} makeDefault enablePan enableDamping autoRotate={spin} autoRotateSpeed={0.8} minDistance={size * 0.25} maxDistance={size * 5} />
+        <OrbitControls ref={controls} makeDefault enablePan enableDamping autoRotate={spin} autoRotateSpeed={0.8} minDistance={size * 0.25} maxDistance={size * 5 + (showAvatar ? 200 : 0)} />
         <CameraRig goal={goal} controls={controls} />
         {quality !== "low" && <PostFX quality={quality} composerRef={composerRef} />}
         {showStats && <Stats onSample={setStats} />}
@@ -668,6 +858,7 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
           </div>
         </div>
       )}
+      {showAvatar && fbx.status === "loading" && <p className="pointer-events-none absolute bottom-2 left-2 rounded bg-ink/80 px-2 py-1 text-[0.62rem] text-mute" role="status" data-testid="avatar-loading">Loading character…</p>}
       {showStats && stats && (
         <p className="pointer-events-none absolute bottom-2 right-2 rounded bg-ink/80 px-2 py-1 font-mono text-[0.62rem] text-mute" data-testid="viewer-stats">{stats.fps} fps · {stats.calls} meshes · {(stats.triangles / 1000).toFixed(0)}k tris · {quality}</p>
       )}

@@ -353,6 +353,17 @@ function panelMesh(outline: Pt[], canvas: Rect, mapFn: (x: number, y: number) =>
   return { positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint32Array(indices) };
 }
 
+/** Reverse the winding of every triangle (so the front faces point the other way). */
+function flipWinding(mesh: MeshData): MeshData {
+  const ix = mesh.indices;
+  for (let t = 0; t < ix.length; t += 3) {
+    const b = ix[t + 1];
+    ix[t + 1] = ix[t + 2];
+    ix[t + 2] = b;
+  }
+  return mesh;
+}
+
 function gridMesh(rows: V3[][], uvFn: (i: number, j: number) => [number, number], closedU = false): MeshData {
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -458,7 +469,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       }
       rows.push(row);
     }
-    const mesh = gridMesh(rows, (i, j) => {
+    const grid = gridMesh(rows, (i, j) => {
       const t = j / (ROWS - 1);
       const cc = -0.5 + i / N;
       const circ = m.bicep + (m.sleeveOpening - m.bicep) * t;
@@ -467,6 +478,9 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       const yf = t * sl.length;
       return [(xf - sleeveCanvas.x0) / SW, 1 - (yf - sleeveCanvas.y0) / SH];
     });
+    // The ring parametrisation runs the other way round on the wearer's left: flip it so front faces point outwards
+    // (inward-facing triangles shaded the left sleeve with the wrong side's normal).
+    const mesh = side === 1 ? flipWinding(grid) : grid;
     return { mesh, endRing: rows[ROWS - 1], dir, shoulder, endCenter, rEnd };
   };
   const left = buildSleeve(1);
@@ -613,7 +627,8 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const along = mul(s.dir, rel[0] * s.dir[0] + rel[1] * s.dir[1] + rel[2] * s.dir[2]);
         return norm(mul(sub(rel, along), -1));
       };
-      cuffs.push(shellMesh(rows, (c.cuff === "rib" ? 0.22 : 0.3) * tk, axisAt, uv, { j0: true, j1: true }));
+      const cuffShell = shellMesh(rows, (c.cuff === "rib" ? 0.22 : 0.3) * tk, axisAt, uv, { j0: true, j1: true });
+      cuffs.push(side === 1 ? flipWinding(cuffShell) : cuffShell); // same mirrored ring order as the sleeve
       if (shirt && c.cuff !== "rib" && c.buttons.count > 0) {
         // Cuff button on the back of the wrist (towards the little finger), mid-height.
         let bi = 0;

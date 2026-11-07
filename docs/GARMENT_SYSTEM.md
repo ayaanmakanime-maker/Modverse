@@ -4,7 +4,7 @@
 15 T-shirt and 17 shirt models (`src/lib/garment/models.ts`), each a distinct parametric configuration — fit block, construction, fabric, GSM and style deltas. A unit test asserts that all 32 produce different configurations and measurements. Availability: Men/Women all models except kids-inappropriate ones (cropped tee, slim formal, longline shirt are adult-only).
 
 ## Measurement engine
-`computeMeasurements(config)` = body size chart (Indian men/women/kids) + **fit block** ease (slim → oversized) + model deltas + user **adjustments** (cm). Outputs chest/waist/hem, body length, shoulder, sleeve length/bicep/opening, armhole, neck width/drops, collar/cuff heights, hem curve, drop-shoulder amount, placket, yoke and pocket sizes. Kids proportions (neck width, hem curve, mock-neck drop) scale with height. Values are estimates — a manufacturer's graded chart replaces them before production.
+`computeMeasurements(config)` = body size chart (Indian men/women) + **fit block** ease (slim → oversized) + model deltas + user **adjustments** (cm). Outputs chest/waist/hem, body length, shoulder, sleeve length/bicep/opening, armhole, neck width/drops, collar/cuff heights, hem curve, drop-shoulder amount, placket, yoke and pocket sizes. Kids proportions (neck width, hem curve, mock-neck drop) scale with height. Values are estimates — a manufacturer's graded chart replaces them before production.
 
 ## Construction options & compatibility
 `optionAvailability()` drives garment-specific controls (collars only on shirts, henley placket only on henley tees, cuffs by sleeve length…). `normalizeDesign()` corrects impossible combinations and reports each correction (shown to the user).
