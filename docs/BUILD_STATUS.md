@@ -43,16 +43,16 @@ Status labels (V2 spec, Part 17): **Fully implemented** — works end-to-end wit
 |---|---|
 | `npm run lint` | 0 errors, 0 warnings |
 | `npm run typecheck` | clean |
-| `npm test` (Vitest) | **172 / 172** passed in 24 files — 136 unit + 36 integration (PGlite) |
-| Integration on **PostgreSQL 16** (`DATABASE_URL`) | **36 / 36** passed in one run of `npx vitest run tests/integration` against a single freshly migrated database (`npm run db:migrate` applied migrations 0000–0007, 52 tables). Fixture e-mails are unique per run; the suite expects an empty database |
+| `npm test` (Vitest) | **193 / 193** passed in 26 files — 151 unit + 42 integration (PGlite) |
+| Integration on **PostgreSQL 16** (`DATABASE_URL`) | **36 / 36** passed at the V2.1 milestone (the 6 Meta Muse image-provider tests added since then have run on PGlite only) in one run of `npx vitest run tests/integration` against a single freshly migrated database (`npm run db:migrate` applied migrations 0000–0007, 52 tables). Fixture e-mails are unique per run; the suite expects an empty database |
 | `npm run build` | passed |
-| `npm run test:e2e` (Playwright, Chromium) | **31 / 31** passed — incl. the customer journey, partner journey, Atelier Pro tools, Fabric Lab, body scanner, avatars and mobile |
+| `npm run test:e2e` (Playwright, Chromium) | **36 / 36** passed (35 desktop + 1 mobile, 8.9 min) — incl. the customer journey, partner journey, Atelier Pro tools, Fabric Lab, body scanner, avatars, **the supplied FBX characters (both models, walk, editor controls, GLB export of the worn garment, procedural fallback)** and mobile |
 | `npm run perf` | recorded in `docs/evaluation/performance.json` (earlier V2-G run) |
 | `npm run ai:eval` | recorded in `docs/evaluation/ai-eval-results.json` (local rules; hosted models not evaluated — no credentials) |
-| Visual checks | Effects grid (33 composer effects), fabric close-ups (9 profiles), flagship garments and Atlas/Aura/Nova renders captured in headless Chromium (software WebGL) during development |
+| Visual checks | Effects grid (33 composer effects), fabric close-ups (9 profiles), flagship garments and renders of the supplied Atlas / Aura characters wearing tees and shirts (rest, idle, walk, run, collar close-ups) captured in headless Chromium (software WebGL) during development |
 
 ## V2.2 (commits)
-`4cd4811` Meta Muse Image integration for AI artwork generation · `085a743` Kids range removed (Men and Women only) · characters commit (this change set): supplied FBX characters, garment skinning, motion / face controls, sleeve-winding fix.
+`4cd4811` Meta Muse Image integration for AI artwork generation · `085a743` Kids range removed (Men and Women only) · `2fdfd28` supplied FBX characters, garment skinning, motion / face controls, sleeve-winding fix.
 
 ## Ultracode upgrade (commits)
 `27201cd` Atelier Pro editing suite · `36c5bd3` garment-aware editing + Fabric Lab · `cbcfbe3` flagship garment construction · `c4ab478` Atlas/Aura/Nova avatars · `6653d7c` guided body scanner · `7ff9be8` AI Muse naming + capability adapters.
