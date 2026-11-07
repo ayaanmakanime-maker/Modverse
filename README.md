@@ -6,7 +6,7 @@
 
 ModVerse lets customers design the *garment itself* — silhouette, construction, proportions, fabric, every panel, typography and artwork — guided by **AI Muse** (an AI Fashion Director whose proposals are compiled, validated and applied as one undoable step), previewed in realistic parametric **3D**, tried on with a **live camera**, checked by a **manufacturing rules engine**, priced from real manufacturing cost drivers, ordered through a full commerce flow and fulfilled by approved **manufacturer and logistics partners**. Initial market: India. Initial catalogue: Men's, Women's and Kids' T-shirts (15 models) and shirts (17 models).
 
-Everything runs **locally with no paid services or credentials**. External providers (OpenAI, Ollama, ComfyUI, Razorpay, Shiprocket, Resend, Google sign-in, …) are prepared behind an admin **Integration Manager** and stay inactive until tested and enabled.
+Everything runs **locally with no paid services or credentials**. External providers (OpenAI, Meta Muse, Ollama, ComfyUI, Razorpay, Shiprocket, Resend, Google sign-in, …) are prepared behind an admin **Integration Manager** and stay inactive until tested and enabled.
 
 ## Quick start (macOS / Linux, Node ≥ 20.9)
 
@@ -18,6 +18,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 
 * The database is **embedded PostgreSQL (PGlite)** stored in `.data/` — no install required. Set `DATABASE_URL` to use any PostgreSQL server instead (verified on PostgreSQL 16).
 * On first start, an admin, a staff and a demo customer account are created with **random passwords written to `.data/ADMIN_CREDENTIALS.txt`** (git-ignored). Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` to choose your own.
+* **Characters:** put the supplied rigged models at `public/avatars/man.fbx` (Atlas, Men) and `public/avatars/woman.fbx` (Aura, Women) to wear designs on real characters with poses, walk/run and a face. They are committed with the repo (owner-confirmed) and optional — without them the built-in procedural avatars are used. See `public/avatars/README.md`.
 * `npm run models:fetch` downloads the MediaPipe pose/segmentation models for the trial room; without them it falls back to the public MediaPipe CDN.
 * Copy `.env.example` to `.env.local` only if you need to override defaults. **Never commit `.env*` or `.data/`.**
 
@@ -26,17 +27,17 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | Area | Highlights |
 |---|---|
 | Brand | Official logo stored byte-for-byte; responsive treatments are crops / alpha-masks of the original (`scripts/derive-brand-assets.py`). |
-| Catalogue | Men / Women / Kids, 32 distinct parametric models, 19 fabrics, Indian size charts, flats generated from real geometry. |
+| Catalogue | Men / Women, 32 distinct parametric models, 19 fabrics, Indian size charts, flats generated from real geometry. |
 | Design experiences | **Design Studio** (guided), **Atelier** (advanced), **Atelier Pro** (professional) — one engine, three workflows. |
 | Garment engine | Fit, proportions, neckline/collar, placket, sleeves/cuffs, hem, pockets, yoke, pleats, darts, buttons, stitching, monogram, 11 independent panels. |
 | Typography | 34 OFL fonts (incl. Devanagari, Tamil, Bengali), curved/circular/vertical text, outline, shadow, background, skew; identical in 2D, 3D and print. |
-| Creative Library | The supplied v0.1 library (1,000 assets, 20 collections) **plus the ModVerse Studio Library** — ~970 original assets in 24 collections (festive & desi, mandala/rangoli, wildlife, pets, kids, sports, music, gaming, food, travel, wellness, botanical, surf, retro, celestial, streetwear, celebration, campus, eco, abstract, line art, stickers, badges, seamless patterns). Every graphic is recolourable (≤5 colours) and one-tap palette-swappable; place on any 2D/3D surface. |
-| AI Muse | Local deterministic text-to-design + conversational editing that applies validated operations; optional Ollama/OpenAI. |
-| 3D | React Three Fiber parametric garments (lofted sleeves, collars, plackets, buttons, pockets, cuffs), fabric relief, avatar. |
+| Creative Library | The supplied v0.1 library (1,000 assets, 20 collections) **plus the ModVerse Studio Library** — ~970 original assets in 24 collections (festive & desi, mandala/rangoli, wildlife, pets, playful characters, sports, music, gaming, food, travel, wellness, botanical, surf, retro, celestial, streetwear, celebration, campus, eco, abstract, line art, stickers, badges, seamless patterns). Every graphic is recolourable (≤5 colours) and one-tap palette-swappable; place on any 2D/3D surface. |
+| AI Muse | Local deterministic text-to-design + conversational editing that applies validated operations; optional Ollama/OpenAI. AI artwork generation through ComfyUI, **Meta Muse Image** or OpenAI — all inactive until an admin adds a key, passes the connection test and enables it (Meta's generation endpoint additionally needs billing set up on the Meta team). |
+| 3D | React Three Fiber parametric garments (lofted sleeves, collars, plackets, buttons, pockets, cuffs), fabric relief, worn by **rigged characters** — Atlas (Men) and Aura (Woman) from the supplied FBX files with Idle / Walk / Run, a real face and body-matched sizing, or the built-in procedural avatars when the files are absent. |
 | Trial room | MediaPipe on-device pose tracking — Level A (2D), B (3D on landmarks), C (experimental occlusion). |
 | Manufacturing | Validation engine with fixes, tech pack PDF/JSON, BOM, measurement sheet, print-ready SVG / 300 DPI PNG, CAD exchange JSON. |
 | Commerce | Cart, checkout, order snapshots, simulated payments (labelled) or Razorpay test mode with signature verification, order tracking. |
-| Accounts | **Guest mode** (one-click account with every signed-in feature, savable later), Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements, avatars, guardian-managed child profiles. |
+| Accounts | **Guest mode** (one-click account with every signed-in feature, savable later), Argon2id auth, sessions, password reset & email verification (simulated mailbox), measurements and avatars. |
 | Admin | Analytics, orders + production approval, design reviews, production board, shipping, disputes, partner approval, pricing & discounts, users/roles, catalogue, library, Integration Manager, audit log, settings. |
 | **V2: AI pipeline** | Fashion Director (local rules, or Ollama / Gemini / OpenAI / on-device Gemini Nano when enabled) → artwork resolution → design compiler (validated, previewed, priced) → applied as one undoable transaction. |
 | **V2: fit & try-on** | Live trial room that doubles as a **fit check** — every size compared zone by zone with your measurements against the garment's design intent, best size, and a fit map on your live image; fit analysis keeps *estimated*, *simulated* and customer-*verified* fit separate. |
@@ -61,4 +62,4 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 
 ## Honesty notes
 
-Size recommendations are estimates; avatars are visual representations; 3D garments are parametric visualisations (not cloth simulation); the trial room is pose-tracked overlay, not physically accurate clothing; tech packs are **design-intent documents, not factory-ready patterns**; payments are simulated unless a provider is configured; manufacturers and logistics companies work through the partner portals, but courier bookings (AWB, labels) are ModVerse-issued until a courier API is connected; prices are illustrative until supplier rates are verified. See [/about/honesty](src/app/(site)/about/honesty/page.tsx).
+Size recommendations are estimates; avatars are visual representations (the garment on the rigged characters is skinned to the skeleton, not cloth-simulated); 3D garments are parametric visualisations; the trial room is pose-tracked overlay, not physically accurate clothing; tech packs are **design-intent documents, not factory-ready patterns**; payments are simulated unless a provider is configured; manufacturers and logistics companies work through the partner portals, but courier bookings (AWB, labels) are ModVerse-issued until a courier API is connected; prices are illustrative until supplier rates are verified. See [/about/honesty](src/app/(site)/about/honesty/page.tsx).

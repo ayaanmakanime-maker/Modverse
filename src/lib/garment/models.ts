@@ -100,7 +100,7 @@ const SHIRT_BASE: Construction = {
 const tee = (c: Partial<Construction>): Construction => ({ ...TEE_BASE, ...c, buttons: { ...TEE_BASE.buttons, ...(c.buttons ?? {}) }, stitching: { ...TEE_BASE.stitching, ...(c.stitching ?? {}) } });
 const shirt = (c: Partial<Construction>): Construction => ({ ...SHIRT_BASE, ...c, buttons: { ...SHIRT_BASE.buttons, ...(c.buttons ?? {}) }, stitching: { ...SHIRT_BASE.stitching, ...(c.stitching ?? {}) } });
 
-const ALL: Audience[] = ["men", "women", "kids"];
+const ALL: Audience[] = ["men", "women"];
 const ADULT: Audience[] = ["men", "women"];
 
 export const GARMENT_MODELS: GarmentModel[] = [

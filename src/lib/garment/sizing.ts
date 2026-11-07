@@ -32,18 +32,9 @@ export const SIZE_CHARTS: Record<Audience, SizeRow[]> = {
     { size: "XL", height: 170, chest: 102, waist: 85, hip: 110, shoulder: 42, armLength: 59, neck: 37, bicep: 32 },
     { size: "XXL", height: 172, chest: 108, waist: 91, hip: 116, shoulder: 43.5, armLength: 60, neck: 38.5, bicep: 34 },
   ],
-  kids: [
-    { size: "2-3Y", height: 92, chest: 53, waist: 51, hip: 55, shoulder: 25, armLength: 33, neck: 26, bicep: 16 },
-    { size: "3-4Y", height: 104, chest: 55, waist: 52, hip: 58, shoulder: 26.5, armLength: 37, neck: 27, bicep: 17 },
-    { size: "5-6Y", height: 116, chest: 59, waist: 55, hip: 63, shoulder: 29.5, armLength: 42, neck: 28, bicep: 18 },
-    { size: "7-8Y", height: 128, chest: 64, waist: 58, hip: 68, shoulder: 31.5, armLength: 46, neck: 29.5, bicep: 19.5 },
-    { size: "9-10Y", height: 140, chest: 70, waist: 62, hip: 75, shoulder: 34, armLength: 50, neck: 31, bicep: 21 },
-    { size: "11-12Y", height: 152, chest: 76, waist: 66, hip: 81, shoulder: 36.5, armLength: 54, neck: 32.5, bicep: 22.5 },
-    { size: "13-14Y", height: 164, chest: 82, waist: 69, hip: 87, shoulder: 39, armLength: 57, neck: 34, bicep: 24 },
-  ],
 };
 
-export const DEFAULT_SIZE: Record<Audience, string> = { men: "M", women: "M", kids: "7-8Y" };
+export const DEFAULT_SIZE: Record<Audience, string> = { men: "M", women: "M" };
 
 export function sizesFor(audience: Audience): string[] {
   return SIZE_CHARTS[audience].map((r) => r.size);
@@ -82,7 +73,7 @@ export const FIT_BLOCKS: Record<Fit, FitBlock> = {
 const SLEEVE_RULE: Record<SleeveLength, number> = { short: 0.34, elbow: 0.52, "three-quarter": 0.74, long: 1.0 };
 
 function lengthRatio(audience: Audience, type: GarmentType): number {
-  const base = audience === "men" ? 0.41 : audience === "women" ? 0.39 : 0.385;
+  const base = audience === "men" ? 0.41 : 0.39;
   return type === "shirt" ? base + 0.025 : base;
 }
 
@@ -96,27 +87,25 @@ export function computeMeasurements(config: Pick<DesignConfig, "audience" | "gar
   const d = model.deltas;
   const a = config.adjustments;
   const c = config.construction;
-  const kids = config.audience === "kids";
-  const scale = kids ? body.height / 140 : 1;
 
   const chest = body.chest + fit.chestEase + (d.chest ?? 0) + a.bodyWidth * 2;
   const waist = Math.min(chest, body.waist + fit.waistEase + (d.waist ?? 0) + a.waistShaping + a.bodyWidth * 2 + (config.audience === "men" ? 6 : 0));
   const hem = Math.max(waist, Math.min(chest + 6, body.hip + fit.hemEase - 6 + a.bodyWidth * 2 + (config.garmentType === "shirt" ? 2 : 0)));
 
-  const dropAmount = c.sleeveStyle === "drop-shoulder" ? Math.max(4, fit.shoulderDelta * 0.75) * (kids ? 0.6 : 1) : 0;
+  const dropAmount = c.sleeveStyle === "drop-shoulder" ? Math.max(4, fit.shoulderDelta * 0.75) : 0;
   const shoulderWidth = body.shoulder + fit.shoulderDelta + (d.shoulder ?? 0) + a.shoulderWidth + (c.sleeveStyle === "drop-shoulder" ? dropAmount : 0);
 
-  const bodyLength = body.height * lengthRatio(config.audience, config.garmentType) + fit.lengthDelta * (kids ? 0.6 : 1) + (d.length ?? 0) + a.bodyLength;
+  const bodyLength = body.height * lengthRatio(config.audience, config.garmentType) + fit.lengthDelta + (d.length ?? 0) + a.bodyLength;
 
   const sleeveFactor = SLEEVE_RULE[c.sleeveLength] * (d.sleeveLengthFactor ?? 1);
   let sleeveLength = body.armLength * sleeveFactor + (c.sleeveLength === "long" ? (config.garmentType === "shirt" ? 2 : 0) : fit.sleeveLengthDelta) - dropAmount * 0.8 + a.sleeveLength;
   if (c.sleeveStyle === "raglan") sleeveLength += body.shoulder * 0.18; // raglan sleeve measured from neck seam region
-  sleeveLength = Math.max(6 * scale, sleeveLength);
+  sleeveLength = Math.max(6, sleeveLength);
 
   const bicepBody = body.bicep ?? body.chest * 0.32;
   const widthFactor = fit.sleeveWidthFactor * (d.sleeveWidthFactor ?? 1);
   // Width factor scales the ease (plus a quarter of the arm), never the arm itself.
-  const bicep = bicepBody + (9 * scale + bicepBody * 0.25) * widthFactor - bicepBody * 0.25 + a.sleeveWidth * 2;
+  const bicep = bicepBody + (9 + bicepBody * 0.25) * widthFactor - bicepBody * 0.25 + a.sleeveWidth * 2;
   let sleeveOpening: number;
   if (c.sleeveLength === "long") sleeveOpening = config.garmentType === "shirt" ? body.chest * 0.235 + 1 : bicep * 0.62;
   else if (c.sleeveLength === "three-quarter") sleeveOpening = bicep * 0.72;
@@ -126,7 +115,7 @@ export function computeMeasurements(config: Pick<DesignConfig, "audience" | "gar
 
   const armholeDepth = body.chest * 0.235 + fit.armholeDelta + a.armholeDepth + dropAmount * 0.35;
 
-  const neckWidth = body.neck * (kids ? 0.52 : 0.46) + (d.neckWidth ?? 0) + a.neckWidth + (config.fit === "oversized" ? 1 : 0);
+  const neckWidth = body.neck * 0.46 + (d.neckWidth ?? 0) + a.neckWidth + (config.fit === "oversized" ? 1 : 0);
   let frontNeckDrop: number;
   switch (c.neckline) {
     case "v": frontNeckDrop = body.neck * 0.42; break;
@@ -135,8 +124,8 @@ export function computeMeasurements(config: Pick<DesignConfig, "audience" | "gar
     case "collared": frontNeckDrop = body.neck * 0.2; break;
     default: frontNeckDrop = body.neck * 0.24;
   }
-  frontNeckDrop = Math.max(0.5, frontNeckDrop + (d.neckDrop ?? 0) * (kids ? 0.5 : 1) + a.neckDrop);
-  const backNeckDrop = config.garmentType === "shirt" ? 1.2 * scale : 2 * scale;
+  frontNeckDrop = Math.max(0.5, frontNeckDrop + (d.neckDrop ?? 0) + a.neckDrop);
+  const backNeckDrop = config.garmentType === "shirt" ? 1.2 : 2;
 
   let collarHeight = d.collarHeight ?? (config.garmentType === "shirt" ? 7.5 : 2);
   if (config.garmentType === "shirt" && !d.collarHeight) {
@@ -144,18 +133,17 @@ export function computeMeasurements(config: Pick<DesignConfig, "audience" | "gar
     else if (c.collar === "band") collarHeight = 3;
     else if (c.collar === "camp") collarHeight = 6.5;
   }
-  if (kids) collarHeight *= 0.8;
   const cuffHeight = c.cuff === "french" ? 6.5 : c.cuff === "barrel" || c.cuff === "adjustable" || c.cuff === "convertible" ? 6 : c.cuff === "rib" ? 2.5 : 2;
 
-  // Model-default curve scales with child size and is capped; user adjustments are left for validation to judge.
-  const baseCurve = Math.min(bodyLength * 0.16, ((config.garmentType === "shirt" ? 5 : 3) + (d.hemCurve ?? 0)) * (kids ? scale : 1));
+  // The model-default curve is capped; user adjustments are left for validation to judge.
+  const baseCurve = Math.min(bodyLength * 0.16, ((config.garmentType === "shirt" ? 5 : 3) + (d.hemCurve ?? 0)));
   const hemCurve = c.hemShape === "curved" ? Math.max(0, baseCurve + a.hemCurve) : Math.max(0, a.hemCurve);
 
   const placketWidth = c.placket === "henley" ? 2.8 : c.placket === "french" ? 0 : c.placket === "none" ? 0 : 3.2;
-  const placketLength = c.placket === "henley" ? 14 * (kids ? 0.6 : 1) : c.placket === "none" ? 0 : bodyLength - frontNeckDrop;
-  const yokeDepth = c.backYoke === "none" ? 0 : c.backYoke === "western" ? 14 * (kids ? 0.65 : 1) : 10 * (kids ? 0.65 : 1);
-  const pocketWidth = (config.garmentType === "shirt" ? 12.5 : 11) * (kids ? 0.7 : 1);
-  const pocketHeight = (config.garmentType === "shirt" ? 14 : 12) * (kids ? 0.7 : 1);
+  const placketLength = c.placket === "henley" ? 14 : c.placket === "none" ? 0 : bodyLength - frontNeckDrop;
+  const yokeDepth = c.backYoke === "none" ? 0 : c.backYoke === "western" ? 14 : 10;
+  const pocketWidth = (config.garmentType === "shirt" ? 12.5 : 11);
+  const pocketHeight = (config.garmentType === "shirt" ? 14 : 12);
   const collarSize = body.neck + 2;
 
   return {
@@ -234,12 +222,9 @@ export function recommendSize(
 }
 
 /** Validate a body-measurement profile for plausibility. */
-export function validateBody(audience: Audience, body: Partial<BodyMeasurements>): string[] {
+export function validateBody(_audience: Audience, body: Partial<BodyMeasurements>): string[] {
   const errors: string[] = [];
-  const limits: Record<keyof BodyMeasurements, [number, number]> =
-    audience === "kids"
-      ? { height: [70, 180], chest: [40, 100], waist: [38, 95], hip: [40, 105], shoulder: [18, 45], armLength: [20, 65], neck: [20, 40], bicep: [10, 32], wrist: [8, 18], torsoLength: [20, 60] }
-      : { height: [130, 220], chest: [65, 170], waist: [50, 160], hip: [65, 170], shoulder: [30, 62], armLength: [45, 80], neck: [28, 55], bicep: [18, 55], wrist: [12, 25], torsoLength: [35, 80] };
+  const limits: Record<keyof BodyMeasurements, [number, number]> = { height: [130, 220], chest: [65, 170], waist: [50, 160], hip: [65, 170], shoulder: [30, 62], armLength: [45, 80], neck: [28, 55], bicep: [18, 55], wrist: [12, 25], torsoLength: [35, 80] };
   for (const [k, v] of Object.entries(body) as [keyof BodyMeasurements, number | undefined][]) {
     if (v === undefined || v === null) continue;
     const [min, max] = limits[k] ?? [0, 500];

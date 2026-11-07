@@ -122,7 +122,7 @@ export const measurementProfiles = pgTable(
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     childProfileId: uuid("child_profile_id").references(() => childProfiles.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    audience: text("audience", { enum: ["men", "women", "kids"] }).notNull(),
+    audience: text("audience", { enum: ["men", "women"] }).notNull(), // legacy rows may still read "kids" (retired range) — see normalizeAudience
     measurements: jsonb("measurements").notNull(),
     /** V2: per-field source (user / camera / derived), confidence and tolerance. */
     provenance: jsonb("provenance").notNull().default({}),
@@ -320,7 +320,7 @@ export const designProjects = pgTable(
     childProfileId: uuid("child_profile_id").references(() => childProfiles.id, { onDelete: "set null" }),
     themeId: uuid("theme_id").references(() => designThemes.id, { onDelete: "set null" }),
     name: text("name").notNull(),
-    audience: text("audience", { enum: ["men", "women", "kids"] }).notNull(),
+    audience: text("audience", { enum: ["men", "women"] }).notNull(), // legacy rows may still read "kids" (retired range) — see normalizeAudience
     garmentType: text("garment_type", { enum: ["tshirt", "shirt"] }).notNull(),
     modelId: text("model_id").notNull(),
     mode: text("mode", { enum: ["studio", "atelier", "pro"] }).notNull().default("studio"),

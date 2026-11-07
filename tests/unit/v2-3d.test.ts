@@ -23,15 +23,42 @@ function seamGap(pos: Float32Array, outline: [number, number][], y0: number, y1:
   return { count, maxZ };
 }
 
+/** Share of triangles whose front face points away from the mesh centre (outward-wound). */
+function outwardShare(mesh: { positions: Float32Array; indices: Uint32Array | number[] }): number {
+  const p = mesh.positions, ix = mesh.indices;
+  let cx = 0, cy = 0, cz = 0;
+  for (let i = 0; i < p.length; i += 3) { cx += p[i]; cy += p[i + 1]; cz += p[i + 2]; }
+  const n = p.length / 3;
+  cx /= n; cy /= n; cz /= n;
+  let out = 0;
+  for (let t = 0; t < ix.length; t += 3) {
+    const a = ix[t] * 3, b = ix[t + 1] * 3, c = ix[t + 2] * 3;
+    const ux = p[b] - p[a], uy = p[b + 1] - p[a + 1], uz = p[b + 2] - p[a + 2], vx = p[c] - p[a], vy = p[c + 1] - p[a + 1], vz = p[c + 2] - p[a + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const mx = (p[a] + p[b] + p[c]) / 3 - cx, my = (p[a + 1] + p[b + 1] + p[c + 1]) / 3 - cy, mz = (p[a + 2] + p[b + 2] + p[c + 2]) / 3 - cz;
+    if (nx * mx + ny * my + nz * mz > 0) out++;
+  }
+  return out / (ix.length / 3);
+}
+
 describe("V2 3D garment geometry", () => {
+  it("winds the wearer's left and right sleeves and cuffs the same way (the left ones used to be inside-out and rendered dark)", () => {
+    for (const id of ["shirt-classic-formal", "tee-regular"]) {
+      const geo = buildGarmentGeometry(createDesign(id, "men"), { resolution: 16, folds: false });
+      const l = outwardShare(geo.sleeveLeft), r = outwardShare(geo.sleeveRight);
+      expect(l).toBeGreaterThan(0.8);
+      expect(Math.abs(l - r)).toBeLessThan(0.02);
+      if (geo.cuffs.length === 2) expect(Math.abs(outwardShare(geo.cuffs[0]) - outwardShare(geo.cuffs[1]))).toBeLessThan(0.02);
+    }
+  });
+
   it("joins front and back panels exactly at the side seams for every model (no gaps)", () => {
     for (const m of GARMENT_MODELS) {
       const d = createDesign(m.id, m.audiences[0]);
       const geo = buildGarmentGeometry(d, { resolution: 48 });
       const meas = geo.measurements;
-      const kids = d.audience === "kids";
       for (const side of ["front", "back"] as const) {
-        const outline = torsoShape(meas, side, d.construction, kids).outline;
+        const outline = torsoShape(meas, side, d.construction).outline;
         const pos = side === "front" ? geo.front.positions : geo.back.positions;
         const g = seamGap(pos, outline, meas.armholeDepth + 1, meas.bodyLength - meas.hemCurve - 1 - (d.construction.sideSlits ? 8 : 0));
         expect(g.count, `${m.id} ${side} seam vertices`).toBeGreaterThan(10);
@@ -78,7 +105,7 @@ describe("V2 3D garment geometry", () => {
     const relief = zoneReliefSvg(d, "front", m, { density: 0.8, sharpness: 0.8, looseness: 0.2 });
     expect(relief.svg).toContain("stroke-dasharray"); // topstitching
     expect(relief.widthPx).toBeGreaterThan(200);
-    const t = torsoShape(m, "front", d.construction, false);
+    const t = torsoShape(m, "front", d.construction);
     expect(outlineHalfWidth(t.outline, m.armholeDepth + 5)).toBeGreaterThan(m.chest / 4 - 4);
   });
 

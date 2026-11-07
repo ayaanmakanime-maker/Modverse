@@ -81,7 +81,6 @@ export function AdminPricing() {
               <Num label="High rate above ₹" value={rules.tax.gstThreshold} onChange={(v) => set((r) => void (r.tax.gstThreshold = v))} />
               <Num label="Shipping flat ₹" value={rules.shipping.flatRate} onChange={(v) => set((r) => void (r.shipping.flatRate = v))} testid="ship-flat" />
               <Num label="Free shipping above ₹" value={rules.shipping.freeAbove} onChange={(v) => set((r) => void (r.shipping.freeAbove = v))} />
-              <Num label="Kids price factor" step={0.01} value={rules.kidsFactor} onChange={(v) => set((r) => void (r.kidsFactor = v))} />
             </div>
           </div>
           <div className="mv-card space-y-3 p-4">

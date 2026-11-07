@@ -1,6 +1,6 @@
 "use client";
 /**
- * Renders a flagship avatar (Atlas / Aura / Nova) as skinned meshes sharing
+ * Renders a flagship avatar (Atlas / Aura) as skinned meshes sharing
  * one THREE.Skeleton. Geometry comes from body measurements, so changing a
  * proportion rebuilds the body; poses rotate real bones.
  */
@@ -8,7 +8,7 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { buildAvatar, poseRotations, type AvatarBody, type AvatarStyle } from "@/lib/three/flagship-avatar";
 
-const HAIR: Record<string, string> = { atlas: "#21160f", aura: "#3a2216", nova: "#2b1a10" };
+const HAIR: Record<string, string> = { atlas: "#21160f", aura: "#3a2216" };
 
 export function FlagshipAvatar({ body, style, position }: { body: AvatarBody; style: AvatarStyle; position?: [number, number, number] }) {
   const rig = useMemo(() => buildAvatar(body, style), [body, style]);

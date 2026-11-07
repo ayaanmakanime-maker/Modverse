@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { AUDIENCES } from "@/lib/garment/types";
 import { GarmentFlat } from "@/components/garment/GarmentFlat";
 import { createDesign } from "@/lib/garment/design";
 import { getModel } from "@/lib/garment/models";
@@ -19,6 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
 
 export default async function CategoryPage({ params, searchParams }: { params: Promise<{ category: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { category } = await params;
+  if (!(AUDIENCES as readonly string[]).includes(category)) notFound(); // the Kids range is retired
   const query = parseCatalogueQuery(await searchParams);
   const db = await getDb();
   const [cat] = await db.select().from(categories).where(eq(categories.id, category));
@@ -33,7 +35,6 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       <p className="mv-eyebrow">ModVerse · {cat.name}</p>
       <h1 className="mv-display mt-2 text-5xl">{cat.name}</h1>
       <p className="mt-3 max-w-2xl text-bone-2">{cat.description}</p>
-      {category === "kids" && <p className="mt-3 max-w-2xl text-sm text-mute">Kidswear designs can be linked to guardian-managed child profiles. Children&apos;s measurements and photos are never shared publicly by default.</p>}
       <CatalogueFilters action={`/shop/${category}`} query={query} count={items.length} />
       {items.length === 0 && <p className="mt-8 text-sm text-mute">No models match these filters. <Link className="underline" href={`/shop/${category}`}>Clear filters</Link> or <Link className="underline" href="/design/new">start from scratch</Link>.</p>}
       <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">

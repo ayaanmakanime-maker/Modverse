@@ -7,7 +7,7 @@ import { GuestBanner } from "./GuestBanner";
 
 const NAV = [
   ["/account", "Dashboard"], ["/account/designs", "Designs"], ["/account/orders", "Orders"], ["/account/measurements", "Measurements"],
-  ["/account/avatars", "Avatars"], ["/account/family", "Family"], ["/account/addresses", "Addresses"], ["/account/wishlist", "Wishlist"],
+  ["/account/avatars", "Avatars"], ["/account/addresses", "Addresses"], ["/account/wishlist", "Wishlist"],
   ["/account/mailbox", "Mailbox"], ["/account/settings", "Settings"],
 ] as const;
 

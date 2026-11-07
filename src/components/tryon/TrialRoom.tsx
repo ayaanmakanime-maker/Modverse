@@ -400,7 +400,7 @@ export function TrialRoom({ config: baseConfig, body, fitMap, onCameraEstimate }
           const turn = Math.min(1.08, Math.max(0.38, scaleSpan / scale));
           const ex = { x: (ls.x - rs.x) / span, y: (ls.y - rs.y) / span };
           const ey = { x: -ex.y, y: ex.x };
-          const slope = shoulderSlope(m, config.audience === "kids");
+          const slope = shoulderSlope(m);
           // Raised arms pull the garment up (up to ~4 cm at full elevation).
           const elev = (s0: Pt, e0: Pt) => {
             const v = { x: e0.x - s0.x, y: e0.y - s0.y };
@@ -607,9 +607,9 @@ export function TrialRoom({ config: baseConfig, body, fitMap, onCameraEstimate }
                   {measure.estimates.map((e) => <li key={e.key} className="flex justify-between"><span>{e.key === "armLength" ? "Arm length" : e.key === "torsoLength" ? "Torso length" : "Shoulder width"}</span><span className="tabular-nums">{e.valueCm} cm <span className="text-mute">± {e.toleranceCm} cm · {e.confidence} confidence</span></span></li>)}
                 </ul>
                 <Notice tone="info">These are estimates from {measure.goodFrames} camera frames — not tape measurements. Only the numbers are used; no image is stored. Chest, waist and hips can&apos;t be measured reliably by a camera, so enter those yourself.</Notice>
-                {user && config.audience !== "kids" ? (
+                {user ? (
                   <Button size="sm" onClick={saveMeasurements} data-testid="tryon-measure-save">Save as a new measurement profile (labelled “camera estimate”)</Button>
-                ) : <p className="text-xs text-mute">{config.audience === "kids" ? "For children, a guardian enters measurements in Account → Family." : "Sign in to save these estimates to a measurement profile."}</p>}
+                ) : <p className="text-xs text-mute">Sign in to save these estimates to a measurement profile.</p>}
               </>
             )}
           </div>

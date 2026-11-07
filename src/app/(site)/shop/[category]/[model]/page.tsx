@@ -10,7 +10,7 @@ import { computeMeasurements, SIZE_CHARTS } from "@/lib/garment/sizing";
 import { formatINR } from "@/lib/garment/pricing";
 import { getDb } from "@/lib/db/client";
 import { products } from "@/lib/db/schema";
-import { FIT_LABELS } from "@/lib/garment/types";
+import { AUDIENCES, FIT_LABELS, type Audience } from "@/lib/garment/types";
 import { ProductActions } from "./ProductActions";
 import { ProductPreview3D } from "./ProductPreview3D";
 
@@ -24,11 +24,11 @@ export async function generateMetadata({ params }: { params: Promise<{ model: st
 export default async function ProductPage({ params }: { params: Promise<{ category: string; model: string }> }) {
   const { category, model: modelId } = await params;
   const model = MODEL_BY_ID.get(modelId);
-  if (!model || !model.audiences.includes(category as "men")) notFound();
+  if (!model || !(AUDIENCES as readonly string[]).includes(category) || !model.audiences.includes(category as Audience)) notFound();
   const db = await getDb();
   const [product] = await db.select().from(products).where(and(eq(products.categoryId, category), eq(products.garmentModelId, modelId)));
   if (!product || !product.active) notFound();
-  const audience = category as "men" | "women" | "kids";
+  const audience = category as Audience;
   const design = createDesign(model.id, audience);
   const fabric = getFabric(model.fabricId);
   const chart = SIZE_CHARTS[audience].map((r) => ({ size: r.size, m: computeMeasurements({ ...design, size: r.size }) }));

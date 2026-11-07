@@ -202,13 +202,12 @@ export interface BodyMapperOptions {
 }
 
 export function createBodyMapper(config: DesignConfig, m: GarmentMeasurements, opts: BodyMapperOptions = {}): BodyMapper {
-  const kids = config.audience === "kids";
   const halfNeck = m.neckWidth / 2;
   const shoulderX = m.shoulderWidth / 2;
-  const slope = shoulderSlope(m, kids);
+  const slope = shoulderSlope(m);
   const waistY = m.armholeDepth + (m.bodyLength - m.armholeDepth) * 0.45;
   const depthRatio = config.fit === "slim" ? 0.66 : config.fit === "regular" || config.fit === "longline" ? 0.63 : 0.58;
-  const ramp = kids ? 6 : 9;
+  const ramp = 9;
   const p = 2.6;
   const halfWidthAt = (y: number) => {
     if (y <= m.armholeDepth) return m.chest / 4;
@@ -354,6 +353,17 @@ function panelMesh(outline: Pt[], canvas: Rect, mapFn: (x: number, y: number) =>
   return { positions: new Float32Array(positions), uvs: new Float32Array(uvs), indices: new Uint32Array(indices) };
 }
 
+/** Reverse the winding of every triangle (so the front faces point the other way). */
+function flipWinding(mesh: MeshData): MeshData {
+  const ix = mesh.indices;
+  for (let t = 0; t < ix.length; t += 3) {
+    const b = ix[t + 1];
+    ix[t + 1] = ix[t + 2];
+    ix[t + 2] = b;
+  }
+  return mesh;
+}
+
 function gridMesh(rows: V3[][], uvFn: (i: number, j: number) => [number, number], closedU = false): MeshData {
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -380,12 +390,11 @@ export const SLEEVE_DROP_DEG: Record<string, number> = { "set-in": 54, raglan: 5
 export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: number; folds?: boolean } = {}): GarmentGeometry {
   const m = computeMeasurements(config);
   const c = config.construction;
-  const kids = config.audience === "kids";
   const res = opts.resolution ?? 64;
   // Fabric Lab: trims (collar, cuffs, placket, pockets) are as thick as the chosen cloth.
   const tk = thicknessFactor(getFabric(config.fabric.id), config.fabric.gsm);
-  const front = torsoShape(m, "front", c, kids);
-  const back = torsoShape(m, "back", c, kids);
+  const front = torsoShape(m, "front", c);
+  const back = torsoShape(m, "back", c);
   const drape = drapeProfile(config, m);
   const outlineHalf = sampled((y) => Math.max(outlineHalfWidth(front.outline, y), outlineHalfWidth(back.outline, y)), -2, m.bodyLength + 2);
   const body = createBodyMapper(config, m, { outlineHalf, drape: opts.folds === false ? undefined : drape });
@@ -460,7 +469,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       }
       rows.push(row);
     }
-    const mesh = gridMesh(rows, (i, j) => {
+    const grid = gridMesh(rows, (i, j) => {
       const t = j / (ROWS - 1);
       const cc = -0.5 + i / N;
       const circ = m.bicep + (m.sleeveOpening - m.bicep) * t;
@@ -469,6 +478,9 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
       const yf = t * sl.length;
       return [(xf - sleeveCanvas.x0) / SW, 1 - (yf - sleeveCanvas.y0) / SH];
     });
+    // The ring parametrisation runs the other way round on the wearer's left: flip it so front faces point outwards
+    // (inward-facing triangles shaded the left sleeve with the wrong side's normal).
+    const mesh = side === 1 ? flipWinding(grid) : grid;
     return { mesh, endRing: rows[ROWS - 1], dir, shoulder, endCenter, rEnd };
   };
   const left = buildSleeve(1);
@@ -530,7 +542,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
     else collars.push(ringBand(m.collarHeight * 0.75, 0.45, 0.3));
   } else {
     const isBand = c.collar === "band" || c.collar === "mandarin";
-    const standH = isBand ? m.collarHeight : 3.2 * (kids ? 0.8 : 1);
+    const standH = isBand ? m.collarHeight : 3.2;
     const roundFront = c.collar === "mandarin" ? (k: number) => 1 - 0.35 * smooth(0.82, 1, Math.abs(k)) : undefined;
     collars.push(ringBand(standH, 0.12, 0.3, roundFront));
     if (!isBand) {
@@ -543,7 +555,7 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         camp: { fall: 6.0, tip: 4.2, spread: 0.9, maxK: 0.8 },
       };
       const st = styles[c.collar] ?? styles.point;
-      const kScale = kids ? 0.8 : 1;
+      const kScale = 1;
       const KS = 70;
       const VS = 6;
       const rowsLeaf: V3[][] = [];
@@ -615,7 +627,8 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
         const along = mul(s.dir, rel[0] * s.dir[0] + rel[1] * s.dir[1] + rel[2] * s.dir[2]);
         return norm(mul(sub(rel, along), -1));
       };
-      cuffs.push(shellMesh(rows, (c.cuff === "rib" ? 0.22 : 0.3) * tk, axisAt, uv, { j0: true, j1: true }));
+      const cuffShell = shellMesh(rows, (c.cuff === "rib" ? 0.22 : 0.3) * tk, axisAt, uv, { j0: true, j1: true });
+      cuffs.push(side === 1 ? flipWinding(cuffShell) : cuffShell); // same mirrored ring order as the sleeve
       if (shirt && c.cuff !== "rib" && c.buttons.count > 0) {
         // Cuff button on the back of the wrist (towards the little finger), mid-height.
         let bi = 0;
@@ -631,8 +644,8 @@ export function buildGarmentGeometry(config: DesignConfig, opts: { resolution?: 
           const out = mul(axisAt(top), -1);
           const up = mul(s.dir, -1);
           const across = norm([up[1] * out[2] - up[2] * out[1], up[2] * out[0] - up[0] * out[2], up[0] * out[1] - up[1] * out[0]]);
-          const L = kids ? 8.5 : 12.5;
-          const W = kids ? 1.8 : 2.3;
+          const L = 12.5;
+          const W = 2.3;
           const steps = 6;
           const prow: V3[][] = [];
           for (let i = 0; i <= steps; i++) {

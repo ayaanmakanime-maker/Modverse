@@ -3,7 +3,8 @@
  * AI Muse, validation, pricing, tech packs and orders — shares these types.
  */
 
-export const AUDIENCES = ["men", "women", "kids"] as const;
+/** ModVerse sells Men's and Women's ranges. (A retired Kids range is still read from old data; see normalizeAudience.) */
+export const AUDIENCES = ["men", "women"] as const;
 export type Audience = (typeof AUDIENCES)[number];
 
 export const GARMENT_TYPES = ["tshirt", "shirt"] as const;
@@ -76,7 +77,10 @@ export const FIT_LABELS: Record<Fit, string> = {
   longline: "Longline",
 };
 
-export const AUDIENCE_LABELS: Record<Audience, string> = { men: "Men", women: "Women", kids: "Kids" };
+export const AUDIENCE_LABELS: Record<Audience, string> = { men: "Men", women: "Women" };
+
+/** Old stored data may still say "kids" (the retired range): read it as the adult range it converts to. */
+export const normalizeAudience = (a: string | null | undefined): Audience => (a === "women" ? "women" : "men");
 export const GARMENT_TYPE_LABELS: Record<GarmentType, string> = { tshirt: "T-shirts", shirt: "Shirts" };
 
 /** Garment measurements in centimetres (flat garment measurements unless noted). */

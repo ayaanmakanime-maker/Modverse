@@ -68,19 +68,18 @@ export const STUDIO_COLLECTIONS: CollectionMeta[] = [
     "mood": "light"
   },
   {
-    "slug": "Kids_Playroom",
-    "name": "Kids Playroom",
-    "description": "Friendly, bright, kid-safe characters: rockets, robots, rainbows and dinos.",
+    "slug": "Playful_Characters",
+    "name": "Playful Characters",
+    "description": "Friendly, bright characters: rockets, robots, rainbows and dinos.",
     "keywords": [
-      "kids",
-      "children",
       "playful",
       "cute",
+      "fun",
       "toy",
       "rainbow",
       "dino",
       "rocket",
-      "baby"
+      "character"
     ],
     "mood": "vivid"
   },

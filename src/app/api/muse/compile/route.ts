@@ -15,7 +15,7 @@ const schema = z.object({
   provider: z.enum(["on-device"]).default("on-device"),
   label: z.string().max(80).default("On-device model"),
   latencyMs: z.number().int().min(0).max(600_000).default(0),
-  audience: z.enum(["men", "women", "kids"]).optional(),
+  audience: z.enum(["men", "women"]).optional(),
 });
 
 /** Compile a proposal produced outside the server (e.g. Gemini Nano in Chrome). Same validation as every Director. */

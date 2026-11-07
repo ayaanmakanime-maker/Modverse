@@ -18,7 +18,7 @@ const TrialRoom = dynamic(() => import("./TrialRoom").then((m) => m.TrialRoom), 
 export function TryOnPicker({ saved }: { saved: { id: string; name: string; config: DesignConfig }[] }) {
   const { user } = useSession();
   const [choice, setChoice] = useState(saved[0] ? `saved:${saved[0].id}` : "model:tee-classic-crew");
-  const [audience, setAudience] = useState<"men" | "women" | "kids">("men");
+  const [audience, setAudience] = useState<"men" | "women">("men");
   const [color, setColor] = useState("#1B2A47");
   const [profiles, setProfiles] = useState<{ id: string; name: string; measurements: Record<string, number> }[]>([]);
   const [profileId, setProfileId] = useState("");
@@ -63,7 +63,7 @@ export function TryOnPicker({ saved }: { saved: { id: string; name: string; conf
         {choice.startsWith("model:") && (
           <>
             <label className="block text-sm"><span className="mv-label">Category</span>
-              <Select value={audience} onChange={(e) => setAudience(e.target.value as typeof audience)}><option value="men">Men</option><option value="women">Women</option><option value="kids">Kids</option></Select>
+              <Select value={audience} onChange={(e) => setAudience(e.target.value as typeof audience)}><option value="men">Men</option><option value="women">Women</option></Select>
             </label>
             <ColorPicker label="Colour" value={color} onChange={setColor} />
           </>

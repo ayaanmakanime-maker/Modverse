@@ -12,6 +12,7 @@ All external services are **planned integration targets**, not active connection
 | AI | Google Gemini | Fashion Director (proposals) | `GET /v1beta/models` (read-only) | Local rules |
 | AI | Gemini Nano (on-device) | Fashion Director in the customer's Chrome (no key) | Browser feature detection | Server Director |
 | AI | ComfyUI | Image generation (workflow JSON) | `/system_stats` | No generation |
+| AI | **Meta Muse Image** | Artwork generation (`POST {base}/images/generations`, `lib/ai/image.ts`) | `GET {base}/models` (free) | ComfyUI, else no generation |
 | Vision | MediaPipe | Trial room (in-browser) | n/a (built in) | Public CDN for models |
 | Auth | Google OAuth | `/api/auth/oauth/google` (+ callback) | OpenID config reachability (secret verified at sign-in) | Email + password |
 | Auth | Apple Sign In | Registry only | — | Email + password |

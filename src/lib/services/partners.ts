@@ -36,7 +36,8 @@ export { STAGES, SHIPMENT_STATUSES };
 export const manufacturerCapabilitiesSchema = z.object({
   methods: z.array(z.enum(PRINT_METHODS)).min(1),
   garmentTypes: z.array(z.enum(["tshirt", "shirt"])).min(1),
-  audiences: z.array(z.enum(AUDIENCES)).min(1),
+  // Organisations registered before the Kids range was retired may still list "kids": it is dropped on read/save.
+  audiences: z.preprocess((v) => (Array.isArray(v) ? v.filter((a) => a !== "kids") : v), z.array(z.enum(AUDIENCES)).min(1)),
   fabrics: z.array(z.enum(["knit", "woven"])).min(1),
   minOrderQty: z.number().int().min(1).max(10000).default(1),
   dailyCapacity: z.number().int().min(1).max(100000).default(50),

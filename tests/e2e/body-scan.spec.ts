@@ -33,7 +33,7 @@ test("guided body scan: consent, camera guidance, honest review, correction and 
   await expect(page.getByTestId("measurements")).toContainText("Camera scan");
 });
 
-test("Fit tab: Atlas/Aura avatar studio and scan-to-fit", async ({ page }) => {
+test("Fit tab: Atlas avatar studio (Aura for the Women's range) and scan-to-fit", async ({ page }) => {
   test.setTimeout(120_000);
   await register(page, "Avatar Fit");
   await openEditor(page, "tee-classic-crew", "men", "pro");
@@ -41,9 +41,8 @@ test("Fit tab: Atlas/Aura avatar studio and scan-to-fit", async ({ page }) => {
   const studio = page.getByTestId("avatar-studio");
   await expect(studio).toBeVisible();
   await expect(page.getByTestId("avatar-atlas")).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByTestId("avatar-nova")).toBeDisabled(); // kids sizes only
-  await page.getByTestId("avatar-aura").click();
-  await expect(page.getByTestId("avatar-aura")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("avatar-aura")).toBeDisabled(); // Aura belongs to the Women's range
+  await page.getByTestId("avatar-toggle").check();
   await expect(page.getByTestId("avatar-toggle")).toBeChecked();
   // Body sliders feed the fit check.
   await page.getByTestId("avatar-sliders").getByRole("slider").nth(1).fill("118");

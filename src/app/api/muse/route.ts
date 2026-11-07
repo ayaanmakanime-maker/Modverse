@@ -15,7 +15,7 @@ const schema = z.object({
   message: z.string().trim().min(1).max(600),
   config: designConfigSchema.nullable(),
   selectedLayerId: z.string().max(64).nullable().optional(),
-  audience: z.enum(["men", "women", "kids"]).optional(),
+  audience: z.enum(["men", "women"]).optional(),
   body: bodySchema.partial().optional(),
 });
 

@@ -36,12 +36,12 @@ Procedurally generated starter artwork — human art direction, QA and brand/leg
 
 Generated from code so it is reproducible, reviewable and extensible: `npx tsx scripts/originals/build.ts` → `assets/modverse-originals/` (SVGs + `manifest.json`) and `src/lib/library/studio-collections.ts`; then `npm run library:import` merges it with v0.1 (same sanitiser, same index, same DB seed). Counts: **732 graphics · 78 seamless patterns · 92 elements (badges, frames, ribbons, sparkles…) · 39 editable-text templates · 26 palettes · 24 collections**.
 
-**How it was designed.** Marketplace and brand catalogues were used only as *taxonomy references* — how creators and print-on-demand shops group designs by interest (sports, pets, food, travel, gaming, music, kids, festive/cultural, campus/team), by style (line art, stickers, badges, retro, boho, Bauhaus/abstract) and by use (all-over repeats, text lockups). No artwork, characters, names, logos or marks from any brand or marketplace were copied; every motif is geometry written for this project in `scripts/originals/{objects,generative,patterns,elements}.ts`, and a unit test fails if a known brand/trademark word appears in any name or tag.
+**How it was designed.** Marketplace and brand catalogues were used only as *taxonomy references* — how creators and print-on-demand shops group designs by interest (sports, pets, food, travel, gaming, music, playful characters, festive/cultural, campus/team), by style (line art, stickers, badges, retro, boho, Bauhaus/abstract) and by use (all-over repeats, text lockups). No artwork, characters, names, logos or marks from any brand or marketplace were copied; every motif is geometry written for this project in `scripts/originals/{objects,generative,patterns,elements}.ts`, and a unit test fails if a known brand/trademark word appears in any name or tag.
 
 | Collections (24) | Examples |
 |---|---|
 | Desi & Festive · Mandala & Rangoli | diya, kite, kulhad chai, mango, peacock feather, lotus; 36 mandalas, rangoli stars, paisley, eight-point stars, flower of life |
-| Wildlife Heroes · Pets & Paws · Kids Playroom | fox, owl, lion, panda, elephant, whale, octopus, butterfly; cat, dog, bunny, paw; rocket, robot, rainbow, dino (kid-safe) |
+| Wildlife Heroes · Pets & Paws · Playful Characters | fox, owl, lion, panda, elephant, whale, octopus, butterfly; cat, dog, bunny, paw; rocket, robot, rainbow, dino (friendly, bright) |
 | Cricket & Sports Club · Campus & Team | bat & ball, football, basketball, shuttlecock, dumbbell, trophy; laurel, pennant, grad cap, book |
 | Music & Nightlife · Gaming & Tech · Retro Arcade | headphones, guitar, vinyl, mic; controller, pixel heart, robot, chip; retro sunsets, atomic starbursts, bolts |
 | Foodie · Travel & Adventure · Sunset & Surf · Eco & Earth | pizza, burger, coffee, donut, ice cream; compass, mountains, tent, camera, anchor, plane; waves, palm, surfboard, shell; tree, drop, bee, globe |

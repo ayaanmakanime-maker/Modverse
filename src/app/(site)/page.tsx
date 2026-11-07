@@ -6,10 +6,10 @@ import { createDesign } from "@/lib/garment/design";
 import { getLibraryIndex } from "@/lib/library/server";
 
 const JOURNEY = ["Discover", "Select garment", "Design", "Customise", "Visualise", "Try on", "Validate", "Order", "Manufacture"];
-const SHOWCASE: [string, "men" | "women" | "kids", string][] = [
+const SHOWCASE: [string, "men" | "women", string][] = [
   ["tee-oversized", "men", "#111111"],
   ["shirt-cuban-camp", "women", "#0F172A"],
-  ["tee-raglan", "kids", "#F5F3EE"],
+  ["tee-raglan", "women", "#F5F3EE"],
   ["shirt-linen", "men", "#E8DCC6"],
 ];
 
@@ -55,8 +55,8 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-4 py-20 md:px-6">
         <p className="mv-eyebrow">Shop by category</p>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {([["men", "Men", "tee-drop-shoulder", "#4A4A48"], ["women", "Women", "shirt-oxford-button-down", "#AFC8E6"], ["kids", "Kids", "tee-pocket", "#D4A017"]] as const).map(([slug, name, model, color]) => {
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {([["men", "Men", "tee-drop-shoulder", "#4A4A48"], ["women", "Women", "shirt-oxford-button-down", "#AFC8E6"]] as const).map(([slug, name, model, color]) => {
             const d = createDesign(model, slug);
             d.fabric.color = color;
             return (
@@ -71,7 +71,7 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
         <p className="mv-eyebrow">Three ways to design — one engine</p>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
           {[
             { mode: "studio", name: "Design Studio", tag: "Guided", body: "Templates, presets, colours, fabrics, library graphics and your own words — with AI Muse at your side." },
             { mode: "atelier", name: "Atelier", tag: "Advanced", body: "Independent panels, collars and cuffs, proportions, layers, embroidery, avatar preview and version history." },

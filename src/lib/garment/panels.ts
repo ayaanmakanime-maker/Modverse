@@ -24,8 +24,8 @@ export interface Rect {
 export const rectW = (r: Rect) => r.x1 - r.x0;
 export const rectH = (r: Rect) => r.y1 - r.y0;
 
-export function shoulderSlope(m: GarmentMeasurements, kids = false): number {
-  return Math.max(1.2, (kids ? 2.6 : 4) - m.dropAmount * 0.35);
+export function shoulderSlope(m: GarmentMeasurements): number {
+  return Math.max(1.2, 4 - m.dropAmount * 0.35);
 }
 
 function quad(a: Pt, c: Pt, b: Pt, n = 10): Pt[] {
@@ -56,9 +56,9 @@ export interface TorsoShape {
 }
 
 /** Flat outline of the front or back torso panel. */
-export function torsoShape(m: GarmentMeasurements, side: "front" | "back", c: Construction, kids = false): TorsoShape {
+export function torsoShape(m: GarmentMeasurements, side: "front" | "back", c: Construction): TorsoShape {
   const halfNeck = m.neckWidth / 2;
-  const slope = shoulderSlope(m, kids);
+  const slope = shoulderSlope(m);
   const shoulderX = m.shoulderWidth / 2;
   const chestX = m.chest / 4;
   const waistX = m.waist / 4;
@@ -259,31 +259,30 @@ export interface Placement {
 }
 
 /** Industry-typical placement presets computed from the actual garment measurements. */
-export function placementPreset(m: GarmentMeasurements, preset: PlacementPreset, kids = false): Placement {
-  const k = kids ? 0.7 : 1;
+export function placementPreset(m: GarmentMeasurements, preset: PlacementPreset): Placement {
   switch (preset) {
     case "center-chest":
-      return { zone: "front", x: 0, top: m.frontNeckDrop + 7 * k, maxWidth: 25 * k, maxHeight: 22 * k };
+      return { zone: "front", x: 0, top: m.frontNeckDrop + 7, maxWidth: 25, maxHeight: 22 };
     case "full-front":
-      return { zone: "front", x: 0, top: m.frontNeckDrop + 6 * k, maxWidth: 30 * k, maxHeight: 38 * k };
+      return { zone: "front", x: 0, top: m.frontNeckDrop + 6, maxWidth: 30, maxHeight: 38 };
     case "left-chest":
-      return { zone: "front", x: (m.chest / 4) * 0.46, top: m.frontNeckDrop + 7 * k, maxWidth: 9 * k, maxHeight: 9 * k };
+      return { zone: "front", x: (m.chest / 4) * 0.46, top: m.frontNeckDrop + 7, maxWidth: 9, maxHeight: 9 };
     case "right-chest":
-      return { zone: "front", x: -(m.chest / 4) * 0.46, top: m.frontNeckDrop + 7 * k, maxWidth: 9 * k, maxHeight: 9 * k };
+      return { zone: "front", x: -(m.chest / 4) * 0.46, top: m.frontNeckDrop + 7, maxWidth: 9, maxHeight: 9 };
     case "upper-back":
-      return { zone: "back", x: 0, top: m.backNeckDrop + Math.max(6, m.yokeDepth + 2) * k, maxWidth: 28 * k, maxHeight: 10 * k };
+      return { zone: "back", x: 0, top: m.backNeckDrop + Math.max(6, m.yokeDepth + 2), maxWidth: 28, maxHeight: 10 };
     case "full-back":
-      return { zone: "back", x: 0, top: m.backNeckDrop + Math.max(8, m.yokeDepth + 3) * k, maxWidth: 30 * k, maxHeight: 40 * k };
+      return { zone: "back", x: 0, top: m.backNeckDrop + Math.max(8, m.yokeDepth + 3), maxWidth: 30, maxHeight: 40 };
     case "nape":
-      return { zone: "back", x: 0, top: m.backNeckDrop + 3 * k, maxWidth: 7 * k, maxHeight: 4 * k };
+      return { zone: "back", x: 0, top: m.backNeckDrop + 3, maxWidth: 7, maxHeight: 4 };
     case "left-sleeve":
-      return { zone: "sleeveLeft", x: 0, top: 4 * k, maxWidth: 7 * k, maxHeight: Math.max(4, m.sleeveLength - 9) };
+      return { zone: "sleeveLeft", x: 0, top: 4, maxWidth: 7, maxHeight: Math.max(4, m.sleeveLength - 9) };
     case "right-sleeve":
-      return { zone: "sleeveRight", x: 0, top: 4 * k, maxWidth: 7 * k, maxHeight: Math.max(4, m.sleeveLength - 9) };
+      return { zone: "sleeveRight", x: 0, top: 4, maxWidth: 7, maxHeight: Math.max(4, m.sleeveLength - 9) };
     case "pocket":
       return { zone: "pocket", x: 0, top: 2, maxWidth: m.pocketWidth - 3, maxHeight: m.pocketHeight - 4 };
     case "hem":
-      return { zone: "front", x: -(m.hem / 4) * 0.55, top: m.bodyLength - m.hemCurve - 12 * k, maxWidth: 6 * k, maxHeight: 6 * k };
+      return { zone: "front", x: -(m.hem / 4) * 0.55, top: m.bodyLength - m.hemCurve - 12, maxWidth: 6, maxHeight: 6 };
     case "collar":
       return { zone: "collar", x: 0, top: 0.6, maxWidth: 8, maxHeight: Math.max(1, m.collarHeight - 1.2) };
     case "cuff":

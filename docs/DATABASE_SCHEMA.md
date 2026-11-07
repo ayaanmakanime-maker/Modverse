@@ -5,7 +5,7 @@ PostgreSQL via Drizzle ORM (`src/lib/db/schema.ts`), **52 tables**, versioned SQ
 | Domain | Tables |
 |---|---|
 | Identity & access | `users` (role customer/staff/admin, status), `sessions` (sha256 token ids), `auth_tokens` (verify/reset), `outbox_emails` (simulated mailbox), `addresses` |
-| Guardian & fit | `guardian_profiles`, `child_profiles` (nickname + birth year + consent), `measurement_profiles`, `avatar_profiles` |
+| Guardian & fit | `measurement_profiles`, `avatar_profiles` (appearance + body); `guardian_profiles` and `child_profiles` belong to the **retired Kids range**: the tables and any stored rows are kept (no data or migration is deleted), nothing reads or offers them, and they are erased with the owner's account |
 | Catalogue | `categories`, `garment_models`, `garment_components`, `fabrics`, `materials`, `products` |
 | Creative Library | `asset_collections`, `creative_assets` (1,967 rows: 1,000 from the supplied manifest + 967 ModVerse Studio Library assets), `colour_palettes`, `library_favorites`, `library_recent`, `saved_compositions`, `uploaded_assets` |
 | Designs | `design_themes` (ModVerse Together), `design_projects`, `design_versions` (full `DesignConfig` JSON + validation summary), projections `design_layers`, `text_elements`, `artwork_elements`, `panel_configurations`, `manufacturing_specs`, `tech_packs` |

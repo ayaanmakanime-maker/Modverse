@@ -12,6 +12,7 @@ _As shipped — every provider below is **NOT CONFIGURED** until an admin adds c
 | Simulated checkout | **Active (fallback)** | Clearly labelled; admin can disable |
 | Ollama | Not configured — adapter + test implemented | |
 | OpenAI (chat + images) | Not configured — adapter + test implemented | Billable |
+| Meta Muse Image (artwork generation) | **Awaiting billing** — adapter + free connection test implemented and tested against a simulated API; a real key authenticates and lists `muse-image-1.0`, but generation returned HTTP 402 `billing_not_configured` (the Meta team has no billing set up). Never auto-enabled | Billable per image |
 | Google Gemini (Fashion Director) | Not configured — adapter + test implemented (V2) | Free tier / billable |
 | Gemini Nano (Chrome built-in, on-device) | Locally implemented, experimental — opt-in, feature-detected | No key; supporting Chrome only |
 | ComfyUI | Not configured — adapter + test implemented | |

@@ -33,7 +33,7 @@ Models load from `/public/models` after `npm run models:fetch` (CDN fallback). N
 | Live customisation | Colour swatches and "hide artwork" inside the room (doesn't alter the saved design) |
 | Full screen | Fullscreen API with an in-page immersive fallback (e.g. iOS Safari); Stop stays visible |
 | Camera stop & privacy | Stop button on the video; auto-stop when the tab is hidden; nothing recorded or uploaded; snapshots only on request, saved locally |
-| Measurement estimate (beta) | 3.5 s of world landmarks → median shoulder width, arm length, torso length with ± tolerance (≥ 3 cm) and confidence never above "medium"; only numbers are kept, only saved on explicit request as a labelled "camera estimate" profile; not available for kids (guardian-managed) |
+| Measurement estimate (beta) | 3.5 s of world landmarks → median shoulder width, arm length, torso length with ± tolerance (≥ 3 cm) and confidence never above "medium"; only numbers are kept, only saved on explicit request as a labelled "camera estimate" profile |
 
 ## Performance (monitored live)
 FPS, inference time (ms), tracking quality, jitter, turn angle and recoveries are shown while running. Pose inference runs on the **main thread with the GPU delegate**. **Web Workers were evaluated** for inference: `@mediapipe/tasks-vision` loads its WASM runtime with `importScripts`, which is unavailable in bundled module workers, and transferring frames (ImageBitmap) adds a copy per frame; the expected gain is small compared with GPU inference (~5–15 ms on desktop). Offloading is therefore *not implemented*; segmentation runs every other frame to save budget. Benchmark FPS on target phones — the CI fake camera only verifies the pipeline.

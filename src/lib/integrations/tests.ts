@@ -52,6 +52,19 @@ export async function testIntegration(id: string, creds: Record<string, string>)
         const has = data.models?.some((m) => m.name === `models/${creds.model}`);
         return { ok: true, message: has ? `Key valid; ${creds.model} available. Check quotas and billing for your project.` : `Key valid, but model "${creds.model}" was not listed.`, partial: !has };
       }
+      case "meta-muse": {
+        // Lists models — free, read-only, nothing is generated and nothing is billed.
+        const base = (creds.baseUrl || "https://api.meta.ai/v1").replace(/\/$/, "");
+        const model = creds.model || "muse-image-1.0";
+        const res = await withRetry(() => fetch(`${base}/models`, { headers: { Authorization: `Bearer ${creds.apiKey}` }, signal: timeout() }));
+        if (res.status === 401 || res.status === 403) return { ok: false, message: `Meta rejected the API key (${res.status}).` };
+        if (!res.ok) return { ok: false, message: `Meta API responded ${res.status}` };
+        const data = (await res.json()) as { data?: { id: string }[] };
+        const has = data.data?.some((m) => m.id === model);
+        return has
+          ? { ok: true, message: `Key valid; ${model} is available. Each generated image is billed by Meta — a billing issue on your Meta team only shows up when the first image is generated (HTTP 402).` }
+          : { ok: false, message: `Key valid, but the model "${model}" is not available to this key.`, partial: true };
+      }
       case "comfyui": {
         const res = await withRetry(() => fetch(`${creds.baseUrl.replace(/\/$/, "")}/system_stats`, { signal: timeout() }));
         if (!res.ok) return { ok: false, message: `ComfyUI responded ${res.status}` };

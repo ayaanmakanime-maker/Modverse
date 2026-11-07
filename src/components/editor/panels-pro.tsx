@@ -215,7 +215,7 @@ export function TechPackPanel({ capture3d, exportGlb }: { capture3d: () => strin
   }
 
   function cadExchange() {
-    const t = (v: "front" | "back") => torsoShape(m, v, config.construction, config.audience === "kids");
+    const t = (v: "front" | "back") => torsoShape(m, v, config.construction);
     const payload = {
       format: "modverse.design-intent.v1",
       notice: "Design-intent reference geometry for CAD bridges (e.g. CLO 3D, Gerber AccuMark). NOT graded production patterns: no seam allowances, grain lines, notches or grading rules.",

@@ -1,3 +1,5 @@
+> **Note (later owner decisions).** This is the original brief, kept unchanged. Since it was written the **Kids range and guardian-managed child profiles were removed** (ModVerse is Men's and Women's only; stored kids data is converted/hidden, never deleted), and the **Men's and Women's avatars are the supplied FBX characters** (with a procedural fallback). See `docs/BUILD_STATUS.md`.
+
 MODVERSE
 
 FINAL MASTER PRODUCT, DESIGN, ENGINEERING AND IMPLEMENTATION SPECIFICATION

@@ -32,8 +32,7 @@ export interface Consumption {
 export function fabricConsumption(config: Pick<DesignConfig, "audience" | "garmentType" | "modelId" | "size" | "fit" | "adjustments" | "construction">): Consumption {
   const m = computeMeasurements(config);
   const c = config.construction;
-  const kids = config.audience === "kids";
-  const torso = polygonArea(torsoShape(m, "front", c, kids).outline) + polygonArea(torsoShape(m, "back", c, kids).outline);
+  const torso = polygonArea(torsoShape(m, "front", c).outline) + polygonArea(torsoShape(m, "back", c).outline);
   const sleeves = 2 * polygonArea(sleeveShape(m, c).outline);
   const rect = (r: Rect) => (r.x1 - r.x0) * (r.y1 - r.y0);
   let trims = 0;

@@ -27,7 +27,7 @@ const STATUS: Record<string, { label: string; tone: "ok" | "info" | "warn" | "ne
 type Pose = import("@mediapipe/tasks-vision").PoseLandmarker;
 type Segmenter = import("@mediapipe/tasks-vision").ImageSegmenter;
 
-export function BodyScanner({ audience, onApply, onClose, signedIn }: { audience: "men" | "women" | "kids"; onApply?: (m: Record<string, number>, provenance: ReturnType<typeof toProfile>["provenance"]) => void; onClose?: () => void; signedIn: boolean }) {
+export function BodyScanner({ audience, onApply, onClose, signedIn }: { audience: "men" | "women"; onApply?: (m: Record<string, number>, provenance: ReturnType<typeof toProfile>["provenance"]) => void; onClose?: () => void; signedIn: boolean }) {
   const [step, setStep] = useState<"consent" | "height" | "capture" | "review">("consent");
   const [consent, setConsent] = useState(false);
   const [height, setHeight] = useState("");
@@ -166,7 +166,7 @@ export function BodyScanner({ audience, onApply, onClose, signedIn }: { audience
         <div className="space-y-3">
           <p className="text-xs text-bone-2">Your height sets the scale for every camera measurement (it is recorded as manually entered).</p>
           <label className="block max-w-40"><span className="mv-label">Height (cm)</span><input className="mv-input" inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value.replace(/[^\d.]/g, ""))} data-testid="scan-height" /></label>
-          <Button size="sm" disabled={!(Number(height) >= (audience === "kids" ? 80 : 130) && Number(height) <= 220)} onClick={() => { setStep("capture"); void start(); }} data-testid="scan-camera">Start camera</Button>
+          <Button size="sm" disabled={!(Number(height) >= 130 && Number(height) <= 220)} onClick={() => { setStep("capture"); void start(); }} data-testid="scan-camera">Start camera</Button>
         </div>
       )}
 

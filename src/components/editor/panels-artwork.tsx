@@ -312,11 +312,11 @@ export function UploadPanel() {
   const [busy, setBusy] = useState(false);
   const [uploads, setUploads] = useState<UploadRow[]>([]);
   const [prompt, setPrompt] = useState("");
-  const [gen, setGen] = useState<{ available: boolean; provider: string | null } | null>(null);
+  const [gen, setGen] = useState<{ available: boolean; provider: "comfyui" | "meta-muse" | "openai" | null } | null>(null);
   const [genBusy, setGenBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    api<{ available: boolean; provider: string | null }>("/api/ai/generate-image").then(setGen).catch(() => setGen({ available: false, provider: null }));
+    api<{ available: boolean; provider: "comfyui" | "meta-muse" | "openai" | null }>("/api/ai/generate-image").then(setGen).catch(() => setGen({ available: false, provider: null }));
     if (user) api<{ uploads: UploadRow[] }>("/api/uploads").then((r) => setUploads(r.uploads.reverse())).catch(() => undefined);
   }, [user]);
   const place = (u: UploadRow) => void insertUpload(u, { preset: ZONE_DEFAULT_PRESET[useEditor.getState().zone] });
@@ -341,7 +341,7 @@ export function UploadPanel() {
     try {
       const r = await api<{ provider: string; images: UploadRow[] }>("/api/ai/generate-image", { body: { prompt } });
       setUploads((u) => [...r.images, ...u]);
-      toast(`Generated with ${r.provider} — pick a result to place it`);
+      toast(`Generated with ${r.provider === "meta-muse" ? "Meta Muse" : r.provider} — pick a result to place it`);
     } catch (e) {
       toast(errorMessage(e), "bad");
     } finally {
@@ -375,11 +375,12 @@ export function UploadPanel() {
         {gen?.available ? (
           <>
             <textarea className="mv-input min-h-14" placeholder="Describe the artwork — e.g. a minimal line-art peacock" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-            <Button size="sm" loading={genBusy} disabled={prompt.trim().length < 3 || !user} onClick={generate}><Wand2 className="size-3.5" /> Generate with {gen.provider}</Button>
-            <p className="text-[0.65rem] text-mute">Check model licences and commercial-use terms before ordering generated artwork.</p>
+            <Button size="sm" loading={genBusy} disabled={prompt.trim().length < 3 || !user} onClick={generate} data-testid="generate-image"><Wand2 className="size-3.5" /> Generate with {gen.provider === "meta-muse" ? "Meta Muse" : gen.provider === "openai" ? "OpenAI" : "ComfyUI"}</Button>
+            {!user && <p className="text-[0.65rem] text-mute">Sign in to generate artwork.</p>}
+            <p className="text-[0.65rem] text-mute">{gen.provider === "meta-muse" ? "Meta Muse images are billed per image by Meta and carry Meta's invisible Content Seal watermark. " : ""}Check model licences and commercial-use terms before ordering generated artwork.</p>
           </>
         ) : (
-          <Notice tone="info" title="No image-generation model configured">An admin can connect ComfyUI (local) or OpenAI in Admin → Integrations. Until then, use the Creative Library or upload artwork — nothing is faked.</Notice>
+          <Notice tone="info" title="No image-generation model configured">An admin can connect Meta Muse, ComfyUI (local) or OpenAI in Admin → Integrations. Until then, use the Creative Library or upload artwork — nothing is faked.</Notice>
         )}
       </div>
     </div>

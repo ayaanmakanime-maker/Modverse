@@ -20,7 +20,7 @@ Quality-first strategy: three benchmark garments (plus a linen shirt for fabric 
 ## 2. Fashion Director (AI) providers
 
 ### Measured (this repository, `npm run ai:eval`)
-Suite: 12 prompts / 26 expectations — V2 spec example, V1 linen shirt, colour edits, collar + pocket, name on back with font, embroidered monogram, length +5 cm, kids yellow tee with graphic, 240 GSM, unsupported zipper, bigger text, colour change preserving existing text.
+Suite: 12 prompts / 26 expectations — V2 spec example, V1 linen shirt, colour edits, collar + pocket, name on back with font, embroidered monogram, length +5 cm, yellow women's tee with a graphic, 240 GSM, unsupported zipper, bigger text, colour change preserving existing text.
 
 | Provider | Schema-valid | Compiled | Expectations met | Avg ops | Rejected items | Latency p50 / p95 |
 |---|---|---|---|---|---|---|

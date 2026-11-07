@@ -300,7 +300,7 @@ export function patternDef(config: DesignConfig, panel: PanelId, assets: AssetRe
   const raw = url ? assets.svg(url) : undefined;
   if (!raw) return ["", null];
   const dims = parseSvgDimensions(raw);
-  const tile = 12 * ps.patternScale * (config.audience === "kids" ? 0.75 : 1);
+  const tile = 12 * ps.patternScale;
   const id = `${idPrefix}-pat-${panel}`;
   const inner = svgInner(namespaceSvgIds(raw, id));
   return [`<pattern id="${id}" width="${n(tile)}" height="${n(tile)}" patternUnits="userSpaceOnUse"><svg width="${n(tile)}" height="${n(tile)}" viewBox="${dims.viewBox.join(" ")}" preserveAspectRatio="none" opacity="${n(ps.patternOpacity)}">${inner}</svg></pattern>`, `url(#${id})`];
@@ -326,14 +326,13 @@ function stitchLine(points: Pt[], color: string, double: boolean, offset = 0): s
 /** Construction details painted onto panel textures (raglan, yoke, side/shoulder panels, stitching). */
 function constructionOverlay(config: DesignConfig, zone: Zone, m: GarmentMeasurements, assets: AssetResolver, idPrefix: string): { defs: string; markup: string } {
   const c = config.construction;
-  const kids = config.audience === "kids";
   const body = panelColor(config, zone as PanelId);
   const stitch = c.stitching.contrast ? c.stitching.color : isDark(body) ? shade(body, 0.12) : shade(body, -0.18);
   const seam = isDark(body) ? shade(body, 0.08) : shade(body, -0.12);
   const defs: string[] = [];
   const out: string[] = [];
   if (zone === "front" || zone === "back") {
-    const t = torsoShape(m, zone, c, kids);
+    const t = torsoShape(m, zone, c);
     if (c.sidePanels) {
       const [d, f] = patternDef(config, "sidePanels", assets, idPrefix);
       defs.push(d);
@@ -342,7 +341,7 @@ function constructionOverlay(config: DesignConfig, zone: Zone, m: GarmentMeasure
     if (c.shoulderPanels && c.sleeveStyle !== "raglan") {
       const [d, f] = patternDef(config, "shoulderPanels", assets, idPrefix);
       defs.push(d);
-      out.push(`<rect x="${n(-m.shoulderWidth / 2 - 4)}" y="-3" width="${n(m.shoulderWidth + 8)}" height="${n(shoulderSlope(m, kids) + 6.5)}" fill="${f ?? panelColor(config, "shoulderPanels")}" stroke="${seam}" stroke-width="0.12"/>`);
+      out.push(`<rect x="${n(-m.shoulderWidth / 2 - 4)}" y="-3" width="${n(m.shoulderWidth + 8)}" height="${n(shoulderSlope(m) + 6.5)}" fill="${f ?? panelColor(config, "shoulderPanels")}" stroke="${seam}" stroke-width="0.12"/>`);
     }
     if (t.raglanSeam) {
       for (const s of [1, -1]) {
@@ -512,7 +511,6 @@ export function zoneReliefSvg(config: DesignConfig, zone: "front" | "back" | "sl
   const widthPx = Math.round(Math.min(1024, W * pxPerCm));
   const heightPx = Math.round(Math.min(1024, H * pxPerCm));
   const c = config.construction;
-  const kids = config.audience === "kids";
   const shirt = config.garmentType === "shirt";
   const rnd = prng(hashStr(`${config.modelId}:${zone}:${config.fit}`));
   const parts: string[] = [];
@@ -528,7 +526,7 @@ export function zoneReliefSvg(config: DesignConfig, zone: "front" | "back" | "sl
   const crinkleDefs = (["hi", "lo"] as const).map((k) => `<filter id="rcr-${k}" x="0" y="0" width="1" height="1" primitiveUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency="${n(crinkleFreq * 0.6)} ${n(crinkleFreq)}" numOctaves="3" seed="${seed}"/><feColorMatrix type="matrix" values="0 0 0 0 ${k === "hi" ? 1 : 0}  0 0 0 0 ${k === "hi" ? 1 : 0}  0 0 0 0 ${k === "hi" ? 1 : 0}  ${n(k === "hi" ? a : -a)} 0 0 0 ${n(k === "hi" ? -0.5 * a : 0.5 * a)}"/></filter>`).join("");
   const crinkleRect = () => parts.push(crinkleDefs, ...(["hi", "lo"] as const).map((k) => `<rect x="${n(canvas.x0)}" y="${n(canvas.y0)}" width="${n(W)}" height="${n(H)}" filter="url(#rcr-${k})"/>`));
   if (zone === "front" || zone === "back") {
-    const t = torsoShape(m, zone, c, kids);
+    const t = torsoShape(m, zone, c);
     crinkleRect();
     groove(polygonToPath(t.outline), 0.42);
     const hemPts = t.outline.filter(([, y]) => y > m.bodyLength - m.hemCurve - 0.6).sort((a, b) => a[0] - b[0]);
@@ -588,7 +586,7 @@ export function zoneArtworkSvg(config: DesignConfig, zone: Zone, m: GarmentMeasu
 /** Front torso overlay (garment outline clipped, with construction + artwork) for the 2D virtual trial room. */
 export function torsoOverlaySvg(config: DesignConfig, m: GarmentMeasurements, assets: AssetResolver, fontCss = ""): { svg: string; canvas: Rect; widthPx: number; heightPx: number } {
   const z = zoneTextureSvg(config, "front", m, assets, { pxPerCm: 10, fontCss });
-  const t = torsoShape(m, "front", config.construction, config.audience === "kids");
+  const t = torsoShape(m, "front", config.construction);
   const inner = z.svg.slice(z.svg.indexOf(">") + 1, z.svg.lastIndexOf("</svg>"));
   const c = z.canvas;
   const W = c.x1 - c.x0;

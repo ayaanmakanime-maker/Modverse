@@ -1,10 +1,10 @@
 import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../db/client";
 import * as s from "../db/schema";
-import { ApiError, badRequest, forbidden, notFound } from "../api/handler";
+import { ApiError, badRequest, notFound } from "../api/handler";
 import type { SessionUser } from "../auth/session";
 import { hashPassword } from "../auth/password";
 import { sha256 } from "../security/request";
@@ -45,7 +45,7 @@ const provenanceSchema = z.object({ source: z.enum(["user", "camera", "derived"]
 
 export const measurementProfileSchema = z.object({
   name: z.string().trim().min(1).max(60),
-  audience: z.enum(["men", "women", "kids"]),
+  audience: z.enum(["men", "women"]),
   measurements: bodySchema,
   /** Per-field provenance; fields without an entry are user-provided. Camera estimates can never claim "high". */
   provenance: z.partialRecord(z.enum(["height", "chest", "waist", "hip", "shoulder", "armLength", "neck", "bicep", "wrist", "torsoLength"]), provenanceSchema).default({}).transform((p) => {
@@ -53,37 +53,20 @@ export const measurementProfileSchema = z.object({
     return p;
   }),
   fitPreference: z.enum(["closer", "true", "looser"]).default("true"),
-  childProfileId: z.string().uuid().nullable().optional(),
 });
 
 export const avatarSchema = z.object({
   name: z.string().trim().min(1).max(60),
   measurementProfileId: z.string().uuid().nullable().optional(),
-  childProfileId: z.string().uuid().nullable().optional(),
   appearance: z.object({
     skinTone: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
     build: z.enum(["slim", "average", "athletic", "broad", "curvy"]),
     height: z.number().min(70).max(220),
     hair: z.enum(["short", "medium", "long", "bun", "none"]).default("short"),
     pose: z.enum(["a-pose", "relaxed"]).default("a-pose"),
-    bodyType: z.enum(["masculine", "feminine", "child"]).default("masculine"),
+    bodyType: z.enum(["masculine", "feminine"]).default("masculine"),
   }),
 });
-
-export const childSchema = z.object({
-  nickname: z.string().trim().min(1).max(30),
-  birthYear: z.number().int().min(new Date().getFullYear() - 15).max(new Date().getFullYear()),
-  consent: z.literal(true, { message: "Guardian consent is required" }),
-  allowSharing: z.boolean().default(false),
-});
-
-async function ownedChild(userId: string, id: string | null | undefined) {
-  if (!id) return null;
-  const db = await getDb();
-  const [c] = await db.select().from(s.childProfiles).where(and(eq(s.childProfiles.id, id), eq(s.childProfiles.guardianUserId, userId)));
-  if (!c) throw forbidden("Child profile not found for this guardian");
-  return c;
-}
 
 // ── Email verification / password reset tokens ─────────────────────
 export async function issueToken(userId: string, type: "verify_email" | "reset_password", ttlMs: number): Promise<string> {
@@ -110,8 +93,7 @@ export async function sendVerificationEmail(user: { id: string; email: string; n
 export async function getProfile(user: SessionUser) {
   const db = await getDb();
   const [u] = await db.select({ id: s.users.id, email: s.users.email, name: s.users.name, phone: s.users.phone, role: s.users.role, emailVerifiedAt: s.users.emailVerifiedAt, marketingOptIn: s.users.marketingOptIn, createdAt: s.users.createdAt }).from(s.users).where(eq(s.users.id, user.id));
-  const [guardian] = await db.select().from(s.guardianProfiles).where(eq(s.guardianProfiles.userId, user.id));
-  return { ...u, isGuardian: !!guardian };
+  return u;
 }
 
 export async function deleteAccount(user: SessionUser) {
@@ -127,6 +109,7 @@ export async function deleteAccount(user: SessionUser) {
     await tx.delete(s.addresses).where(eq(s.addresses.userId, user.id));
     await tx.delete(s.avatarProfiles).where(eq(s.avatarProfiles.userId, user.id));
     await tx.delete(s.measurementProfiles).where(eq(s.measurementProfiles.userId, user.id));
+    // The Kids range is retired, but any guardian/child data stored earlier is still erased with the account.
     await tx.delete(s.childProfiles).where(eq(s.childProfiles.guardianUserId, user.id));
     await tx.delete(s.guardianProfiles).where(eq(s.guardianProfiles.userId, user.id));
     await tx.delete(s.libraryFavorites).where(eq(s.libraryFavorites.userId, user.id));
@@ -181,22 +164,21 @@ export async function deleteAddress(user: SessionUser, id: string) {
 // ── Measurement profiles ─────────────────────────────────────────────
 export async function listMeasurementProfiles(user: SessionUser) {
   const db = await getDb();
-  return db.select().from(s.measurementProfiles).where(eq(s.measurementProfiles.userId, user.id)).orderBy(desc(s.measurementProfiles.updatedAt));
+  // Profiles of the retired Kids range stay in the database but are no longer offered.
+  return db.select().from(s.measurementProfiles).where(and(eq(s.measurementProfiles.userId, user.id), inArray(s.measurementProfiles.audience, ["men", "women"]))).orderBy(desc(s.measurementProfiles.updatedAt));
 }
 
 export async function upsertMeasurementProfile(user: SessionUser, raw: z.input<typeof measurementProfileSchema>, id?: string) {
   const input = measurementProfileSchema.parse(raw);
   const errors = validateBody(input.audience, input.measurements);
   if (errors.length) throw badRequest(`Measurements look implausible: ${errors.join("; ")}`);
-  const child = await ownedChild(user.id, input.childProfileId);
-  if (input.audience === "kids" && !child) throw badRequest("Children's measurements must be linked to a guardian-managed child profile");
   const db = await getDb();
   if (id) {
-    const [row] = await db.update(s.measurementProfiles).set({ ...input, childProfileId: child?.id ?? null, updatedAt: new Date() }).where(and(eq(s.measurementProfiles.id, id), eq(s.measurementProfiles.userId, user.id))).returning();
+    const [row] = await db.update(s.measurementProfiles).set({ ...input, updatedAt: new Date() }).where(and(eq(s.measurementProfiles.id, id), eq(s.measurementProfiles.userId, user.id))).returning();
     if (!row) throw notFound("Measurement profile");
     return row;
   }
-  const [row] = await db.insert(s.measurementProfiles).values({ ...input, childProfileId: child?.id ?? null, userId: user.id }).returning();
+  const [row] = await db.insert(s.measurementProfiles).values({ ...input, userId: user.id }).returning();
   return row;
 }
 
@@ -214,12 +196,11 @@ export async function listAvatars(user: SessionUser) {
 
 export async function upsertAvatar(user: SessionUser, input: z.infer<typeof avatarSchema>, id?: string) {
   const db = await getDb();
-  const child = await ownedChild(user.id, input.childProfileId);
   if (input.measurementProfileId) {
     const [m] = await db.select().from(s.measurementProfiles).where(and(eq(s.measurementProfiles.id, input.measurementProfileId), eq(s.measurementProfiles.userId, user.id)));
     if (!m) throw notFound("Measurement profile");
   }
-  const values = { name: input.name, appearance: input.appearance, measurementProfileId: input.measurementProfileId ?? null, childProfileId: child?.id ?? null };
+  const values = { name: input.name, appearance: input.appearance, measurementProfileId: input.measurementProfileId ?? null };
   if (id) {
     const [row] = await db.update(s.avatarProfiles).set({ ...values, updatedAt: new Date() }).where(and(eq(s.avatarProfiles.id, id), eq(s.avatarProfiles.userId, user.id))).returning();
     if (!row) throw notFound("Avatar");
@@ -233,37 +214,6 @@ export async function deleteAvatar(user: SessionUser, id: string) {
   const db = await getDb();
   const r = await db.delete(s.avatarProfiles).where(and(eq(s.avatarProfiles.id, id), eq(s.avatarProfiles.userId, user.id))).returning();
   if (!r.length) throw notFound("Avatar");
-}
-
-// ── Guardian-managed child profiles ───────────────────────────────────
-export async function listChildren(user: SessionUser) {
-  const db = await getDb();
-  return db.select().from(s.childProfiles).where(eq(s.childProfiles.guardianUserId, user.id)).orderBy(s.childProfiles.createdAt);
-}
-
-export async function createChild(user: SessionUser, input: z.infer<typeof childSchema>) {
-  const db = await getDb();
-  const [policy] = await db.select().from(s.platformSettings).where(eq(s.platformSettings.key, "consent_policy_version"));
-  const version = String(policy?.value ?? "2026-11");
-  const existing = await listChildren(user);
-  if (existing.length >= 8) throw badRequest("You can manage up to 8 child profiles");
-  await db.insert(s.guardianProfiles).values({ userId: user.id, adultDeclaredAt: new Date(), consentPolicyVersion: version }).onConflictDoNothing();
-  const [row] = await db.insert(s.childProfiles).values({ guardianUserId: user.id, nickname: input.nickname, birthYear: input.birthYear, consentGivenAt: new Date(), consentVersion: version, allowSharing: input.allowSharing }).returning();
-  return row;
-}
-
-export async function updateChild(user: SessionUser, id: string, input: { nickname?: string; allowSharing?: boolean }) {
-  await ownedChild(user.id, id);
-  const db = await getDb();
-  const [row] = await db.update(s.childProfiles).set(input).where(eq(s.childProfiles.id, id)).returning();
-  return row;
-}
-
-/** Deleting a child profile removes all of the child's measurements and avatars (cascade). */
-export async function deleteChild(user: SessionUser, id: string) {
-  await ownedChild(user.id, id);
-  const db = await getDb();
-  await db.delete(s.childProfiles).where(eq(s.childProfiles.id, id));
 }
 
 export async function mailbox(user: SessionUser) {

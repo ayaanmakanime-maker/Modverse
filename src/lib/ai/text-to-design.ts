@@ -254,8 +254,8 @@ export function interpretInstruction(
   for (const [re, msg] of UNSUPPORTED_FEATURES) if (re.test(text)) unsupported.push(msg);
 
   let audience: Audience | null = null;
-  if (/\b(kids?|child(ren)?|son|daughter|boys?|girls?|toddler|baby|years? old)\b/.test(text)) audience = "kids";
-  else if (/\b(women'?s?|woman|ladies|female|for her|girlfriend|wife|mom|mother|sister)\b/.test(text)) audience = "women";
+  if (/\b(kids?|child(ren)?|toddler|baby|infant)\b/.test(text)) unsupported.push("ModVerse has no children's range — it designs Men's and Women's T-shirts and shirts, so no kids' sizing was used.");
+  if (/\b(women'?s?|woman|ladies|female|for her|girlfriend|wife|mom|mother|sister)\b/.test(text)) audience = "women";
   else if (/\b(men'?s?|man|male|for him|boyfriend|husband|dad|father|brother)\b/.test(text)) audience = "men";
 
   const createIntent =

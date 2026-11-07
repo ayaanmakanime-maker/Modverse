@@ -147,7 +147,7 @@ export function AdminDesigns() {
       {!data ? <Spinner /> : !data.designs.length ? <EmptyState title="Nothing to review" /> : (
         <div className="space-y-2">{data.designs.map(({ design: d, owner }) => (
           <div key={d.id} className="mv-card flex flex-wrap items-center gap-3 p-3 text-sm">
-            <div className="min-w-0 flex-1"><p>{d.name} <span className="text-xs text-mute">· {d.modelId} · {d.audience}{d.childProfileId ? " · guardian-managed" : ""} · v{d.currentVersion}</span></p><p className="text-xs text-mute">{owner.name} ({owner.email}) · {d.status} · review {d.reviewStatus}{d.reviewNote ? ` — ${d.reviewNote}` : ""}</p></div>
+            <div className="min-w-0 flex-1"><p>{d.name} <span className="text-xs text-mute">· {d.modelId} · {d.audience} · v{d.currentVersion}</span></p><p className="text-xs text-mute">{owner.name} ({owner.email}) · {d.status} · review {d.reviewStatus}{d.reviewNote ? ` — ${d.reviewNote}` : ""}</p></div>
             <Button size="sm" variant="ghost" onClick={async () => { const r = await api<{ version: { config: DesignConfig } }>(`/api/designs/${d.id}`); setPreview({ name: d.name, config: r.version.config }); }}>Preview</Button>
             <a className="mv-chip" href={`/api/designs/${d.id}/techpack?format=pdf`} target="_blank" rel="noopener">Tech pack</a>
             <Button size="sm" onClick={async () => { await api(`/api/admin/designs/${d.id}/review`, { body: { decision: "approved" } }); toast("Approved"); reload(); }}>Approve</Button>

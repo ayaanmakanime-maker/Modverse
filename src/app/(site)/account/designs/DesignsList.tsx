@@ -7,7 +7,7 @@ import { Badge, EmptyState, toast } from "@/components/ui";
 import { useSession } from "@/components/session";
 import { MODEL_BY_ID } from "@/lib/garment/models";
 
-interface Row { id: string; name: string; audience: string; modelId: string; mode: string; status: string; currentVersion: number; updatedAt: string; reviewStatus: string; childProfileId: string | null }
+interface Row { id: string; name: string; audience: string; modelId: string; mode: string; status: string; currentVersion: number; updatedAt: string; reviewStatus: string }
 
 export function DesignsList({ initial }: { initial: Row[] }) {
   const [rows, setRows] = useState(initial);
@@ -21,7 +21,7 @@ export function DesignsList({ initial }: { initial: Row[] }) {
         <div key={d.id} className="mv-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center" data-testid="design-row">
           <Link href={`/design/${d.id}?mode=${d.mode}`} className="min-w-0 flex-1">
             <p className="truncate font-medium">{d.name}</p>
-            <p className="text-xs text-mute">{MODEL_BY_ID.get(d.modelId)?.name} · {d.audience}{d.childProfileId ? " · family" : ""} · {d.mode} · v{d.currentVersion} · {new Date(d.updatedAt).toLocaleString("en-IN")}</p>
+            <p className="text-xs text-mute">{MODEL_BY_ID.get(d.modelId)?.name} · {d.audience} · {d.mode} · v{d.currentVersion} · {new Date(d.updatedAt).toLocaleString("en-IN")}</p>
           </Link>
           <div className="flex flex-wrap items-center gap-1">
             <Badge tone={d.status === "validated" || d.status === "approved" ? "ok" : d.status === "ordered" ? "accent" : "neutral"}>{d.status}</Badge>
