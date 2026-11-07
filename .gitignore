@@ -33,5 +33,3 @@ npm-debug.log*
 public/mediapipe/
 public/models/
 
-# supplied character models (licence unconfirmed → kept out of the public repository; see public/avatars/README.md)
-public/avatars/*.fbx

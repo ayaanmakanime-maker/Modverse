@@ -18,7 +18,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 
 * The database is **embedded PostgreSQL (PGlite)** stored in `.data/` — no install required. Set `DATABASE_URL` to use any PostgreSQL server instead (verified on PostgreSQL 16).
 * On first start, an admin, a staff and a demo customer account are created with **random passwords written to `.data/ADMIN_CREDENTIALS.txt`** (git-ignored). Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` to choose your own.
-* **Characters:** put the supplied rigged models at `public/avatars/man.fbx` (Atlas, Men) and `public/avatars/woman.fbx` (Aura, Women) to wear designs on real characters with poses, walk/run and a face. They are git-ignored (public repo, licence unconfirmed) and optional — without them the built-in procedural avatars are used. See `public/avatars/README.md`.
+* **Characters:** put the supplied rigged models at `public/avatars/man.fbx` (Atlas, Men) and `public/avatars/woman.fbx` (Aura, Women) to wear designs on real characters with poses, walk/run and a face. They are committed with the repo (owner-confirmed) and optional — without them the built-in procedural avatars are used. See `public/avatars/README.md`.
 * `npm run models:fetch` downloads the MediaPipe pose/segmentation models for the trial room; without them it falls back to the public MediaPipe CDN.
 * Copy `.env.example` to `.env.local` only if you need to override defaults. **Never commit `.env*` or `.data/`.**
 

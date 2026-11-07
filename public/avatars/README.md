@@ -7,8 +7,8 @@ ModVerse can show its garments on two rigged character models:
 | `man.fbx`          | the Men's range    | Atlas  |
 | `woman.fbx`        | the Women's range  | Aura   |
 
-The `.fbx` files are **not** committed (the repository is public and their licence has not been confirmed).
-Copy them here — `public/avatars/man.fbx` and `public/avatars/woman.fbx` — and the 3D viewer, the trial room
+The `.fbx` files are committed here (added with the owner's confirmation that they may be redistributed).
+To use different characters, replace `man.fbx` / `woman.fbx`; the 3D viewer, the trial room
 and the account avatar preview pick them up automatically. Without them ModVerse falls back to its built-in
 procedural Atlas / Aura bodies; nothing else changes.
 
