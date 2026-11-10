@@ -1,0 +1,128 @@
+{
+  "note": "Approved asset sources for the ModVerse Asset Acquisition Pipeline (npm run assets:acquire). Only sources whose files download without a login and whose licence allows commercial use are automated; everything else is reported as a manual step.",
+  "makehumanPacks": [
+    {
+      "id": "shirts01",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html"
+    },
+    {
+      "id": "shirts02",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html"
+    },
+    {
+      "id": "shirts03",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html"
+    },
+    {
+      "id": "dress01",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html"
+    },
+    {
+      "id": "dress02",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html"
+    },
+    {
+      "id": "dress03",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/dress03.html"
+    },
+    {
+      "id": "suits01",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html"
+    },
+    {
+      "id": "suits03",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/suits03.html"
+    }
+  ],
+  "acceptedLicences": [
+    "CC0",
+    "CC-BY"
+  ],
+  "rejectNamePatterns": [
+    "hero",
+    "heroine",
+    "spider",
+    "ayanami",
+    "tsuno",
+    "chapulin",
+    "deathnote",
+    "cyborg",
+    "armor",
+    "ninja",
+    "wizard",
+    "mars_suit",
+    "diver",
+    "fire_suit",
+    "emt_",
+    "uniform",
+    "pants",
+    "boots",
+    "coverall",
+    "ballet",
+    "mycenaean",
+    "monk",
+    "viking",
+    "wetsuit",
+    "bodysuit",
+    "triathlon",
+    "skintight",
+    "skinsuit",
+    "robe"
+  ],
+  "manualSources": [
+    {
+      "name": "Innerscene male base mesh (CC0)",
+      "url": "https://www.innerscene.com/tools/library/3d-parts/male-base-mesh-3d-person-rigged-a-pose-380e6d89",
+      "reason": "The page states CC0 and free, but the GLB is served through the site's interactive download button; no direct file URL is published.",
+      "destination": "public/avatars/base/male-base-mesh.glb"
+    },
+    {
+      "name": "Innerscene female base mesh (CC0)",
+      "url": "https://www.innerscene.com/tools/library/3d-parts/female-base-mesh-3d-person-rigged-a-pose-dba97ed5",
+      "reason": "Same as the male base mesh.",
+      "destination": "public/avatars/base/female-base-mesh.glb"
+    },
+    {
+      "name": "Sketchfab downloadable models",
+      "url": "https://sketchfab.com/search?features=downloadable&licenses=7c23a1ba438d4306920229c12afcb5f9&licenses=322a749bcfa841b29dff1e8a1bb74b0b&q=jacket&type=models",
+      "reason": "The search API is public, but the download endpoint answers 401 without a logged-in Sketchfab API token. Filter to CC0 / CC-BY, download glTF, and drop the folder in the destination.",
+      "destination": "asset-inbox/sketchfab/<model-name>/"
+    },
+    {
+      "name": "CLO-SET CONNECT free assets",
+      "url": "https://connect.clo-set.com/store?pricingOptions=1",
+      "reason": "Requires a CLO account; files are ZPRJ/ZPAC (CLO / Marvelous Designer project files with sewing patterns) that need CLO or Marvelous Designer to export OBJ/GLB. Check each item's licence: many are free for use inside CLO only.",
+      "destination": "asset-inbox/clo-set/<item>/"
+    },
+    {
+      "name": "All Project Files \u2014 Marvelous Designer",
+      "url": "https://allprojectfiles.com/marvelous-designer/",
+      "reason": "Download links go through file-hosting pages and items carry no clear commercial licence. Verify the licence per item before use.",
+      "destination": "asset-inbox/allprojectfiles/<item>/"
+    },
+    {
+      "name": "CGTrader free models",
+      "url": "https://www.cgtrader.com/free-3d-models/clothes",
+      "reason": "Login required to download; 'Royalty Free' licences forbid redistributing the source files, which a public repository would do. Suitable only if the files are kept in private storage.",
+      "destination": "asset-inbox/cgtrader/<item>/"
+    },
+    {
+      "name": "Free3D clothing",
+      "url": "https://free3d.com/3d-models/clothes",
+      "reason": "The site refuses automated clients (HTTP 403) and most items are 'personal use only'.",
+      "destination": "asset-inbox/free3d/<item>/"
+    },
+    {
+      "name": "3D Garments",
+      "url": "https://www.3d-garments.com/",
+      "reason": "Host was unreachable from the build environment (connection refused by the proxy).",
+      "destination": "asset-inbox/3d-garments/<item>/"
+    },
+    {
+      "name": "Virtual Fashion Lab, Meshy, ArtStation Marketplace, Open3DModel",
+      "url": "https://www.virtualfashionlab.com/",
+      "reason": "Account, paid or unclear licences; Meshy items are AI-generated meshes, which the brief excludes.",
+      "destination": "asset-inbox/<source>/<item>/"
+    }
+  ]
+}

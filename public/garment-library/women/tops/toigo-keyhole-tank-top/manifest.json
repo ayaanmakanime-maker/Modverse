@@ -1,0 +1,93 @@
+{
+  "id": "toigo-keyhole-tank-top",
+  "name": "Keyhole Tank Top",
+  "originalName": "toigo_keyhole_tank_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "keyhole tank top by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"keyhole tank top\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-keyhole-tank-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Giraffe.png",
+      "original/tank_keyhole_neck.mhmat",
+      "original/tank_keyhole_neck.obj",
+      "original/toigo_keyhole_tank_top.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "tank_keyhole_neck.mhmat",
+        "sha256": "6cdb64864b29896a03032d3aee32579c7242f5a538fd5eb68e49a2c6f1f96d78",
+        "bytes": 474
+      },
+      {
+        "name": "tank_keyhole_neck.obj",
+        "sha256": "ab1cf8d5ea20ea88fa2af49a8c82bb57b0875fd3245701abf2aee6ab8020c601",
+        "bytes": 53692
+      },
+      {
+        "name": "Giraffe.png",
+        "sha256": "d65c8852e82d9f5b44511f645bb3a53567fa33f749b4148824183cbe8c8dbe01",
+        "bytes": 1335850
+      },
+      {
+        "name": "toigo_keyhole_tank_top.mhclo",
+        "sha256": "3d806939bb7a31d7868800a90aeccbc2c327b64ba389965e0d575b9ff27a16d3",
+        "bytes": 49748
+      }
+    ],
+    "glbBytes": 350304
+  },
+  "geometry": {
+    "vertices": 823,
+    "triangles": 1352,
+    "hasUv": true,
+    "uvCoverage": 0.87,
+    "boundsCm": {
+      "width": 34.4,
+      "height": 45,
+      "depth": 26
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

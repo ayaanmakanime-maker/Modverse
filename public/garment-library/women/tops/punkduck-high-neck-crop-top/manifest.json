@@ -1,0 +1,102 @@
+{
+  "id": "punkduck-high-neck-crop-top",
+  "name": "High Neck Crop Top",
+  "originalName": "punkduck_high_neck_crop_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tops",
+  "description": "high neck crop top by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"high neck crop top\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-high-neck-crop-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/highneckcroptop.mhmat",
+      "original/highneckcroptop.obj",
+      "original/highneckcroptop.png",
+      "original/highneckcroptop_norm.png",
+      "original/punkduck_high_neck_crop_top.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "highneckcroptop.mhmat",
+        "sha256": "5219427e286f37dd6a24f5e08e169102833eda325c092feffd1b5a5285ed2296",
+        "bytes": 879
+      },
+      {
+        "name": "highneckcroptop_norm.png",
+        "sha256": "00384e8a368c02c06a74a9ca182d3f0b52dfafc7630d824ecd8ab1303ad5e0aa",
+        "bytes": 2829342
+      },
+      {
+        "name": "highneckcroptop.obj",
+        "sha256": "c67c81a922b30250c02bb404a139174ac39823c7b66d54c2e6ef237b6c8df64d",
+        "bytes": 93537
+      },
+      {
+        "name": "punkduck_high_neck_crop_top.mhclo",
+        "sha256": "af3029784d154492c931718e93603d5440ebf9eee805d920fb13d7a060da01ef",
+        "bytes": 82546
+      },
+      {
+        "name": "highneckcroptop.png",
+        "sha256": "ede0277ac2c8b1e259cdd2dcf2c640999b6d84196e7629a4c0f3fde1ead43a31",
+        "bytes": 3790578
+      }
+    ],
+    "glbBytes": 197020
+  },
+  "geometry": {
+    "vertices": 1443,
+    "triangles": 2282,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 29.1,
+      "height": 42.4,
+      "depth": 23.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "top"
+  ],
+  "integrationStatus": "integrated"
+}

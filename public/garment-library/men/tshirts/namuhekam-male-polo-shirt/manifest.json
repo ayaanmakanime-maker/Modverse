@@ -1,0 +1,116 @@
+{
+  "id": "namuhekam-male-polo-shirt",
+  "name": "Male Polo Shirt",
+  "originalName": "namuhekam_male_polo_shirt",
+  "audience": "men",
+  "category": "tshirts",
+  "collection": "Polo shirts",
+  "description": "Basic polo shirt. Use subdivision to get better results.",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "namuhekam",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"male polo shirt\" by namuhekam, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "namuhekam-male-polo-shirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Polo_Base_Color.png",
+      "original/Polo_Height.png",
+      "original/Polo_Normal_OpenGL.png",
+      "original/Polo_Roughness.png",
+      "original/Polo_t-shirt.mhmat",
+      "original/Polo_t-shirt.obj",
+      "original/namuhekam_male_polo_shirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "Polo_Base_Color.png",
+        "sha256": "d8e74dbcc3e79227dd7f6d8b1e0ed6c614eb11d4dc3cfeb935222783c23ae64b",
+        "bytes": 1255797
+      },
+      {
+        "name": "Polo_t-shirt.obj",
+        "sha256": "aaee5f49077a8bacb8b1077910e4b9cc7946d587c75e367273f4ecaf94abd627",
+        "bytes": 181381
+      },
+      {
+        "name": "Polo_Normal_OpenGL.png",
+        "sha256": "1428ecac615cf45d409f42167b3d4cba70ea77a14a0c4f06ff5d01b75e7a8b5c",
+        "bytes": 5311773
+      },
+      {
+        "name": "Polo_t-shirt.mhmat",
+        "sha256": "fb47735dab1f3aacf39b9aea7e9c8343ea47c39f8a13fab559ba505b7c28356c",
+        "bytes": 427
+      },
+      {
+        "name": "Polo_Roughness.png",
+        "sha256": "b7205361068df100f8f63256a265d052dfa4bbec96d826e7999b23fcf17c95c2",
+        "bytes": 562396
+      },
+      {
+        "name": "Polo_Height.png",
+        "sha256": "f69d99fab6b30ad1972ac27e260f6e59129f7e3dcb988ed4c75d64cca29c386e",
+        "bytes": 1036116
+      },
+      {
+        "name": "namuhekam_male_polo_shirt.mhclo",
+        "sha256": "1639239b0d6d16ef2ca98f1f5af1af447d1e9e6950cd0fad9ecf774fa597434b",
+        "bytes": 135942
+      }
+    ],
+    "glbBytes": 150736
+  },
+  "geometry": {
+    "vertices": 2574,
+    "triangles": 4106,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 68.4,
+      "height": 61.4,
+      "depth": 27.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "male",
+    "casual",
+    "profession",
+    "contemporary"
+  ],
+  "integrationStatus": "integrated"
+}

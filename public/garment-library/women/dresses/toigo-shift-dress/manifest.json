@@ -1,0 +1,93 @@
+{
+  "id": "toigo-shift-dress",
+  "name": "Shift Dress",
+  "originalName": "toigo_shift_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "shift dress by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"shift dress\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-shift-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/ShiftDress.png",
+      "original/dress_shift.mhmat",
+      "original/dress_shift.obj",
+      "original/toigo_shift_dress.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "dress_shift.mhmat",
+        "sha256": "9abee1654f3f7cf3b2ead5d15e1a72497a137a2d426a10fbb495af5eae70ef82",
+        "bytes": 500
+      },
+      {
+        "name": "ShiftDress.png",
+        "sha256": "ea7f1d0a2009702745a8cf99190bbdb9dee523486f9c7a53be2ddeb4c01d9fc8",
+        "bytes": 1624432
+      },
+      {
+        "name": "dress_shift.obj",
+        "sha256": "b7607930f54a7444bee1077f0d97a9d835131d206e777a1d132fac924a23ad50",
+        "bytes": 576997
+      },
+      {
+        "name": "toigo_shift_dress.mhclo",
+        "sha256": "fb6587b7775b6fc11251772117c6e16f4f78c43b5987d69d560df32d648d8bff",
+        "bytes": 467384
+      }
+    ],
+    "glbBytes": 493936
+  },
+  "geometry": {
+    "vertices": 7814,
+    "triangles": 13568,
+    "hasUv": true,
+    "uvCoverage": 0.89,
+    "boundsCm": {
+      "width": 40.5,
+      "height": 87,
+      "depth": 28.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

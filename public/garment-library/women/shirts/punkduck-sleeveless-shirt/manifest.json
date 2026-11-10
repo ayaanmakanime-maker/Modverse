@@ -1,0 +1,102 @@
+{
+  "id": "punkduck-sleeveless-shirt",
+  "name": "Sleeveless Shirt",
+  "originalName": "punkduck_sleeveless_shirt",
+  "audience": "women",
+  "category": "shirts",
+  "collection": "Shirts",
+  "description": "sleeveless shirt by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"sleeveless shirt\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-sleeveless-shirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_sleeveless_shirt.mhclo",
+      "original/sleeveless.mhmat",
+      "original/sleeveless.obj",
+      "original/sleeveless.png",
+      "original/sleeveless_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "sleeveless.png",
+        "sha256": "85cbc2133bc3600c70f10c4df261bbdece28ddcac28e0af390094274fc0c829e",
+        "bytes": 2577783
+      },
+      {
+        "name": "sleeveless.mhmat",
+        "sha256": "85dadbf707209db61127bdd234b1c23c100e1803ff6fecca20e19200bc26b1af",
+        "bytes": 861
+      },
+      {
+        "name": "sleeveless.obj",
+        "sha256": "2a710fd6bbad9fb10b5399c21c6f71c238b5b75d53da6bb6969a0c2db67c6c23",
+        "bytes": 129361
+      },
+      {
+        "name": "punkduck_sleeveless_shirt.mhclo",
+        "sha256": "3c0760583eaa28a7eaa53987b9ebd489594195abaf5d22a8462915da170b9e66",
+        "bytes": 112854
+      },
+      {
+        "name": "sleeveless_normals.png",
+        "sha256": "520654d6f07875082700b340a527e7cb5c59f444586ca2a4c870c0ad73eeabf3",
+        "bytes": 2955243
+      }
+    ],
+    "glbBytes": 194048
+  },
+  "geometry": {
+    "vertices": 1883,
+    "triangles": 3136,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 30.1,
+      "height": 53.6,
+      "depth": 23.2
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "shirt"
+  ],
+  "integrationStatus": "integrated"
+}

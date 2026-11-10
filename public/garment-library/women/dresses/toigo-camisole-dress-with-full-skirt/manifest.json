@@ -1,0 +1,93 @@
+{
+  "id": "toigo-camisole-dress-with-full-skirt",
+  "name": "Camisole Dress With Full Skirt",
+  "originalName": "toigo_camisole_dress_with_full_skirt",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "camisole dress with full skirt by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"camisole dress with full skirt\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-camisole-dress-with-full-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/CamisoleDressUV.png",
+      "original/dress_camisole_full_skirt.mhmat",
+      "original/dress_camisole_full_skirt.obj",
+      "original/toigo_camisole_dress_with_full_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "dress_camisole_full_skirt.mhmat",
+        "sha256": "251afe9de54c4d59b8ce7ff95ab474e2e4cc8661ba24991bf188b1065a772df0",
+        "bytes": 508
+      },
+      {
+        "name": "CamisoleDressUV.png",
+        "sha256": "564bac9a17874ec4785b62a37a7646bfb6e4b427ac7748bd8303d1d864dad5a3",
+        "bytes": 7515256
+      },
+      {
+        "name": "dress_camisole_full_skirt.obj",
+        "sha256": "bcfc40134106228563e7dc85385b4b06585d21a5103ff249658fba9526cc8d7a",
+        "bytes": 458015
+      },
+      {
+        "name": "toigo_camisole_dress_with_full_skirt.mhclo",
+        "sha256": "be6932ff7c09e7b5ef74c6b3575485265b20996f791729c363df089979aade2f",
+        "bytes": 373523
+      }
+    ],
+    "glbBytes": 624692
+  },
+  "geometry": {
+    "vertices": 6467,
+    "triangles": 10792,
+    "hasUv": true,
+    "uvCoverage": 0.86,
+    "boundsCm": {
+      "width": 61.8,
+      "height": 102.9,
+      "depth": 40.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

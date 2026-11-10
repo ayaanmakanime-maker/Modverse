@@ -1,0 +1,99 @@
+{
+  "id": "elvs-male-shirt-tie-tucked1",
+  "name": "Male Shirt Tie Tucked",
+  "originalName": "elvs_male_shirt_tie_tucked1",
+  "audience": "men",
+  "category": "shirts",
+  "collection": "Shirts",
+  "description": "male shirt tie tucked by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male shirt tie tucked\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-male-shirt-tie-tucked1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_male_shirt_tie_tucked1.mhclo",
+      "original/mens_shirt_tie_tuck_elv1f.mhmat",
+      "original/mens_shirt_tie_tuck_elv1f.obj",
+      "original/shirttietex1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "mens_shirt_tie_tuck_elv1f.mhmat",
+        "sha256": "bfef49d237e57889429804a143e49255ed031293d73d85d1c262938862fbe59b",
+        "bytes": 845
+      },
+      {
+        "name": "elvs_male_shirt_tie_tucked1.mhclo",
+        "sha256": "3dd4b9f0c132435bc3431efb89c844030a538e8c2f06ef6ff575ef7d420a68dc",
+        "bytes": 165950
+      },
+      {
+        "name": "mens_shirt_tie_tuck_elv1f.obj",
+        "sha256": "b9b2bc055043161605f30d86e2c63d93ca97b94280dd58fc57acdb00bb531f2f",
+        "bytes": 197511
+      },
+      {
+        "name": "shirttietex1.png",
+        "sha256": "6cdaf388ae3988cb30f82942fe08dae3c363fd6170171a5b88dfe2c3dacae6bf",
+        "bytes": 269313
+      }
+    ],
+    "glbBytes": 161308
+  },
+  "geometry": {
+    "vertices": 2915,
+    "triangles": 4666,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 104.5,
+      "height": 53.8,
+      "depth": 34.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.2476,
+      0,
+      0.6393
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "shirt",
+    "menswear",
+    "fashion",
+    "traditional",
+    "tie"
+  ],
+  "integrationStatus": "integrated"
+}

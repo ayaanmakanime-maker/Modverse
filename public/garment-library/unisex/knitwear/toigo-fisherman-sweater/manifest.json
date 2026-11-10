@@ -1,0 +1,104 @@
+{
+  "id": "toigo-fisherman-sweater",
+  "name": "Fisherman Sweater",
+  "originalName": "toigo_fisherman_sweater",
+  "audience": "unisex",
+  "category": "knitwear",
+  "collection": "Sweaters",
+  "description": "fisherman sweater by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"fisherman sweater\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-fisherman-sweater.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/shirt-knit-NORM.png",
+      "original/shirt-knit.png",
+      "original/sweater_fisherman.mhmat",
+      "original/sweater_fisherman.obj",
+      "original/toigo_fisherman_sweater.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "sweater_fisherman.obj",
+        "sha256": "2844465f4e798666a90f631ea4a89ae30d3e526ef045a978d338908750d21d09",
+        "bytes": 172798
+      },
+      {
+        "name": "shirt-knit-NORM.png",
+        "sha256": "c3458d9b5174d7c34beed74618828c26f479200512d691a6bada34e7ea5d9a62",
+        "bytes": 598273
+      },
+      {
+        "name": "toigo_fisherman_sweater.mhclo",
+        "sha256": "b454960bdd61985f246e88e547a127a75d590dc87d6c1a4062fb7c7c281d8999",
+        "bytes": 144016
+      },
+      {
+        "name": "shirt-knit.png",
+        "sha256": "a7d526797da4cdc1a79603a35abebf41e577277267f36db6641cdb6cebe6ffb1",
+        "bytes": 2316765
+      },
+      {
+        "name": "sweater_fisherman.mhmat",
+        "sha256": "254c011b3edae8cbab7adb2d082de670dd41b26324bf5772318b7557a127fd64",
+        "bytes": 509
+      }
+    ],
+    "glbBytes": 331432
+  },
+  "geometry": {
+    "vertices": 2511,
+    "triangles": 4164,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 102.3,
+      "height": 57.8,
+      "depth": 31.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "sweater",
+    "shirt",
+    "top",
+    "knit"
+  ],
+  "integrationStatus": "integrated"
+}

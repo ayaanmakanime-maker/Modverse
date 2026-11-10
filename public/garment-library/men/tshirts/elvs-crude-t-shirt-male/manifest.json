@@ -1,0 +1,93 @@
+{
+  "id": "elvs-crude-t-shirt-male",
+  "name": "Crude T-Shirt Male",
+  "originalName": "elvs_crude_t-shirt_male",
+  "audience": "men",
+  "category": "tshirts",
+  "collection": "T-shirts",
+  "description": "crude t-shirt male by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"crude t-shirt male\" by Elvaerwyn, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-crude-t-shirt-male.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/crude_male_shirt.mhmat",
+      "original/crude_male_shirt.obj",
+      "original/crude_male_tex.png",
+      "original/elvs_crude_t-shirt_male.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "crude_male_tex.png",
+        "sha256": "0704c69ec9ebaf4a9ab0ba04a103a9350939971ca8222f130f4e3defecdc2231",
+        "bytes": 9204
+      },
+      {
+        "name": "elvs_crude_t-shirt_male.mhclo",
+        "sha256": "64dd3e6e2fbba39cc792854e0ae3e2c4829a37fa4e4b690f463c2956476294da",
+        "bytes": 75660
+      },
+      {
+        "name": "crude_male_shirt.obj",
+        "sha256": "3389b981a826396213cce2e69f40b3d9eca6cdfadcfcbee2774acb1dfb322fa7",
+        "bytes": 80940
+      },
+      {
+        "name": "crude_male_shirt.mhmat",
+        "sha256": "4e456f7b85ff3023b2ec3b4ed58b0ccceac621f3a02f4887d04eaa2a781b229a",
+        "bytes": 794
+      }
+    ],
+    "glbBytes": 71396
+  },
+  "geometry": {
+    "vertices": 1150,
+    "triangles": 2068,
+    "hasUv": true,
+    "uvCoverage": 0.56,
+    "boundsCm": {
+      "width": 56.4,
+      "height": 52.7,
+      "depth": 25
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

@@ -1,0 +1,122 @@
+{
+  "id": "elvs-fashion-stylized-qipoa",
+  "name": "Fashion Stylized Qipoa",
+  "originalName": "elvs_fashion_stylized_qipoa",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "fashion stylized qipoa by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"fashion stylized qipoa\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-fashion-stylized-qipoa.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/bump10.png",
+      "original/displacement10.png",
+      "original/elvquopaotex10.png",
+      "original/elvs_fashion_stylized_qipoa.mhclo",
+      "original/normal10.png",
+      "original/specs10.png",
+      "original/westernized_quipoa.mhmat",
+      "original/westernized_quipoa.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "normal10.png",
+        "sha256": "3231eae9550522d9bbfa05068a78adb7b23136940249c08ee20b90842e56eb93",
+        "bytes": 1682649
+      },
+      {
+        "name": "westernized_quipoa.mhmat",
+        "sha256": "3e437a730e750b213d77519bd9f4a47f89304905205e74469e58a407ef717856",
+        "bytes": 888
+      },
+      {
+        "name": "elvs_fashion_stylized_qipoa.mhclo",
+        "sha256": "9110bf0205b366ff1cb2e80a4f1ac044576e6aa98d8856903f7ef36f26b16981",
+        "bytes": 1298923
+      },
+      {
+        "name": "elvquopaotex10.png",
+        "sha256": "dcb44373d9ad54da471dad0ec4cf43358e84db0ebdb29a75676bbe0089a53b54",
+        "bytes": 1620232
+      },
+      {
+        "name": "bump10.png",
+        "sha256": "4abe5948930ac40afb993687aa869538e27003d8251237b7257762d29401df68",
+        "bytes": 1690266
+      },
+      {
+        "name": "specs10.png",
+        "sha256": "a9aecb2cbf4000d4a8d48b7279e384ce38e3da0c8fd0ba6cefaec787a716b3ea",
+        "bytes": 1324882
+      },
+      {
+        "name": "displacement10.png",
+        "sha256": "0802f0975f9ff0c7f41b927990e174dcd185e9ddd82852388e6cb41319ad22a4",
+        "bytes": 1860690
+      },
+      {
+        "name": "westernized_quipoa.obj",
+        "sha256": "e47ba022af1e31a25958ac084c310439ec2cbb0488c4f5b21d2b1b944656acc2",
+        "bytes": 2533933
+      }
+    ],
+    "glbBytes": 2651880
+  },
+  "geometry": {
+    "vertices": 40165,
+    "triangles": 39027,
+    "hasUv": true,
+    "uvCoverage": 1,
+    "boundsCm": {
+      "width": 44.4,
+      "height": 96.7,
+      "depth": 27.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "asian",
+    "ladies",
+    "fashion"
+  ],
+  "integrationStatus": "integrated"
+}

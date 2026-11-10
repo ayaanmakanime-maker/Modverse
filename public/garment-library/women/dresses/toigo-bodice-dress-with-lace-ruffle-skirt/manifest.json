@@ -1,0 +1,93 @@
+{
+  "id": "toigo-bodice-dress-with-lace-ruffle-skirt",
+  "name": "Bodice Dress With Lace Ruffle Skirt",
+  "originalName": "toigo_bodice_dress_with_lace_ruffle_skirt",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "bodice dress with lace ruffle skirt by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"bodice dress with lace ruffle skirt\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-bodice-dress-with-lace-ruffle-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/SkirtLaceRuffle.png",
+      "original/dress_bodice_ruffle_skirt.mhmat",
+      "original/dress_bodice_ruffle_skirt.obj",
+      "original/toigo_bodice_dress_with_lace_ruffle_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "SkirtLaceRuffle.png",
+        "sha256": "6747b01cdac38ab49accac3ed3e0271cfea8d08f690b7bb2766beed4946bfe09",
+        "bytes": 3425159
+      },
+      {
+        "name": "toigo_bodice_dress_with_lace_ruffle_skirt.mhclo",
+        "sha256": "f49359f662fb69891ba19280ad5d59724b914b755f7c772fcb1f1ab6401cfcef",
+        "bytes": 303372
+      },
+      {
+        "name": "dress_bodice_ruffle_skirt.obj",
+        "sha256": "e625b6e1117866b1d16765180c1a9d9eb60b2cd44622185df8d0cefd989cf9cb",
+        "bytes": 374390
+      },
+      {
+        "name": "dress_bodice_ruffle_skirt.mhmat",
+        "sha256": "6f3b8563cb26542b2a7742b41f3af33603e5197ee60033cf67fc1e39a891740d",
+        "bytes": 520
+      }
+    ],
+    "glbBytes": 567476
+  },
+  "geometry": {
+    "vertices": 5203,
+    "triangles": 8840,
+    "hasUv": true,
+    "uvCoverage": 0.74,
+    "boundsCm": {
+      "width": 52,
+      "height": 67.9,
+      "depth": 40.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

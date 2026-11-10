@@ -1,0 +1,93 @@
+{
+  "id": "toigo-strapless-ruffle-top-dress",
+  "name": "Strapless Ruffle Top Dress",
+  "originalName": "toigo_strapless_ruffle_top_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "strapless ruffle top dress by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"strapless ruffle top dress\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-strapless-ruffle-top-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/SkirtRuffleTop.png",
+      "original/dress_strapless_ruffle_top.mhmat",
+      "original/dress_strapless_ruffle_top.obj",
+      "original/toigo_strapless_ruffle_top_dress.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "dress_strapless_ruffle_top.obj",
+        "sha256": "97d2906bc2064a4de1be890faadc7fb882011080a34b8de47e462d0b87575b66",
+        "bytes": 438756
+      },
+      {
+        "name": "SkirtRuffleTop.png",
+        "sha256": "35be488906286f6f73869a717e57ea3470a4679e867bde6d270b886aca022895",
+        "bytes": 4053443
+      },
+      {
+        "name": "toigo_strapless_ruffle_top_dress.mhclo",
+        "sha256": "5afaef4141fd2272e09003d1d3718893471cb88de91772e6e215eaed41adb112",
+        "bytes": 358461
+      },
+      {
+        "name": "dress_strapless_ruffle_top.mhmat",
+        "sha256": "061e4afb3a2ca334685d6c1b9424de9d7f866d9d7a0f149eebf96ca84aa06a91",
+        "bytes": 520
+      }
+    ],
+    "glbBytes": 657724
+  },
+  "geometry": {
+    "vertices": 5992,
+    "triangles": 10336,
+    "hasUv": true,
+    "uvCoverage": 0.62,
+    "boundsCm": {
+      "width": 53.9,
+      "height": 66.1,
+      "depth": 42
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

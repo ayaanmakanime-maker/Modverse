@@ -1,0 +1,106 @@
+{
+  "id": "elvs-lara-tank1",
+  "name": "Lara Tank",
+  "originalName": "elvs_lara_tank1",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "tank top",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"lara tank\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-lara-tank1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_lara_tank1.mhclo",
+      "original/elvs_lara_top1.mhmat",
+      "original/elvs_lara_top1.obj",
+      "original/laratoptexture1.png",
+      "original/normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "laratoptexture1.png",
+        "sha256": "0266a3c34d9f1c858be7faaca5c6508b11ea96fd638228a7f61d901b59efb52f",
+        "bytes": 1435159
+      },
+      {
+        "name": "normals.png",
+        "sha256": "63d9cd4b5700f0868cc1440ef824407c8acf11ac3a5fec6134241b14302c09fa",
+        "bytes": 1843566
+      },
+      {
+        "name": "elvs_lara_top1.obj",
+        "sha256": "918154c408878de05aa15bd4ef23a053941becf3b3913187c0810ccf23e001e2",
+        "bytes": 75945
+      },
+      {
+        "name": "elvs_lara_top1.mhmat",
+        "sha256": "879ffe6ce1cb37a4fc3b613897ba1bd65ca653ed54bf865afad2292a0f12cfbe",
+        "bytes": 861
+      },
+      {
+        "name": "elvs_lara_tank1.mhclo",
+        "sha256": "6cb837b032dbd2dead591dfa61cd95d8e98a3ca5164afe692d0c3db3b011d3cc",
+        "bytes": 42209
+      }
+    ],
+    "glbBytes": 521744
+  },
+  "geometry": {
+    "vertices": 1334,
+    "triangles": 1288,
+    "hasUv": true,
+    "uvCoverage": 0.72,
+    "boundsCm": {
+      "width": 31.5,
+      "height": 47,
+      "depth": 23.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "casual",
+    "sport",
+    "contemporary",
+    "shirt",
+    "sleeveless"
+  ],
+  "integrationStatus": "integrated"
+}

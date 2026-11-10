@@ -12,7 +12,7 @@ const schema = z.object({
   proposal: designProposalSchema,
   config: designConfigSchema.nullable(),
   /** Which Director produced the proposal (e.g. an on-device model in the browser). */
-  provider: z.enum(["on-device"]).default("on-device"),
+  provider: z.enum(["on-device", "puter"]).default("on-device"),
   label: z.string().max(80).default("On-device model"),
   latencyMs: z.number().int().min(0).max(600_000).default(0),
   audience: z.enum(["men", "women"]).optional(),

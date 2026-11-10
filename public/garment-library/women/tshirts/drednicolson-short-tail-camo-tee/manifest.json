@@ -1,0 +1,108 @@
+{
+  "id": "drednicolson-short-tail-camo-tee",
+  "name": "Short-Tail Camo Tee",
+  "originalName": "drednicolson_short-tail_camo_tee",
+  "audience": "women",
+  "category": "tshirts",
+  "collection": "T-shirts",
+  "description": "short-tail camo tee by DredNicolson (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "DredNicolson",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"short-tail camo tee\" by DredNicolson, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "drednicolson-short-tail-camo-tee.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/drednicolson_short-tail_camo_tee.mhclo",
+      "original/short_tail_camo_tee.mhmat",
+      "original/short_tail_camo_tee.obj",
+      "original/short_tail_camo_tee_diff.jpg",
+      "original/short_tail_camo_tee_nrml.jpg",
+      "original/short_tail_camo_tee_spec.jpg"
+    ],
+    "originalChecksums": [
+      {
+        "name": "short_tail_camo_tee.obj",
+        "sha256": "7a80f591297984ebb3c4c9b304b9090b15f0d6b8ac20ce8c2317b008066b5af2",
+        "bytes": 161323
+      },
+      {
+        "name": "short_tail_camo_tee_diff.jpg",
+        "sha256": "63e7be3c45f5b91d45c29c7f5b52bd0fdc6aefd1876e1a269ed575272ae31b0c",
+        "bytes": 1080420
+      },
+      {
+        "name": "short_tail_camo_tee_nrml.jpg",
+        "sha256": "4f7936bc8ce4eda04dac3435bd440e94e492e20dde48d4b9ecef8872d5ff0ae8",
+        "bytes": 3102244
+      },
+      {
+        "name": "short_tail_camo_tee_spec.jpg",
+        "sha256": "e8d2349aec329fc2d3076969dd0f04ab47813e73c49d62fcd1d9a324fe0ec806",
+        "bytes": 573879
+      },
+      {
+        "name": "short_tail_camo_tee.mhmat",
+        "sha256": "28f78014b8a28173bcf6c0a4b35aa6995f639fae38c9ab1c4835e5f9724a71b6",
+        "bytes": 670
+      },
+      {
+        "name": "drednicolson_short-tail_camo_tee.mhclo",
+        "sha256": "33b6cc5706742d7c02000e237d0eee25c9e60578f577ef1be8c435f41c6e5fff",
+        "bytes": 130235
+      }
+    ],
+    "glbBytes": 332892
+  },
+  "geometry": {
+    "vertices": 2606,
+    "triangles": 3746,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 61.3,
+      "height": 43.5,
+      "depth": 24.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "casual",
+    "female"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -1,0 +1,105 @@
+{
+  "id": "toigo-bodice-style-top",
+  "name": "Bodice-Style Top",
+  "originalName": "toigo_bodice-style_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tops",
+  "description": "bodice-style top by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"bodice-style top\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-bodice-style-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Bodice-NORM.png",
+      "original/Bodice-spec.png",
+      "original/Bodice.png",
+      "original/bodice_style_top.mhmat",
+      "original/bodice_style_top.obj",
+      "original/toigo_bodice-style_top.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "Bodice-spec.png",
+        "sha256": "915cd0dd9acf3caed0cee1b72df921693752e05ed58476247f137f36bb6839c8",
+        "bytes": 24974
+      },
+      {
+        "name": "toigo_bodice-style_top.mhclo",
+        "sha256": "995f41209f5366483a94158d779e1dae2d8fd580914c1b15673c4b6722b81030",
+        "bytes": 69391
+      },
+      {
+        "name": "Bodice.png",
+        "sha256": "291ca9c9bfdef0d1684f0c94e7fe1e1b4264ac5ecd3a08f89c243b2be49ecc6a",
+        "bytes": 898747
+      },
+      {
+        "name": "Bodice-NORM.png",
+        "sha256": "f0ee8ff32f153d1b7d691d72d901c9f47e4af1846c787cde8db7b59dcc9752fe",
+        "bytes": 1545349
+      },
+      {
+        "name": "bodice_style_top.mhmat",
+        "sha256": "b67abab1e4ba409122b093bf773ee686d00fee19c77f34a1f7bbbcfc581b262a",
+        "bytes": 528
+      },
+      {
+        "name": "bodice_style_top.obj",
+        "sha256": "08be587b0a95de97e331a8432e9f33444783411f2060614a4f0776749fd70c25",
+        "bytes": 76496
+      }
+    ],
+    "glbBytes": 242744
+  },
+  "geometry": {
+    "vertices": 1152,
+    "triangles": 1944,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 33.7,
+      "height": 37.1,
+      "depth": 27.2
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0,
+      0,
+      0
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

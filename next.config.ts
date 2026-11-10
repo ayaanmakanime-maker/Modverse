@@ -7,12 +7,12 @@ const isDev = process.env.NODE_ENV !== "production";
 // optional public MediaPipe model CDN used only when local models are absent.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""} https://cdn.jsdelivr.net https://checkout.razorpay.com`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""} https://cdn.jsdelivr.net https://checkout.razorpay.com https://js.puter.com`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://*.puter.com https://*.puter.site",
   "font-src 'self' data:",
-  `connect-src 'self' blob: data: https://storage.googleapis.com https://cdn.jsdelivr.net https://api.razorpay.com https://lumberjack.razorpay.com${isDev ? " ws:" : ""}`,
-  "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+  `connect-src 'self' blob: data: https://storage.googleapis.com https://cdn.jsdelivr.net https://api.razorpay.com https://lumberjack.razorpay.com https://*.puter.com wss://*.puter.com https://*.puter.site${isDev ? " ws:" : ""}`,
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://puter.com https://*.puter.com",
   "media-src 'self' blob: mediastream:",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",

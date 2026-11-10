@@ -1,0 +1,105 @@
+{
+  "id": "toigo-female-double-breasted-suit",
+  "name": "Female Double-Breasted Suit",
+  "originalName": "toigo_female_double-breasted_suit",
+  "audience": "women",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "female double-breasted suit by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "suits01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits01/suits01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "2b1d8676f3863b188e9eea98c1d8f234543d54c440e791d92b819f8ee1861f19"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"female double-breasted suit\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-female-double-breasted-suit.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/DB-suit-Fem-norm.png",
+      "original/DB-suit-Fem.png",
+      "original/DB-suit-spec.png",
+      "original/fem_suit_double_breasted.mhmat",
+      "original/fem_suit_double_breasted.obj",
+      "original/toigo_female_double-breasted_suit.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "DB-suit-Fem-norm.png",
+        "sha256": "cacd846e25b71181b9c49e12392b403c9c98765fe637238aaef498a39d8c94fe",
+        "bytes": 3368345
+      },
+      {
+        "name": "DB-suit-Fem.png",
+        "sha256": "d3f52f73401982399a79f210f4570f21138e8ddb312042cb6ea31d8c9666790e",
+        "bytes": 2561814
+      },
+      {
+        "name": "fem_suit_double_breasted.obj",
+        "sha256": "5adfdcf7f43efafd89f778f4d61122ab559dc6afbfb63d8fa741ef60c02e2697",
+        "bytes": 435552
+      },
+      {
+        "name": "fem_suit_double_breasted.mhmat",
+        "sha256": "6cb410ea629f27d50da019dc5fd514d7f729ed3108a42ce9996e1ce447beb8fa",
+        "bytes": 568
+      },
+      {
+        "name": "toigo_female_double-breasted_suit.mhclo",
+        "sha256": "87b9b5499c67904338fe2ac271977dccabb3e603e3d2a5f90a62a633d5504913",
+        "bytes": 365044
+      },
+      {
+        "name": "DB-suit-spec.png",
+        "sha256": "e9833b05fcc3e9f89d0ca6e4ae1f919185e0dcb481bb68464f13b46b872b15ad",
+        "bytes": 33746
+      }
+    ],
+    "glbBytes": 803000
+  },
+  "geometry": {
+    "vertices": 6021,
+    "triangles": 10062,
+    "hasUv": true,
+    "uvCoverage": 0.93,
+    "boundsCm": {
+      "width": 91,
+      "height": 133.5,
+      "depth": 31.3
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

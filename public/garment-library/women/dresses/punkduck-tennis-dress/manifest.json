@@ -1,0 +1,101 @@
+{
+  "id": "punkduck-tennis-dress",
+  "name": "Tennis Dress",
+  "originalName": "punkduck_tennis_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "tennis dress by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "suits03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits03/suits03_cc-by.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "74ace28794d27186a3f3ee26058f16906fe3c46f9f7e35a9ac7f622cd5e821eb"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"tennis dress\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-tennis-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_tennis_dress.mhclo",
+      "original/tennisdress.mhmat",
+      "original/tennisdress.obj",
+      "original/tennisdress.png",
+      "original/tennisdress_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "punkduck_tennis_dress.mhclo",
+        "sha256": "9fa1764bedc7e73a4334147301e1190f0c2532c35296acf4fc829fba0efb76eb",
+        "bytes": 95123
+      },
+      {
+        "name": "tennisdress.obj",
+        "sha256": "16477bb4376b44a2cdfbe237cccd2a07fae1750dfb9f0504d6dc8e0b6a67a5c8",
+        "bytes": 109470
+      },
+      {
+        "name": "tennisdress.png",
+        "sha256": "de2334bdc0dc99efc535c5bf71c9c2608aeb891d7f0a515554f7d0f1a14eb28f",
+        "bytes": 2411302
+      },
+      {
+        "name": "tennisdress_normals.png",
+        "sha256": "409f2a6613dfa8fe51e1b592eab8135ba8ca53608341d19e320f531fc04f21a6",
+        "bytes": 3436647
+      },
+      {
+        "name": "tennisdress.mhmat",
+        "sha256": "ecb708155151b307a0d905247ecd185bed61afe0c4ebec373a3a130863d93c5c",
+        "bytes": 863
+      }
+    ],
+    "glbBytes": 184148
+  },
+  "geometry": {
+    "vertices": 1637,
+    "triangles": 2668,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 39.2,
+      "height": 72,
+      "depth": 26.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "sport"
+  ],
+  "integrationStatus": "integrated"
+}

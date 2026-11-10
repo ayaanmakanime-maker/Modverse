@@ -1,0 +1,108 @@
+{
+  "id": "mindfront-m-suit-01",
+  "name": "M Suit 01",
+  "originalName": "mindfront_m_suit_01",
+  "audience": "men",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "m suit 01 by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "suits03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits03/suits03_cc-by.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "74ace28794d27186a3f3ee26058f16906fe3c46f9f7e35a9ac7f622cd5e821eb"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"m suit 01\" by Mindfront, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-m-suit-01.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/M_Suit_01.png",
+      "original/M_Suit_01_NRM.png",
+      "original/M_Suit_01_SPEC.png",
+      "original/m_suit_01.mhmat",
+      "original/m_suit_01.obj",
+      "original/mindfront_m_suit_01.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "M_Suit_01_NRM.png",
+        "sha256": "69d232c8ec69ba1e1ce56981eb0be85bbc8b29eba752b666efcad69a2d419bc5",
+        "bytes": 19155530
+      },
+      {
+        "name": "m_suit_01.mhmat",
+        "sha256": "377849c9008a75102c04025ed477086f7767fda6247b9ff83dd2f515f0ead718",
+        "bytes": 531
+      },
+      {
+        "name": "M_Suit_01.png",
+        "sha256": "313fa22d6a074e22022c5e6aa1efd9bc4fd112003866009e5eeb443619bf77c8",
+        "bytes": 2145871
+      },
+      {
+        "name": "m_suit_01.obj",
+        "sha256": "c3b8e5390e9aa4c8b16755b8bb7d1fa16231fa81761f09f7c6aae1519d7bb49a",
+        "bytes": 393384
+      },
+      {
+        "name": "M_Suit_01_SPEC.png",
+        "sha256": "39859caa924e7ba35b4b2c636dd01e087bcee95cc42ca8350c53dc835b1b4351",
+        "bytes": 1541053
+      },
+      {
+        "name": "mindfront_m_suit_01.mhclo",
+        "sha256": "75d23b201d2fe68dd4f09dc1531a78990d8afa7589fd9d85c5395f964fc55ebd",
+        "bytes": 332594
+      }
+    ],
+    "glbBytes": 373532
+  },
+  "geometry": {
+    "vertices": 5485,
+    "triangles": 9170,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 105.7,
+      "height": 147.7,
+      "depth": 35.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "male",
+    "elegant"
+  ],
+  "integrationStatus": "integrated"
+}

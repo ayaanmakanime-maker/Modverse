@@ -1,0 +1,106 @@
+{
+  "id": "elvs-disco-top-1-butterfly",
+  "name": "Disco Top 1 Butterfly",
+  "originalName": "elvs_disco_top_1_butterfly",
+  "audience": "women",
+  "category": "blouses",
+  "collection": "Blouses & tunics",
+  "description": "blouse",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"disco top 1 butterfly\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-disco-top-1-butterfly.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_butterflydiscotop1.mhmat",
+      "original/elvs_butterflydiscotop1.obj",
+      "original/elvs_disco_top_1_butterfly.mhclo",
+      "original/glitterbutterflytoptex1.png",
+      "original/normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "normals.png",
+        "sha256": "18a43a27061262e9771ceef10daa250c9cc70bd4184f2baedc7967605d5a7c9d",
+        "bytes": 3396368
+      },
+      {
+        "name": "elvs_butterflydiscotop1.mhmat",
+        "sha256": "90a864948ccefba0996c97c4c18e0658ea84f78416a13f21e536dcc670575eaf",
+        "bytes": 898
+      },
+      {
+        "name": "glitterbutterflytoptex1.png",
+        "sha256": "0718fabac9e754f8ea4e255ce0b693d8a2e30982eca92fa3f073ab6c1fd13c5b",
+        "bytes": 3152045
+      },
+      {
+        "name": "elvs_butterflydiscotop1.obj",
+        "sha256": "a6498557ccfd3de5d2ecf0d642b96ac30658aa5aeef3d9eeb6738d6f97d2d7c7",
+        "bytes": 302740
+      },
+      {
+        "name": "elvs_disco_top_1_butterfly.mhclo",
+        "sha256": "e839ba3d82ec54f5bd6304304a844df726f6a7de7631e24c37376c27c359c19f",
+        "bytes": 159956
+      }
+    ],
+    "glbBytes": 1367544
+  },
+  "geometry": {
+    "vertices": 4923,
+    "triangles": 4860,
+    "hasUv": true,
+    "uvCoverage": 0.9,
+    "boundsCm": {
+      "width": 55.6,
+      "height": 59.8,
+      "depth": 32
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "formal",
+    "festive",
+    "vintage",
+    "shirt",
+    "disco"
+  ],
+  "integrationStatus": "integrated"
+}

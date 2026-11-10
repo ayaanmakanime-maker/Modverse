@@ -1,0 +1,98 @@
+{
+  "id": "elvs-frilled-party-dress",
+  "name": "Frilled Party Dress",
+  "originalName": "elvs_frilled_party_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "frilled party dress by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"frilled party dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-frilled-party-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_frilled_party_dress.mhclo",
+      "original/frill_partydress1.mhmat",
+      "original/frill_partydress1.obj",
+      "original/silverhatchesfrills.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "silverhatchesfrills.png",
+        "sha256": "f242ef672102dec92a859d590c0cf7527028dfe8152f81d4ed71376b9cdfbc1e",
+        "bytes": 1659771
+      },
+      {
+        "name": "frill_partydress1.mhmat",
+        "sha256": "509ab3eb41dbc0edc3b4aaa5710bdf3c480ec4fda9434ab80cf00ce56c0ab940",
+        "bytes": 847
+      },
+      {
+        "name": "elvs_frilled_party_dress.mhclo",
+        "sha256": "6dffb5c7c8c147519772be0abf25dc464dfdebb31faee4d06321b2cfb9eb545b",
+        "bytes": 652880
+      },
+      {
+        "name": "frill_partydress1.obj",
+        "sha256": "153f0c5ac1756aa21aa63ee872f78c89f4cd3f74ef1dba0d4c716831732a1099",
+        "bytes": 1131282
+      }
+    ],
+    "glbBytes": 1096520
+  },
+  "geometry": {
+    "vertices": 16698,
+    "triangles": 18881,
+    "hasUv": true,
+    "uvCoverage": 0.98,
+    "boundsCm": {
+      "width": 47.2,
+      "height": 80,
+      "depth": 28.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "party dress",
+    "female",
+    "fashion"
+  ],
+  "integrationStatus": "integrated"
+}

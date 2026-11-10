@@ -1,0 +1,104 @@
+{
+  "id": "elvs-goddess-dress1",
+  "name": "Goddess Dress",
+  "originalName": "elvs_goddess_dress1",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "greek style dress",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"goddess dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-goddess-dress1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_goddess_dress1.mhclo",
+      "original/elvs_goddessdress1.mhmat",
+      "original/elvs_goddessdress1.obj",
+      "original/elvs_goddessdress1.png",
+      "original/elvs_goddessdress1_norm.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_goddessdress1.mhmat",
+        "sha256": "76f59665fa19451c05af001f452f09f8889e0fce5adb934b040a7698f6f1271f",
+        "bytes": 884
+      },
+      {
+        "name": "elvs_goddessdress1.png",
+        "sha256": "3d4061ae891e42622db73f47ef2ad5919c01d3206cced630f2f95d9817587384",
+        "bytes": 102979
+      },
+      {
+        "name": "elvs_goddess_dress1.mhclo",
+        "sha256": "569aa540e4a4d7299741b8f11c550597dc23d789f26330630e2ae5ea9445e690",
+        "bytes": 331894
+      },
+      {
+        "name": "elvs_goddessdress1_norm.png",
+        "sha256": "480c18ee20a8bcb4c818e518c7cec1ccafd48d1f4fa7fdcc4546f6245286794b",
+        "bytes": 62762
+      },
+      {
+        "name": "elvs_goddessdress1.obj",
+        "sha256": "176fd5227bb4df083f42497380951b961169a01a644694027e2e9f2d6e448d9a",
+        "bytes": 605321
+      }
+    ],
+    "glbBytes": 469080
+  },
+  "geometry": {
+    "vertices": 9576,
+    "triangles": 10059,
+    "hasUv": true,
+    "uvCoverage": 0.92,
+    "boundsCm": {
+      "width": 47.2,
+      "height": 133.3,
+      "depth": 43.2
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "fantasy",
+    "play",
+    "dress"
+  ],
+  "integrationStatus": "integrated"
+}

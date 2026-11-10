@@ -1,0 +1,99 @@
+{
+  "id": "elvs-hooded-sweat-jacket1",
+  "name": "Hooded Sweat Jacket",
+  "originalName": "elvs_hooded_sweat_jacket1",
+  "audience": "unisex",
+  "category": "sweatwear",
+  "collection": "Hoodies & sweatwear",
+  "description": "hooded sweat jacket by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"hooded sweat jacket\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-hooded-sweat-jacket1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_hooded_sweat_jacket1.mhclo",
+      "original/hoodietex1.png",
+      "original/ladieshoodiedown1.mhmat",
+      "original/ladieshoodiedown1.obj",
+      "original/normalshoodie.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "ladieshoodiedown1.obj",
+        "sha256": "e53204f19be28c005c920748322fc2aa42e7ebdb84a4ab72f48e7a244b71aa64",
+        "bytes": 936824
+      },
+      {
+        "name": "hoodietex1.png",
+        "sha256": "8c186f1c37094c46b8fcc84aa9d3896b91b863093df084056dd676ca6d3302b0",
+        "bytes": 243913
+      },
+      {
+        "name": "normalshoodie.png",
+        "sha256": "ef106c733e71e5c262b128748a212358b3402d402bc8bb6786d7ab0dca6a4876",
+        "bytes": 256592
+      },
+      {
+        "name": "elvs_hooded_sweat_jacket1.mhclo",
+        "sha256": "0bcba0098a56c32f66b9f22ae37e8d0329e1cd515c44ce384edbaf848ef6fcb0",
+        "bytes": 671469
+      },
+      {
+        "name": "ladieshoodiedown1.mhmat",
+        "sha256": "b3a4cc7eaa937e26d36230de0684c1e18b95b15e7faa9e4020db7baafb158ce0",
+        "bytes": 827
+      }
+    ],
+    "glbBytes": 861204
+  },
+  "geometry": {
+    "vertices": 16615,
+    "triangles": 19574,
+    "hasUv": true,
+    "uvCoverage": 0.99,
+    "boundsCm": {
+      "width": 91.5,
+      "height": 62.5,
+      "depth": 34.3
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.4023,
+      0.08955,
+      0.3928
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

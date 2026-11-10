@@ -1,0 +1,105 @@
+{
+  "id": "elvs-halter-dress-tiered",
+  "name": "Halter Dress Tiered",
+  "originalName": "elvs_halter_dress_tiered",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "halter dress tiered by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"halter dress tiered\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-halter-dress-tiered.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_halter_dress_tiered.mhclo",
+      "original/normalstier1.png",
+      "original/tieredhalterdress1.mhmat",
+      "original/tieredhalterdress1.obj",
+      "original/tieredtex2b.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_halter_dress_tiered.mhclo",
+        "sha256": "a7c974559eef2749f8cf52e3669d50ab27f8ae8c7ee6fcc53659fab92d59d74d",
+        "bytes": 727144
+      },
+      {
+        "name": "tieredhalterdress1.mhmat",
+        "sha256": "f0c0d762133a8a4362166c94c463b5f5ba6cc571328e593decf48d9d4ffdd237",
+        "bytes": 903
+      },
+      {
+        "name": "normalstier1.png",
+        "sha256": "bcbb79bd1acd78c121816fe9a65c24d3ee370b0e1f326eee7c02703c56b3d157",
+        "bytes": 168125
+      },
+      {
+        "name": "tieredhalterdress1.obj",
+        "sha256": "e6774482a957fe2838022ac16cba7d1d38e46296340dc3c74208abafbd619e90",
+        "bytes": 1321912
+      },
+      {
+        "name": "tieredtex2b.png",
+        "sha256": "aa8972ea5f298a350030a4b9b8421ebdfbe139880a3944dd8fef86e8ab3b56bf",
+        "bytes": 153577
+      }
+    ],
+    "glbBytes": 1089716
+  },
+  "geometry": {
+    "vertices": 20871,
+    "triangles": 21076,
+    "hasUv": true,
+    "uvCoverage": 0.83,
+    "boundsCm": {
+      "width": 59.2,
+      "height": 103.6,
+      "depth": 52.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.3843,
+      0,
+      0.3922
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "ladiesware",
+    "female",
+    "halter",
+    "halter dress"
+  ],
+  "integrationStatus": "integrated"
+}

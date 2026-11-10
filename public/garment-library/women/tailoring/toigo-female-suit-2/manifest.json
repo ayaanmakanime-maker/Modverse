@@ -1,0 +1,105 @@
+{
+  "id": "toigo-female-suit-2",
+  "name": "Female Suit 2",
+  "originalName": "toigo_female_suit_2",
+  "audience": "women",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "female suit 2 by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "suits01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits01/suits01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "2b1d8676f3863b188e9eea98c1d8f234543d54c440e791d92b819f8ee1861f19"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"female suit 2\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-female-suit-2.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Fsuit2-norm.png",
+      "original/Fsuit2-spec.png",
+      "original/Fsuit2.png",
+      "original/fem_suit2.mhmat",
+      "original/fem_suit2.obj",
+      "original/toigo_female_suit_2.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "Fsuit2-norm.png",
+        "sha256": "2ce673245d1fb62b6aec0e785bb498268aaeef25a2576612393cc4ddc7cfc8bd",
+        "bytes": 2583270
+      },
+      {
+        "name": "fem_suit2.mhmat",
+        "sha256": "c6cd9227461acb3bdcb1bd3ea4784f3af23a83185b51b321fe1101321e1823d9",
+        "bytes": 543
+      },
+      {
+        "name": "toigo_female_suit_2.mhclo",
+        "sha256": "3156c2113c18028dd8d12f3d4ad77b29008cd982a444f86f5d18be003240929c",
+        "bytes": 576417
+      },
+      {
+        "name": "Fsuit2-spec.png",
+        "sha256": "da7de2e179f4c06e35b6453232edc9c0aac752cda13e218b9ace54ef0cbbca51",
+        "bytes": 21439
+      },
+      {
+        "name": "Fsuit2.png",
+        "sha256": "b3f0a27b957783696a6b9bed71ba73779831515418a72d3f4680cdc972ce990a",
+        "bytes": 2611873
+      },
+      {
+        "name": "fem_suit2.obj",
+        "sha256": "a322ac52ac113b08e5436dea787768180740c86db7e0a2b07b274b36a16467b3",
+        "bytes": 703468
+      }
+    ],
+    "glbBytes": 645620
+  },
+  "geometry": {
+    "vertices": 9781,
+    "triangles": 16214,
+    "hasUv": true,
+    "uvCoverage": 0.81,
+    "boundsCm": {
+      "width": 91.8,
+      "height": 137.3,
+      "depth": 32.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

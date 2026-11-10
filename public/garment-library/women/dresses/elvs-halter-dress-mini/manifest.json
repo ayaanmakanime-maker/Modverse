@@ -1,0 +1,105 @@
+{
+  "id": "elvs-halter-dress-mini",
+  "name": "Halter Dress Mini",
+  "originalName": "elvs_halter_dress_mini",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "halter dress mini by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"halter dress mini\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-halter-dress-mini.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_halter_dress_mini.mhclo",
+      "original/elvs_mini_halterdress.mhmat",
+      "original/elvs_mini_halterdress.obj",
+      "original/shortminihalternormals.png",
+      "original/shortminihaltertex2.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "shortminihalternormals.png",
+        "sha256": "3d9e531555362d61fd9f212e9da49a4aa2b5ea010fd107d3758df58984e6ea5d",
+        "bytes": 1778161
+      },
+      {
+        "name": "shortminihaltertex2.png",
+        "sha256": "f9af801b8bdafd5b524d26c81108bf136e876b1150687aabc93992e2cbeaaa97",
+        "bytes": 1695411
+      },
+      {
+        "name": "elvs_halter_dress_mini.mhclo",
+        "sha256": "22a8389dd2092791d30c7abfcdf7fd622cee585834f1766e7237e19343d07e9e",
+        "bytes": 540990
+      },
+      {
+        "name": "elvs_mini_halterdress.mhmat",
+        "sha256": "c2b6951863074ac7aadc01cc53d6d5539422a073ee1c3d07bfb38a8df7d64ec6",
+        "bytes": 941
+      },
+      {
+        "name": "elvs_mini_halterdress.obj",
+        "sha256": "ca0b8044d0a898580a1df39ac7ec53e2bb8e338e0f5fdb05a85c5c6618ca97e2",
+        "bytes": 958501
+      }
+    ],
+    "glbBytes": 1598824
+  },
+  "geometry": {
+    "vertices": 15240,
+    "triangles": 15492,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 51,
+      "height": 89.6,
+      "depth": 46
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.3843,
+      0,
+      0.3922
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "ladiesware",
+    "female",
+    "halter",
+    "halter dress"
+  ],
+  "integrationStatus": "integrated"
+}

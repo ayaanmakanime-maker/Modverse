@@ -1,0 +1,93 @@
+{
+  "id": "toigo-keyhole-neck-dress",
+  "name": "Keyhole Neck Dress",
+  "originalName": "toigo_keyhole_neck_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "keyhole neck dress by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"keyhole neck dress\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-keyhole-neck-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/ZebraD.png",
+      "original/dress_keyhole_neck.mhmat",
+      "original/dress_keyhole_neck.obj",
+      "original/toigo_keyhole_neck_dress.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "dress_keyhole_neck.mhmat",
+        "sha256": "203eb64f476f13dcaa0b22a0825f2e603a2d51fa1d951bb1ccb7211b2974726a",
+        "bytes": 479
+      },
+      {
+        "name": "toigo_keyhole_neck_dress.mhclo",
+        "sha256": "c167b8e68fd4d837f2e6b94b803a08111d6ee6866809adc2ac703e5b7bc87d18",
+        "bytes": 612956
+      },
+      {
+        "name": "dress_keyhole_neck.obj",
+        "sha256": "01a4158a5b5ab1a70f8d78e015084ccbdc1af84d29f5c949a19113beaa18bd05",
+        "bytes": 751885
+      },
+      {
+        "name": "ZebraD.png",
+        "sha256": "8bb1750470c8d3bad3bffc3330eae9504e3cddf9c481bb22cb4bafe56f090a69",
+        "bytes": 1385772
+      }
+    ],
+    "glbBytes": 850848
+  },
+  "geometry": {
+    "vertices": 9623,
+    "triangles": 17888,
+    "hasUv": true,
+    "uvCoverage": 0.9,
+    "boundsCm": {
+      "width": 47.4,
+      "height": 90.7,
+      "depth": 29
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

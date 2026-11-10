@@ -1,0 +1,93 @@
+{
+  "id": "elvs-ruffle-sleeve-peasant-blouse-1",
+  "name": "Ruffle Sleeve Peasant Blouse",
+  "originalName": "elvs_ruffle_sleeve_peasant_blouse_1",
+  "audience": "women",
+  "category": "blouses",
+  "collection": "Blouses & tunics",
+  "description": "ruffle sleeve peasant blouse by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"ruffle sleeve peasant blouse\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-ruffle-sleeve-peasant-blouse-1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_ruffle_sleeve_peasant_blouse_1.mhclo",
+      "original/gaissiancloth.png",
+      "original/ruffle_sleeve_peasantblouse.mhmat",
+      "original/ruffle_sleeve_peasantblouse.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "gaissiancloth.png",
+        "sha256": "7240d87bfa38037e2f4d0fdcc9522916298761387c816a9fea96b13f96cbdd83",
+        "bytes": 8558331
+      },
+      {
+        "name": "elvs_ruffle_sleeve_peasant_blouse_1.mhclo",
+        "sha256": "619b100926f5dacfdbd2c483b02ce1f8df521e59392f9ab79b819999400adc5c",
+        "bytes": 93332
+      },
+      {
+        "name": "ruffle_sleeve_peasantblouse.mhmat",
+        "sha256": "3294de70a0ff7199588bda32d9257c6060c483b9be118e8f77f58ddacf47cdf1",
+        "bytes": 708
+      },
+      {
+        "name": "ruffle_sleeve_peasantblouse.obj",
+        "sha256": "8152db0ee250cf70bf09d1d6be0d500e8f2439135cc83de6a5a95cd01d880db5",
+        "bytes": 97078
+      }
+    ],
+    "glbBytes": 439152
+  },
+  "geometry": {
+    "vertices": 1431,
+    "triangles": 2588,
+    "hasUv": true,
+    "uvCoverage": 0.91,
+    "boundsCm": {
+      "width": 66.5,
+      "height": 51.4,
+      "depth": 26.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

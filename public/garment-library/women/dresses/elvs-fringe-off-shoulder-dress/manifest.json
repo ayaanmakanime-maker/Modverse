@@ -1,0 +1,106 @@
+{
+  "id": "elvs-fringe-off-shoulder-dress",
+  "name": "Fringe Off Shoulder Dress",
+  "originalName": "elvs_fringe_off_shoulder_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "fringe_dress",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"fringe off shoulder dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-fringe-off-shoulder-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/dresstex2.png",
+      "original/elvs_fringe_off_shoulder_dress.mhclo",
+      "original/elvs_offshoulder_fringedress2_p.mhmat",
+      "original/elvs_offshoulder_fringedress2_p.obj",
+      "original/normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "normals.png",
+        "sha256": "2f44aa28c468f008b219aa7eee7fea72b65803889dacff3c76212a8e40c383fc",
+        "bytes": 1909155
+      },
+      {
+        "name": "elvs_offshoulder_fringedress2_p.obj",
+        "sha256": "0302778669668c4fb76cf2920cdad2a97419769300f8f79e9fa812773116c8c1",
+        "bytes": 1244636
+      },
+      {
+        "name": "elvs_fringe_off_shoulder_dress.mhclo",
+        "sha256": "88a9f634edd85382b16eb0eb5f77d68087ff1c8cc0383c38644d5d48f616f7b3",
+        "bytes": 859488
+      },
+      {
+        "name": "elvs_offshoulder_fringedress2_p.mhmat",
+        "sha256": "0ed0cbde86885b93a915e25bc42eb3c47dda948556772939be4e6628ecac9297",
+        "bytes": 922
+      },
+      {
+        "name": "dresstex2.png",
+        "sha256": "dd5e04b9ee37af2707163fde1059e942b6c56de7d2191fe760055a2f8cccf82b",
+        "bytes": 4051682
+      }
+    ],
+    "glbBytes": 1143356
+  },
+  "geometry": {
+    "vertices": 21266,
+    "triangles": 14733,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 44.1,
+      "height": 114.8,
+      "depth": 30.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "unisex",
+    "fantasy",
+    "festive",
+    "contemporary",
+    "dress",
+    "dress"
+  ],
+  "integrationStatus": "integrated"
+}

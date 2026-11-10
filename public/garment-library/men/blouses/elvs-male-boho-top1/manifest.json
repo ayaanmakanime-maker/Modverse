@@ -1,0 +1,99 @@
+{
+  "id": "elvs-male-boho-top1",
+  "name": "Male Boho Top",
+  "originalName": "elvs_male_boho_top1",
+  "audience": "men",
+  "category": "blouses",
+  "collection": "Blouses & tunics",
+  "description": "male boho top by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male boho top\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-male-boho-top1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/bohotop1.png",
+      "original/elvs_male_boho_top1.mhclo",
+      "original/mens_boho_top1elv.mhmat",
+      "original/mens_boho_top1elv.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "mens_boho_top1elv.obj",
+        "sha256": "222fa6598f2fec825b553e2e5eb16bf106ea659412c84a78db0b88a46afad98a",
+        "bytes": 142985
+      },
+      {
+        "name": "bohotop1.png",
+        "sha256": "a981c0f360d4d46fb00cb41f086b71eaa6a795d4c0490df7fa341211dd679fb2",
+        "bytes": 269895
+      },
+      {
+        "name": "elvs_male_boho_top1.mhclo",
+        "sha256": "1563560334c31135992ff0d4cadb605de6583b8762f8657eeead75fa9c50d90d",
+        "bytes": 120137
+      },
+      {
+        "name": "mens_boho_top1elv.mhmat",
+        "sha256": "61a68cbc9d5b8061c3e610742145534261f4e18ba83aeb865dfa4fbe8e1ad050",
+        "bytes": 837
+      }
+    ],
+    "glbBytes": 168192
+  },
+  "geometry": {
+    "vertices": 2178,
+    "triangles": 3422,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 108.8,
+      "height": 69.7,
+      "depth": 38.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.762,
+      0.6818,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "shirt",
+    "menswear",
+    "fashion",
+    "bohemian",
+    "loose fit"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -3,11 +3,13 @@ import { route, ApiError } from "@/lib/api/handler";
 import { getDb } from "@/lib/db/client";
 import { platformSettings } from "@/lib/db/schema";
 import { audit } from "@/lib/audit";
+import { puterConfigSchema } from "@/lib/ai/puter-config";
 
 const EDITABLE: Record<string, z.ZodType> = {
   shipping: z.object({ flatRate: z.number().int().min(0).max(1000), freeAbove: z.number().int().min(0).max(100000), currency: z.literal("INR"), note: z.string().max(200).optional() }),
   checkout: z.object({ simulatedPaymentsEnabled: z.boolean() }),
   consent_policy_version: z.string().max(20),
+  muse_puter: puterConfigSchema,
 };
 
 export const GET = route({ auth: "admin" }, async () => {

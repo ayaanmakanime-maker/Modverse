@@ -1,0 +1,93 @@
+{
+  "id": "toigo-halter-dress-with-fluted-skirt",
+  "name": "Halter Dress With Fluted Skirt",
+  "originalName": "toigo_halter_dress_with_fluted_skirt",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "halter dress with fluted skirt by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"halter dress with fluted skirt\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-halter-dress-with-fluted-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/DressCloth2UV.png",
+      "original/dress_long_fluted_skirt.mhmat",
+      "original/dress_long_fluted_skirt.obj",
+      "original/toigo_halter_dress_with_fluted_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "toigo_halter_dress_with_fluted_skirt.mhclo",
+        "sha256": "3325e36d35ff7e6413c772eddbd23923277963bcab4a9c123dcb42398ef12b62",
+        "bytes": 223268
+      },
+      {
+        "name": "dress_long_fluted_skirt.obj",
+        "sha256": "57f2c71a5ceacea90847450d209ad10ede175cbb2fa2a8590e49f84f56c91157",
+        "bytes": 268083
+      },
+      {
+        "name": "DressCloth2UV.png",
+        "sha256": "e770a2ced07bee2b94fe72fad480a3ebd3d036cd125acb1bf5e2ccb08048a496",
+        "bytes": 2468170
+      },
+      {
+        "name": "dress_long_fluted_skirt.mhmat",
+        "sha256": "3c3ff62a82b807b4dbf03b8972b98a7ea872f9b0df2ad1c3f73ad6e035a3c433",
+        "bytes": 510
+      }
+    ],
+    "glbBytes": 322256
+  },
+  "geometry": {
+    "vertices": 3589,
+    "triangles": 6432,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 106.1,
+      "height": 138.6,
+      "depth": 75.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.06401,
+      0.002897,
+      0.002897
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

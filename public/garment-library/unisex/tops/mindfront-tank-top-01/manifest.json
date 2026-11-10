@@ -1,0 +1,108 @@
+{
+  "id": "mindfront-tank-top-01",
+  "name": "Tank Top 01",
+  "originalName": "mindfront_tank_top_01",
+  "audience": "unisex",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "tank top 01 by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"tank top 01\" by Mindfront, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-tank-top-01.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Tank_Top_01.png",
+      "original/Tank_Top_01_NRM.png",
+      "original/Tank_Top_01_SPEC.png",
+      "original/mindfront_tank_top_01.mhclo",
+      "original/tank_top_01.mhmat",
+      "original/tank_top_01.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "mindfront_tank_top_01.mhclo",
+        "sha256": "1336b272f47f52527a95a925962541827658f6bcee3d7d989d52088d575e37b4",
+        "bytes": 61810
+      },
+      {
+        "name": "Tank_Top_01_NRM.png",
+        "sha256": "3804b178bd0a092f7be1fa8f27dd17f4765ce8c86acfa80d61bc7497147e0e10",
+        "bytes": 2760973
+      },
+      {
+        "name": "tank_top_01.mhmat",
+        "sha256": "518dc01689948205b20588aa1e142c5028e16d8635c5e71e6213b462f793501c",
+        "bytes": 535
+      },
+      {
+        "name": "Tank_Top_01.png",
+        "sha256": "1422431566ca30919c355405e2c2b23627e9024eb09bfbb96330ad94e0b4d091",
+        "bytes": 198898
+      },
+      {
+        "name": "Tank_Top_01_SPEC.png",
+        "sha256": "69e6a43f5d18f74aa2dcba9c890049fe56b12bfd2bd9e87fbf1921236677367c",
+        "bytes": 253055
+      },
+      {
+        "name": "tank_top_01.obj",
+        "sha256": "049ee97e142be8207ee853a5f94d10e68f5ef14b5462142e910073554b6e74dc",
+        "bytes": 68608
+      }
+    ],
+    "glbBytes": 136664
+  },
+  "geometry": {
+    "vertices": 1113,
+    "triangles": 1672,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 36.7,
+      "height": 48.9,
+      "depth": 25.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "casual",
+    "sport"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -1,0 +1,105 @@
+{
+  "id": "toigo-basic-tucked-t-shirt",
+  "name": "Basic Tucked T-Shirt",
+  "originalName": "toigo_basic_tucked_t-shirt",
+  "audience": "unisex",
+  "category": "tshirts",
+  "collection": "T-shirts",
+  "description": "basic tucked t-shirt by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"basic tucked t-shirt\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-basic-tucked-t-shirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/T-shirt_basic-bump.png",
+      "original/T-shirt_basic.png",
+      "original/t_shirt_basic_tucked.mhmat",
+      "original/t_shirt_basic_tucked.obj",
+      "original/toigo_basic_tucked_t-shirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "t_shirt_basic_tucked.obj",
+        "sha256": "22159cf14d1f6831f931b49625f8f7692910bac22499c43466c0b5a2159b4d03",
+        "bytes": 109974
+      },
+      {
+        "name": "T-shirt_basic-bump.png",
+        "sha256": "dfe923b14a9188857d12eb227ceb6365dcf1ec3cd97e42f30c6fe3ae2c474578",
+        "bytes": 181491
+      },
+      {
+        "name": "T-shirt_basic.png",
+        "sha256": "c1992ad975e14aa2cef891ff9632d28283607b2de6160d72e350f059043a063b",
+        "bytes": 861166
+      },
+      {
+        "name": "toigo_basic_tucked_t-shirt.mhclo",
+        "sha256": "c34bd03895c5ad9ec46965ef7d5f3e5e8c567630797ab312f8762c1d9fde8f71",
+        "bytes": 94278
+      },
+      {
+        "name": "t_shirt_basic_tucked.mhmat",
+        "sha256": "44098003a7ed47cd4c613d04adcdccaae47fe0d2b380bf3c25f105a739814f94",
+        "bytes": 509
+      }
+    ],
+    "glbBytes": 130460
+  },
+  "geometry": {
+    "vertices": 1644,
+    "triangles": 2700,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 66,
+      "height": 47.2,
+      "depth": 24.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "t-shirt",
+    "shirt",
+    "top",
+    "knit",
+    "casual"
+  ],
+  "integrationStatus": "integrated"
+}

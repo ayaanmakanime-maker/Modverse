@@ -23,7 +23,8 @@
     "setup": "npm run library:import && npm run fonts:sync && npm run db:migrate && npm run db:seed && (npm run models:fetch || echo \"models:fetch failed \u2014 trial room will use the MediaPipe CDN\")",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "ai:eval": "tsx scripts/ai-eval.ts",
-    "perf": "tsx scripts/perf.ts"
+    "perf": "tsx scripts/perf.ts",
+    "assets:acquire": "tsx scripts/assets/acquire.ts"
   },
   "engines": {
     "node": ">=20.9"

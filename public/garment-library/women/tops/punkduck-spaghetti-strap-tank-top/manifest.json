@@ -1,0 +1,102 @@
+{
+  "id": "punkduck-spaghetti-strap-tank-top",
+  "name": "Spaghetti Strap Tank Top",
+  "originalName": "punkduck_spaghetti_strap_tank_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "spaghetti strap tank top by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"spaghetti strap tank top\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-spaghetti-strap-tank-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_spaghetti_strap_tank_top.mhclo",
+      "original/spaghetti_top.mhmat",
+      "original/spaghetti_top.obj",
+      "original/spaghetti_top.png",
+      "original/spaghetti_top_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "spaghetti_top_normals.png",
+        "sha256": "320269e58301f4a93fc271a1c90bc9d78d5cb716008b3236b92972372d72e2e5",
+        "bytes": 453291
+      },
+      {
+        "name": "spaghetti_top.png",
+        "sha256": "7ba0412f66bf2b67fc49141eb4daa29cf5b9cbb19808aeab1088eb601c16b614",
+        "bytes": 487616
+      },
+      {
+        "name": "spaghetti_top.mhmat",
+        "sha256": "6633d452cc563505d333291f4b3e389bb702179439cbe6c9c28e2e130a865e5d",
+        "bytes": 895
+      },
+      {
+        "name": "punkduck_spaghetti_strap_tank_top.mhclo",
+        "sha256": "0ae831686041a147dd17b508a94e1949217fcf2b88a229741becd87c9940ac85",
+        "bytes": 68077
+      },
+      {
+        "name": "spaghetti_top.obj",
+        "sha256": "ff76bfe0b8771205bc87d939a78b32363a9aacb17c9c2e36a335f7651621ccb7",
+        "bytes": 73800
+      }
+    ],
+    "glbBytes": 128632
+  },
+  "geometry": {
+    "vertices": 1126,
+    "triangles": 1828,
+    "hasUv": true,
+    "uvCoverage": 0.9,
+    "boundsCm": {
+      "width": 28.9,
+      "height": 42.9,
+      "depth": 22.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "shirt"
+  ],
+  "integrationStatus": "integrated"
+}
