@@ -34,6 +34,23 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   await expect(studio).toHaveAttribute("data-decals", "1");
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("library-export").click()]);
   expect(download.suggestedFilename()).toMatch(/preview\.png$/);
+  // 3D downloads of the customised garment: GLB / OBJ / STL / ZIP project
+  const grab = async (fmt: string) => {
+    const [d] = await Promise.all([page.waitForEvent("download"), page.getByTestId(`export-${fmt}`).click()]);
+    const chunks: Buffer[] = [];
+    for await (const c of await d.createReadStream()) chunks.push(c as Buffer);
+    return Buffer.concat(chunks);
+  };
+  const glb = await grab("glb");
+  expect(glb.subarray(0, 4).toString("latin1")).toBe("glTF");
+  expect(glb.length).toBeGreaterThan(50_000);
+  const obj = (await grab("obj")).toString("utf8");
+  expect(obj).toContain("MakeHuman"); // creator credit travels with the file
+  expect(obj).toMatch(/\nv -?\d/);
+  expect((await grab("stl")).length).toBeGreaterThan(10_000);
+  const zip = await grab("zip");
+  expect(zip.subarray(0, 2).toString("latin1")).toBe("PK");
+  for (const name of ["garment.glb", "project.json", "ATTRIBUTION.txt", "artwork/01-MODVERSE.png"]) expect(zip.includes(Buffer.from(name))).toBe(true);
   expect(errors).toEqual([]);
 });
 

@@ -97,7 +97,56 @@ function Rig({ view, dist }: { view: string; dist: number }) {
   return null;
 }
 
-export function LibraryGarmentStudio({ url, name, heightCm }: { url: string; name: string; heightCm: number }) {
+type ExportFormat = "glb" | "obj" | "stl" | "zip";
+
+/**
+ * Export of the customised garment. GLB keeps geometry, UVs, the tinted material, textures and the artwork decals;
+ * OBJ keeps geometry and UVs (no materials); STL keeps geometry only. The ZIP project adds the artwork files, the
+ * settings and the creator credit the licence asks for.
+ */
+async function exportGarment(root: THREE.Object3D, format: ExportFormat, meta: { name: string; attribution: string; licence: string; settings: unknown; artwork: { label: string; src: string }[] }): Promise<Blob> {
+  const glb = async () => {
+    const { GLTFExporter } = await import("three/examples/jsm/exporters/GLTFExporter.js");
+    return new Blob([(await new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true })) as ArrayBuffer], { type: "model/gltf-binary" });
+  };
+  if (format === "glb") return glb();
+  if (format === "obj") {
+    const { OBJExporter } = await import("three/examples/jsm/exporters/OBJExporter.js");
+    return new Blob([`# ${meta.attribution}\n` + new OBJExporter().parse(root)], { type: "text/plain" });
+  }
+  if (format === "stl") {
+    const { STLExporter } = await import("three/examples/jsm/exporters/STLExporter.js");
+    return new Blob([new STLExporter().parse(root, { binary: true }) as unknown as ArrayBuffer], { type: "model/stl" });
+  }
+  const { zipSync, strToU8 } = await import("fflate");
+  const files: Record<string, Uint8Array> = {
+    "garment.glb": new Uint8Array(await (await glb()).arrayBuffer()),
+    "project.json": strToU8(JSON.stringify({ format: "modverse-3d-project/1", garment: meta.name, licence: meta.licence, exportedAt: new Date().toISOString(), settings: meta.settings, contains: "Customised garment (GLB), artwork files, settings. No avatar, rig, animation or cloth simulation data." }, null, 2)),
+    "ATTRIBUTION.txt": strToU8(`${meta.attribution}\n\nCustomised in ModVerse. Keep this file with the model when you share it.\n`),
+  };
+  await Promise.all(meta.artwork.map(async (a, i) => {
+    const b = await (await fetch(a.src)).blob();
+    files[`artwork/${String(i + 1).padStart(2, "0")}-${a.label.replace(/[^a-z0-9]+/gi, "-").slice(0, 30) || "art"}.${b.type.includes("jpeg") ? "jpg" : b.type.includes("webp") ? "webp" : "png"}`] = new Uint8Array(await b.arrayBuffer());
+  }));
+  return new Blob([zipSync(files, { level: 6 }) as unknown as ArrayBuffer], { type: "application/zip" });
+}
+
+export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence }: { url: string; name: string; heightCm: number; attribution: string; licence: string }) {
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const [exporting, setExporting] = useState("");
+  const doExport = async (format: ExportFormat) => {
+    const root = sceneRef.current?.getObjectByName("library-garment");
+    if (!root) return;
+    setExporting(format);
+    try {
+      const blob = await exportGarment(root, format, { name, attribution, licence, settings: { tint, useTexture, roughness, decals: decals.map(({ kind, side, size, up, label }) => ({ kind, side, sizeCm: size, height: up, label })) }, artwork: decals.map((d) => ({ label: d.label, src: d.src })) });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${format}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } finally { setExporting(""); }
+  };
   const [tint, setTint] = useState("#FFFFFF");
   const [useTexture, setUseTexture] = useState(true);
   const [roughness, setRoughness] = useState(0.85);
@@ -118,7 +167,7 @@ export function LibraryGarmentStudio({ url, name, heightCm }: { url: string; nam
     <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]" data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
       <div className="relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-line">
         {error ? <p className="p-6 text-sm text-mute">{error}</p> : (
-          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl }) => { glRef.current = gl; gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
+          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
             <hemisphereLight args={["#ffffff", "#3a3a3d", 0.5]} />
             <directionalLight position={[70, 130, 150]} intensity={2.2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-150} shadow-camera-right={150} shadow-camera-top={150} shadow-camera-bottom={-150} shadow-camera-far={600} />
             <directionalLight position={[-110, 60, -120]} intensity={1.4} />
@@ -172,6 +221,13 @@ export function LibraryGarmentStudio({ url, name, heightCm }: { url: string; nam
           </ul>
         </section>
         <button className="mv-btn mv-btn-primary w-full" data-testid="library-export" onClick={() => { const gl = glRef.current; if (!gl) return; const a = document.createElement("a"); a.href = gl.domElement.toDataURL("image/png"); a.download = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-preview.png`; a.click(); }}>Export preview (PNG)</button>
+        <div className="mv-card p-4">
+          <h2 className="text-bone">Download the 3D garment</h2>
+          <div className="mt-2 grid grid-cols-4 gap-1.5">
+            {(["glb", "obj", "stl", "zip"] as ExportFormat[]).map((f) => <button key={f} className="mv-chip justify-center !text-[0.68rem]" disabled={!size || !!exporting} onClick={() => doExport(f)} data-testid={`export-${f}`}>{exporting === f ? "…" : f.toUpperCase()}</button>)}
+          </div>
+          <p className="mt-2 text-[0.68rem] text-mute">GLB (recommended): shape, UVs, colour, textures and artwork. OBJ: shape and UVs only. STL: shape only. ZIP: GLB + your artwork + settings + the creator credit. No rig, animation or physics is included. Licence {licence}: you may share the model{licence === "CC-BY" ? " if you keep the credit" : ""}.</p>
+        </div>
         <p className="text-xs text-mute">Artwork is projected onto the model for preview. This garment is a visual 3D model without sewing patterns, so it can&apos;t be ordered yet; use the Men / Women ranges for made-to-order pieces.</p>
       </div>
     </div>

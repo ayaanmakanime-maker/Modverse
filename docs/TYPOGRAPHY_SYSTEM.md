@@ -17,3 +17,7 @@ The composer emits real SVG `<text>`/`<textPath>`; the 2D editor renders it with
 
 ## Print validation
 Too-small cap height (per font; stricter for embroidery), unsupported fonts, missing glyphs for the script (e.g. Hindi in a Latin-only font, with suggested alternatives), low contrast against the panel (outline-aware), outlines thinner than the method minimum, blurred shadows or soft effects for screen/embroidery, thin layered strokes, extra screens for effect colours, long circular text, tight embroidery tracking, empty text, kids-inappropriate words.
+
+
+## Added scripts and styles (studio upgrade)
+Noto Sans Telugu, Noto Sans Gujarati, Noto Naskh Arabic, Noto Nastaliq Urdu (right-to-left, shaped by the browser; not yet proofed in print output), Great Vibes (copperplate calligraphy), Kaushan Script (brush lettering), Pirata One (blackletter), Cinzel (classical capitals). All OFL-1.1 via Fontsource; two candidates (Rock Salt, Special Elite) were left out because they are Apache-2.0 and the library states OFL. Japanese, Chinese and Korean are not included yet. Script detection now also recognises Telugu, Gujarati, Korean and the extended Arabic blocks, so the editor warns when the chosen font lacks them.

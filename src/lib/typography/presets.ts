@@ -16,7 +16,7 @@ export const TYPOGRAPHY_CATEGORIES: { id: TypographyCategory; label: string }[] 
   { id: "monograms", label: "Monograms & initials" },
   { id: "badges", label: "Badges & circular" },
   { id: "script", label: "Script & signature" },
-  { id: "indic", label: "Indian scripts" },
+  { id: "indic", label: "Indian & world scripts" },
   { id: "effects", label: "Layered effects" },
 ];
 

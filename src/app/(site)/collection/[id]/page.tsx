@@ -14,7 +14,7 @@ export default async function GarmentPage({ params }: { params: Promise<{ id: st
     <div className="mx-auto max-w-7xl px-4 py-8">
       <p className="text-xs text-mute"><Link href="/collection" className="underline">3D garment collection</Link> / {g.collection}</p>
       <h1 className="mv-display mt-2 text-3xl" data-testid="garment-name">{g.name}</h1>
-      <LibraryStudioLoader url={`/garment-library/${g.path}/${g.glb}`} name={g.name} heightCm={m.geometry.boundsCm.height} />
+      <LibraryStudioLoader url={`/garment-library/${g.path}/${g.glb}`} name={g.name} heightCm={m.geometry.boundsCm.height} attribution={m.licence.attribution} licence={m.licence.id} />
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <section className="mv-card p-5 text-sm">
           <h2 className="text-bone">About this model</h2>

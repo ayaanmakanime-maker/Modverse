@@ -57,5 +57,21 @@ This document tracks the "Ultimate Master Development Prompt" (phases 1–20) an
 | 16–17 Database, security | Fully implemented for a single instance | No new tables were needed: library availability and Muse settings use `platform_settings`; usage uses the audit log |
 | 18 Performance | Locally implemented | Library models are loaded one at a time on the garment page; thumbnails in the grid |
 
-## Second prompt (phases 21–32) — see the section at the end of `docs/BUILD_STATUS.md` once work on it starts
-Not started at the time of this commit.
+## Second prompt (phases 21–32) — Human Studio, Art Studio, graphics, physics, exports
+Only the first tranche is done. The rest is listed with what it needs; none of it is claimed.
+
+| Phase | Status | What exists / what is missing |
+|---|---|---|
+| 21 Human Studio (original parametric human with morph targets) | **Not started** | Today: the supplied FBX characters (4 body morphs) and the procedural measurement-driven body (10 measurements, no face). Missing: one authored base topology with calibrated morph targets for the ~25 male / female controls, bust shaping integrated with fitting, face / hair / skin controls, measurement history. This needs authoring in Blender / MPFB, which is not available in the build environment |
+| 22 Art Studio | **Partially (existing)** | Atelier Pro already has brush, pencil, eraser, custom brushes, smudge, clone, heal, gradient text, shapes, selections (marquee, lasso, polygon, wand), masks, blend modes, layers / folders, history. Missing: spray / airbrush / marker / watercolour / calligraphy brush engines, paint bucket, bezier pen, symmetry, canvas rotation. Pressure input is read from pointer events but **has not been tested with an Apple Pencil or any stylus** |
+| 22.4 Direct 3D painting / UV painting | **Not started** | Artwork on downloaded garments is placed as projected decals; painting strokes on the mesh surface and a UV-island editor do not exist |
+| 23 Uploads | **Partially (existing)** | PNG, JPG, WebP, SVG (sanitised) with server-side type sniffing, DPI checks, crop, rotate, background removal (on-device). Missing: PDF, TIFF, PSD |
+| 24 Typography | **Extended in this tranche** | 42 OFL families. New: Telugu, Gujarati, Arabic (Naskh), Urdu (Nastaliq), copperplate calligraphy, brush lettering, blackletter, classical capitals. Missing: Japanese, Chinese, Korean (their fonts ship as 100+ subset files each and need a different loading path). Right-to-left text renders through the browser's shaping; it has not been proofed in print output |
+| 25 Graphics library | **Existing library only** | 1,000 supplied + ~970 original assets, searchable, categorised. Not done: acquiring from Openclipart, Noto Emoji, OpenMoji, SVG Repo, Kenney, The Met, Wikimedia, Openverse with a per-asset licence registry. (Reachability was checked: several APIs refused automated access; OpenMoji is CC BY-SA, which needs a decision because share-alike may carry over to designs) |
+| 26 Fabric physics profiles | **Not started** | Fabric Lab has visual and drape-appearance parameters for 19 fabrics. No measured mechanical data (bending, shear, damping, friction) exists in the repo, and none was invented |
+| 27 Cloth physics | **Not implemented** | Garments on avatars are skinned and collision-resolved once; there is no solver. A real-time XPBD solver with body collision is a project of its own and needs pattern / seam data that the Level B library garments do not have |
+| 28 Save and export | **Partially, new** | Customised library garments export as GLB (shape, UVs, colour, textures, artwork), OBJ (shape + UVs), STL (shape) and a ZIP project (GLB, artwork files, settings, creator credit) — tested end to end. Existing: parametric garment GLB, design saving / versions / duplication. Missing: avatar export, complete avatar-plus-outfit scenes, FBX, USDZ, a "My 3D creations" page for library garments (their customisations are not saved to the account yet) |
+| 29 Complete outfit studio | **Not started** | No lower garments, no multi-garment outfits |
+| 30 Manufacturing packages | **Existing** | Tech pack, print-ready files, placement sheet, BOM for parametric garments. Not connected to library garments (they are not orderable) |
+| 31 Privacy | **Existing** | Consent-gated scan and measurement storage, deletion, partners never see scans. No change in this tranche |
+| 32 Validation | Desktop and emulated mobile only | **No iPad, Apple Pencil or physical phone testing has been done** |
