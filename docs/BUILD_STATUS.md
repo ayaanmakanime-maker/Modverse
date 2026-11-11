@@ -52,10 +52,10 @@ Status labels (V2 spec, Part 17): **Fully implemented** — works end-to-end wit
 |---|---|
 | `npm run lint` | 0 errors, 0 warnings |
 | `npm run typecheck` | clean |
-| `npm test` (Vitest) | **198 / 198** passed in 27 files — 156 unit + 42 integration (PGlite) |
+| `npm test` (Vitest) | **214 / 214** passed in 30 files (unit + PGlite integration; adds graphics taxonomy, 3D export writers, tape-measure girth and the XPBD cloth solver) |
 | Integration on **PostgreSQL 16** (`DATABASE_URL`) | **36 / 36** passed at the V2.1 milestone (the 6 Meta Muse image-provider tests added since then have run on PGlite only) in one run of `npx vitest run tests/integration` against a single freshly migrated database (`npm run db:migrate` applied migrations 0000–0007, 52 tables). Fixture e-mails are unique per run; the suite expects an empty database |
 | `npm run build` | passed |
-| `npm run test:e2e` (Playwright, Chromium) | **41 / 41** passed (40 desktop + 1 mobile; adds the 3D collection, the admin garment switch, the Puter consent flow, the scan accuracy tool and the trial room's 3D model mode) — incl. the customer journey, partner journey, Atelier Pro tools, Fabric Lab, body scanner, avatars, **the supplied FBX characters (both models, walk, editor controls, GLB export of the worn garment, procedural fallback)** and mobile |
+| `npm run test:e2e` (Playwright, Chromium) | **48 / 48** passed in the last full run (47 desktop + 1 mobile), plus the new avatar tape-check test (passed in the avatar / character run after it was added: 10 / 10). Adds the AI photo try-on (stubbed Puter), the graphics library and registry, every 3D export format, Atelier Pro–only avatars; the live trial room tests run against `/try-on/live` — incl. the customer journey, partner journey, Atelier Pro tools, Fabric Lab, body scanner, the supplied FBX characters and mobile |
 | `npm run perf` | recorded in `docs/evaluation/performance.json` (earlier V2-G run) |
 | `npm run ai:eval` | recorded in `docs/evaluation/ai-eval-results.json` (local rules; hosted models not evaluated — no credentials) |
 | Visual checks | Effects grid (33 composer effects), fabric close-ups (9 profiles), flagship garments and renders of the supplied Atlas / Aura characters wearing tees and shirts (rest, idle, walk, run, collar close-ups) captured in headless Chromium (software WebGL) during development |
