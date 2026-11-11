@@ -59,6 +59,8 @@ export interface GarmentViewerHandle {
   capture: (w?: number) => string | null;
   /** Export the current garment as binary glTF (GLB) for AR / CAD hand-off. */
   exportGlb: () => Promise<Blob | null>;
+  /** The garment as it is shown now (worn garments baked to a static shape), for the 3D export formats. */
+  exportRoot: () => THREE.Object3D | null;
 }
 
 const resolver: AssetResolver = { svg: getSvg, dataUrl: getDataUrl, patternUrl: getPatternUrl };
@@ -754,6 +756,12 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
       if (composerRef.current) composerRef.current.render();
       else gl.render(s.scene, s.camera);
       return gl.domElement.toDataURL("image/png");
+    },
+    exportRoot: () => {
+      const root = garmentRef.current;
+      if (!root) return null;
+      const skin = fbxSkinRef.current;
+      return skin ? bakeGarment(root, skin.mounts) : root;
     },
     exportGlb: async () => {
       const root = garmentRef.current;

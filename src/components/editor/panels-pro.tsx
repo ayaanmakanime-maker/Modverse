@@ -245,7 +245,7 @@ export function TechPackPanel({ capture3d, exportGlb }: { capture3d: () => strin
         ) : <Button size="sm" variant="ghost" disabled title="Save the design first"><FileText className="size-3.5" /> PDF (save first)</Button>}
         <Button size="sm" variant="ghost" onClick={cadExchange}><Box className="size-3.5" /> CAD exchange</Button>
         <Button size="sm" variant="ghost" onClick={() => { const d = capture3d(); if (d) fetch(d).then((r) => r.blob()).then((b) => download(`${slug}-3d-mockup.png`, b)); else toast("Open the 3D view first", "info"); }}><ImageIcon className="size-3.5" /> 3D mockup PNG</Button>
-        {exportGlb && <Button size="sm" variant="ghost" onClick={async () => { const b = await exportGlb(); if (b) download(`${slug}-3d.glb`, b); else toast("Open the 3D view first", "info"); }} title="Parametric visual model (glTF binary) for AR viewers — not a production pattern"><Box className="size-3.5" /> 3D model GLB</Button>}
+        {exportGlb && <Button size="sm" variant="ghost" onClick={async () => { const b = await exportGlb(); if (b) download(`${slug}-3d.glb`, b); else toast("Open the 3D view first", "info"); }} title="Parametric visual model (glTF binary) for AR viewers — not a production pattern. More formats: Export 3D above the 3D view."><Box className="size-3.5" /> 3D model GLB</Button>}
       </div>
       {zones.length > 0 && (
         <div className="space-y-1">

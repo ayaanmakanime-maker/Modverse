@@ -34,21 +34,45 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   await expect(studio).toHaveAttribute("data-decals", "1");
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("library-export").click()]);
   expect(download.suggestedFilename()).toMatch(/preview\.png$/);
-  // 3D downloads of the customised garment: GLB / OBJ / STL / ZIP project
-  const grab = async (fmt: string) => {
-    const [d] = await Promise.all([page.waitForEvent("download"), page.getByTestId(`export-${fmt}`).click()]);
+  // 3D downloads of the customised garment in every format of the Export Studio
+  const grab = async (id: string) => {
+    const [d] = await Promise.all([page.waitForEvent("download"), page.getByTestId(id).click()]);
     const chunks: Buffer[] = [];
     for await (const c of await d.createReadStream()) chunks.push(c as Buffer);
-    return Buffer.concat(chunks);
+    return { name: d.suggestedFilename(), buf: Buffer.concat(chunks) };
   };
-  const glb = await grab("glb");
-  expect(glb.subarray(0, 4).toString("latin1")).toBe("glTF");
-  expect(glb.length).toBeGreaterThan(50_000);
-  const obj = (await grab("obj")).toString("utf8");
-  expect(obj).toContain("MakeHuman"); // creator credit travels with the file
-  expect(obj).toMatch(/\nv -?\d/);
-  expect((await grab("stl")).length).toBeGreaterThan(10_000);
-  const zip = await grab("zip");
+  const has = (b: Buffer, s: string) => b.includes(Buffer.from(s));
+  const glb = await grab("export3d-glb");
+  expect(glb.buf.subarray(0, 4).toString("latin1")).toBe("glTF");
+  expect(glb.buf.length).toBeGreaterThan(50_000);
+  const gltf = JSON.parse((await grab("export3d-gltf")).buf.toString("utf8"));
+  expect(gltf.asset.version).toBe("2.0");
+  expect(gltf.meshes.length).toBeGreaterThan(0);
+  const obj = await grab("export3d-obj");
+  expect(obj.name).toMatch(/-obj\.zip$/);
+  for (const n of [".obj", ".mtl", "textures/", "README.txt"]) expect(has(obj.buf, n), n).toBe(true);
+  const fbx = await grab("export3d-fbx");
+  expect(fbx.buf.subarray(0, 18).toString("latin1")).toBe("Kaydara FBX Binary");
+  expect(fbx.buf.length).toBeGreaterThan(50_000); // geometry + embedded texture
+  expect((await grab("export3d-ply")).buf.subarray(0, 3).toString("latin1")).toBe("ply");
+  const usd = await grab("export3d-usd");
+  expect(has(usd.buf, ".usda")).toBe(true);
+  const usdz = await grab("export3d-usdz");
+  expect(usdz.buf.subarray(0, 2).toString("latin1")).toBe("PK");
+  expect(has(usdz.buf, ".usda")).toBe(true);
+  // USDC needs OpenUSD on the server: without it the customer is told what to use instead
+  if ((await (await page.request.get("/api/export/usdc")).json()).available === false) {
+    await page.getByTestId("export3d-usdc").click();
+    await expect(page.getByText(/USDC needs OpenUSD/)).toBeVisible();
+  }
+  expect((await grab("export3d-stl")).buf.length).toBeGreaterThan(10_000);
+  const tmf = await grab("export3d-3mf");
+  expect(has(tmf.buf, "3D/3dmodel.model")).toBe(true);
+  expect((await grab("export3d-obj-print")).name).toMatch(/-obj-mm\.zip$/);
+  const dxf = (await grab("export3d-dxf")).buf.toString("utf8");
+  expect(dxf).toContain("AC1009");
+  expect(dxf.match(/\n3DFACE\n/g)?.length ?? 0).toBeGreaterThan(1000);
+  const zip = (await grab("export-zip")).buf;
   expect(zip.subarray(0, 2).toString("latin1")).toBe("PK");
   for (const name of ["garment.glb", "project.json", "ATTRIBUTION.txt", "artwork/01-MODVERSE.png"]) expect(zip.includes(Buffer.from(name))).toBe(true);
   expect(errors).toEqual([]);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { FlaskConical, Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
+import { Download, FlaskConical, Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
 import { useEditor, type EditorMode } from "@/lib/editor/store";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { getModel } from "@/lib/garment/models";
@@ -15,7 +15,8 @@ import type { PanelId } from "@/lib/garment/types";
 import { api, errorMessage } from "@/lib/client/api";
 import { useSession } from "@/components/session";
 import { Logo, BrandLoader } from "@/components/brand/Logo";
-import { Badge, Button, Notice, Segmented, Select, toast } from "@/components/ui";
+import { Badge, Button, Modal, Notice, Segmented, Select, toast } from "@/components/ui";
+import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { Canvas2D } from "./Canvas2D";
 import { ACCEPTED_ARTWORK, copySelection, pasteClipboard, uploadAndInsert, ZONE_DEFAULT_PRESET } from "@/lib/editor/insert";
 import { SelectedProperties } from "./properties";
@@ -310,6 +311,7 @@ function EditorLayout(p: {
   patternTarget: PanelId | null; setPatternTarget: (p: PanelId | null) => void;
   mobilePanel: boolean; setMobilePanel: (b: boolean) => void; selectedId: string | null;
 }) {
+  const [exportOpen, setExportOpen] = useState(false);
   const production = useEditor((s) => s.production);
   const guides3d = useEditor((s) => s.guides3d);
   const config = useEditor((s) => s.config);
@@ -410,6 +412,7 @@ function EditorLayout(p: {
                 <Segmented size="sm" label="3D view" value={p.view3d} onChange={p.setView3d} options={[{ value: "front", label: "Front" }, { value: "back", label: "Back" }, { value: "left", label: "Side" }, { value: "three-quarter", label: "¾" }]} />
                 <Select aria-label="Lighting" value={p.lighting} onChange={(e) => p.setLighting(e.target.value as LightingPreset)} className="!w-auto !py-0.5 !text-[0.68rem]"><option value="studio">Studio light</option><option value="daylight">Daylight</option><option value="evening">Evening</option></Select>
                 {p.mode === "pro" && <label className="flex items-center gap-1 text-[0.68rem] text-bone-2"><input type="checkbox" checked={p.avatar.on} onChange={(e) => p.setAvatar({ ...p.avatar, on: e.target.checked })} data-testid="toolbar-avatar" /> Avatar</label>}
+                <button type="button" className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" onClick={() => setExportOpen(true)} data-testid="open-export-3d"><Download className="mr-1 inline size-3" />Export 3D</button>
               </div>
             )}
           </div>
@@ -423,6 +426,10 @@ function EditorLayout(p: {
             )}
           </div>
         </main>
+        <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export the 3D garment" wide>
+          <p className="mb-3 text-xs text-bone-2">The garment exactly as shown in 3D, with your colours, panels and artwork{p.mode === "pro" && p.avatar.on ? " (worn shape; the avatar itself is not included)" : ""}. A visual model: not a graded production pattern.</p>
+          <Export3DPanel getRoot={() => p.viewer.current?.exportRoot()} name={p.name || model.name} />
+        </Modal>
 
         {/* Properties */}
         {isXL && <aside className="order-3 min-h-0 w-80 shrink-0 overflow-y-auto border-l border-line p-3 mv-scroll" aria-label="Properties">

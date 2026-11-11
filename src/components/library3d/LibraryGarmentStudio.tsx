@@ -8,6 +8,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { ContactShadows, Decal, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 type Side = "front" | "back" | "left" | "right";
@@ -223,10 +224,13 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
         <button className="mv-btn mv-btn-primary w-full" data-testid="library-export" onClick={() => { const gl = glRef.current; if (!gl) return; const a = document.createElement("a"); a.href = gl.domElement.toDataURL("image/png"); a.download = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-preview.png`; a.click(); }}>Export preview (PNG)</button>
         <div className="mv-card p-4">
           <h2 className="text-bone">Download the 3D garment</h2>
-          <div className="mt-2 grid grid-cols-4 gap-1.5">
-            {(["glb", "obj", "stl", "zip"] as ExportFormat[]).map((f) => <button key={f} className="mv-chip justify-center !text-[0.68rem]" disabled={!size || !!exporting} onClick={() => doExport(f)} data-testid={`export-${f}`}>{exporting === f ? "…" : f.toUpperCase()}</button>)}
+          <div className="mt-2">
+            <Export3DPanel getRoot={() => sceneRef.current?.getObjectByName("library-garment")} name={name} attribution={attribution} licence={licence} note={`Licence ${licence}: you may share the model${licence === "CC-BY" ? " if you keep the credit (it is written into each file)" : ""}.`} />
           </div>
-          <p className="mt-2 text-[0.68rem] text-mute">GLB (recommended): shape, UVs, colour, textures and artwork. OBJ: shape and UVs only. STL: shape only. ZIP: GLB + your artwork + settings + the creator credit. No rig, animation or physics is included. Licence {licence}: you may share the model{licence === "CC-BY" ? " if you keep the credit" : ""}.</p>
+          <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
+            <button className="mv-chip !text-[0.68rem]" disabled={!size || !!exporting} onClick={() => doExport("zip")} data-testid="export-zip">{exporting === "zip" ? "…" : "ZIP project"}</button>
+            <span className="text-[0.62rem] text-mute">GLB + your artwork files + settings + the creator credit.</span>
+          </div>
         </div>
         <p className="text-xs text-mute">Artwork is projected onto the model for preview. This garment is a visual 3D model without sewing patterns, so it can&apos;t be ordered yet; use the Men / Women ranges for made-to-order pieces.</p>
       </div>
