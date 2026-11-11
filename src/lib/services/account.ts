@@ -109,6 +109,7 @@ export async function deleteAccount(user: SessionUser) {
     await tx.delete(s.addresses).where(eq(s.addresses.userId, user.id));
     await tx.delete(s.avatarProfiles).where(eq(s.avatarProfiles.userId, user.id));
     await tx.delete(s.measurementProfiles).where(eq(s.measurementProfiles.userId, user.id));
+    await tx.delete(s.fitValidationSamples).where(eq(s.fitValidationSamples.userId, user.id));
     // The Kids range is retired, but any guardian/child data stored earlier is still erased with the account.
     await tx.delete(s.childProfiles).where(eq(s.childProfiles.guardianUserId, user.id));
     await tx.delete(s.guardianProfiles).where(eq(s.guardianProfiles.userId, user.id));

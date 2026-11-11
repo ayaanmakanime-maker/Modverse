@@ -115,6 +115,26 @@ export const childProfiles = pgTable(
   (t) => [index("child_guardian_idx").on(t.guardianUserId)],
 );
 
+/**
+ * Scan-accuracy validation: one row per scan of a consenting person, pairing what the camera produced with a tape
+ * measurement taken by hand. Numbers only: no image, no name (the subject is a code the contributor chooses).
+ */
+export const fitValidationSamples = pgTable(
+  "fit_validation_samples",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    subject: text("subject").notNull(),
+    audience: text("audience", { enum: ["men", "women"] }).notNull(),
+    device: text("device").notNull().default(""),
+    /** { chest: { scanCm, tapeCm, status }, … } */
+    pairs: jsonb("pairs").notNull(),
+    consent: boolean("consent").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("fit_validation_user_idx").on(t.userId)],
+);
+
 export const measurementProfiles = pgTable(
   "measurement_profiles",
   {
