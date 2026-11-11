@@ -15,6 +15,20 @@ Each source named in the brief (Part A: downloadable human models; Part D: physi
 | **HumanScanRepository** | Raw 3D scans of people | Use restricted; **no redistribution** | No | Scans are not rigged or editable | **Excluded** |
 | **Anatom 3D** | Static anatomy model | Per-site terms | n/a | A static anatomy model is **not** a substitute for a customisable rigged human (brief) | Not used |
 
+### Inspection of the preferred source (MPFB 2 bundled MakeHuman data, downloaded 2026-11-11)
+The original archive is kept outside the repository (≈ 46 MB, 2,422 files); nothing from it is committed yet. Measured from the files themselves:
+
+| Item | Finding |
+|---|---|
+| Licence | `data/3dobjs/base.obj` header: *"explicitly released as CC0 in September 2020"*; copyright holders at release Data Collection AB, Joel Palmius, Jonas Hauquier. The add-on's Python code is GPL-3.0 and is not used |
+| Base mesh *hm08* | 19,158 vertices, 21,334 UVs, 18,486 faces, **all quads** (no triangles, no n-gons); no materials in the OBJ |
+| Topology groups | `body` 13,378 faces; helper geometry for fitting: tights 2,650, skirt 684, hair 198, tongue 224, eyes 2 × 70, teeth, eyelashes, genitals; joint marker cubes (`joint-*`) used to place bones |
+| Morph targets | 1,258 targets: macro details 348 (gender × age × ethnicity × muscle × weight, height, proportions), breast 228, expression 102, eyes 68, asymmetry 62, legs 58, arms 50, mouth 44, ears 44, nose 42, torso 34, feet 30, head 27, hands 22, neck 20, hip 14, stomach 8 and others. Region targets include `l/r-upperarm-scale-horiz/depth/vert`, `-fat`, `-muscle`, `lowerlegs-height`, `upperlegs-height`, `hip-scale-*`, `hip-waist-up/down` |
+| Measurement targets | The MakeHuman "measure-*" targets (bust, waist, neck circumference…) are **not** in this archive; measurements would be matched by solving with the region targets above, or the measure targets fetched from the MakeHuman system assets (also CC0) |
+| Rigs | standard default (163 bones), game engine (53), **Mixamo (52 bones, `mixamorig:*` names — the same naming as the supplied FBX characters, so their clips retarget directly)**, CMU MB, OpenPose, Rigify human |
+| Skin weights | `weights.mixamo.json`: 52 bone groups covering all 19,158 vertices |
+| Clothes | Fitted to hm08 through `.mhclo` files (the 85 community garments in the 3D collection carry them) |
+
 **Avatars in ModVerse today:** the two supplied FBX characters (Atlas / Aura) in Atelier Pro, reshaped by height, chest, waist and hip and skinned to the garment. New in this tranche: the customer's saved measurements can be applied to the avatar in one step, and the avatar is **tape-checked**: chest, waist and hip are measured on the shaped, height-scaled 3D body around its convex outline (as a tape does) and shown against the customer's values. This exposed and fixed an error: height scaling inflated the girths (a 190 cm customer's 100 cm chest came out ≈ 108 cm); the shaping now divides the height scale out. Shoulder width, arm length and inseam still feed the fit check only.
 
 **Next step (not done):** a Human Studio on the MakeHuman hm08 base mesh with its CC0 measurement targets (bust, neck, upper arm, forearm, wrist, thigh, calf, shoulder distance, torso and leg lengths), the CC0 Mixamo-compatible rig and weights, and the community garments fitted through their `.mhclo` data. Loaders must be ModVerse's own (GPL / AGPL code is not copied).
