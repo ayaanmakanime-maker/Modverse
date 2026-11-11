@@ -40,7 +40,7 @@ test("scan accuracy: a tape comparison is recorded with consent, shows up in the
   await page.goto("/account/measurements");
   await expect(page.getByTestId("scan-comparisons")).toContainText("P01");
   const before = await page.getByTestId("scan-comparison-delete").count();
-  await page.getByTestId("scan-comparison-delete").first().click();
+  await page.getByTestId("scan-comparison-delete").last().click(); // the oldest one (P01); the two P03 repeats stay
   await expect(page.getByTestId("scan-comparison-delete")).toHaveCount(before - 1);
 
   await logout(page);

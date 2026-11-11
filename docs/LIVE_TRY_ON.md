@@ -58,3 +58,14 @@ Account → Measurements and the editor's Fit tab. Steps: **consent** → **heig
 
 ## Light mode
 All of ModVerse (store, editor, trial room, admin and partner portals) has a white light theme: header/editor/admin toggle or Account → Settings → Appearance (Dark · Light · System). The preference is stored in a cookie and rendered on the server, so pages never flash the wrong theme; logos switch to the dark-lettering artwork and the 3D studio backdrop turns white.
+
+
+## Accuracy validation (how to find out how good the scan is)
+The scanner has never been benchmarked on real people in this repository, so no accuracy figure is published. The tooling to measure it now exists:
+1. In the scanner's review step a signed-in person ticks **"I also measured with a tape"**, enters the tape values, a person code (not a name), optionally the device, and gives consent. The camera's own values (before any correction) are stored next to the tape values. No image is stored.
+2. `/admin/fit-validation` (staff) shows, per region and per range: sample count, mean absolute error, RMSE, bias (scan − tape), error %, worst error, and repeatability (pooled SD of repeat scans of the same person). It also shows how often the size recommended from the scan matches the size from the tape, and a CSV download.
+3. The page states what the data supports: fewer than 5 people is "not evidence", fewer than 30 is "pilot", and only then a study. Protocol: scan each volunteer twice with the same code, one trained person takes the tape measurements, cover the size range and the devices you care about.
+Contributors can list and delete their comparisons under Account → Measurements; they are erased with the account. Table: `fit_validation_samples` (migration 0008).
+
+## 3D model mode
+`/try-on` has a second mode beside the live camera: **3D model with my measurements**. It shows the chosen garment and size on the rigged Man / Woman character, scaled to the customer's height with chest, waist and hips matched to their measurements, standing, idle or walking. The garment is skinned to the character (see 3D_SYSTEM.md), not cloth-simulated: the fit verdicts still come from the measurement fit check.
