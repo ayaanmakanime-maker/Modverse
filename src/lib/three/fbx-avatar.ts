@@ -19,7 +19,7 @@
  */
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { blurPoints, buildGrid, collisionPush, girthMorph, nearestK, shrinkAlongNormals, skinPoint, smoothSkinWeights, splitOutfit, spreadSpatial, transferWeights, voxelUnique, type Grid } from "./avatar-rig-utils";
+import { blurPoints, buildGrid, collisionPush, convexHullPerimeter, ringGirth, girthMorph, nearestK, shrinkAlongNormals, skinPoint, smoothSkinWeights, splitOutfit, spreadSpatial, transferWeights, voxelUnique, type Grid } from "./avatar-rig-utils";
 import type { AvatarExpression, AvatarMotion } from "./avatar";
 
 export type FbxModel = "atlas" | "aura";
@@ -460,22 +460,12 @@ async function prepare(model: FbxModel): Promise<AvatarAsset> {
   // Baseline circumferences from the character's own (torso-skinned) surface, at fixed fractions of its height.
   const H = topY;
   const levels = { chest: neck.y - 0.1 * H, waist: neck.y - 0.215 * H, hip: neck.y - 0.3 * H };
+  // tape-measure girth: convex hull of the torso-skinned vertices of body + fill at that height
   const ringOf = (y: number): { perimeter: number; zc: number } => {
-    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-    for (const mb of morphBase) {
-      for (let i = 0; i < mb.dominantBone.length; i++) {
-        if (!TORSO_BONES.has(boneNames[mb.dominantBone[i]])) continue;
-        if (Math.abs(mb.positions[i * 3 + 1] - y) > 1.6) continue;
-        const x = mb.positions[i * 3], z = mb.positions[i * 3 + 2];
-        if (x < x0) x0 = x;
-        if (x > x1) x1 = x;
-        if (z < z0) z0 = z;
-        if (z > z1) z1 = z;
-      }
-    }
-    if (!isFinite(x0)) return { perimeter: 0, zc: 0 };
-    const a = (x1 - x0) / 2, b = (z1 - z0) / 2;
-    return { perimeter: Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b))), zc: (z0 + z1) / 2 };
+    const parts = morphBase.map((mb) => ringGirth(mb.positions, (i) => TORSO_BONES.has(boneNames[mb.dominantBone[i]]), y, 1.6));
+    const pts: number[] = [];
+    for (const mb of morphBase) for (let i = 0; i < mb.dominantBone.length; i++) if (TORSO_BONES.has(boneNames[mb.dominantBone[i]]) && Math.abs(mb.positions[i * 3 + 1] - y) <= 1.6) pts.push(mb.positions[i * 3], mb.positions[i * 3 + 2]);
+    return { perimeter: convexHullPerimeter(pts), zc: parts[0]?.zc ?? 0 };
   };
   const chestRing = ringOf(levels.chest);
   const baseline = { chest: chestRing.perimeter, waist: ringOf(levels.waist).perimeter, hip: ringOf(levels.hip).perimeter };
@@ -524,8 +514,23 @@ export interface BodyTarget { height: number; chest: number; waist: number; hip:
 export interface Placement { scale: number; position: THREE.Vector3 }
 
 /** Uniform scale for the requested height and the root position that pins the character's shoulder anchor to the garment's shoulder line. */
+export const heightScale = (info: AvatarInfo, heightCm: number) => Math.max(0.6, Math.min(1.5, heightCm / info.heightCm));
+
+/** The character's own tape-measured girths (cm) after shaping and height scaling: what the customer's tape would read on it. */
+export function measureGirths(asset: AvatarAsset, t: BodyTarget): { height: number; chest: number; waist: number; hip: number } {
+  const { positions } = morphedPositions(asset, t);
+  const s = heightScale(asset.info, t.height);
+  const at = (y: number) => {
+    const pts: number[] = [];
+    asset.morphBase.forEach((mb, k) => { const p = positions[k]; for (let i = 0; i < mb.dominantBone.length; i++) if (TORSO_BONES.has(asset.boneNames[mb.dominantBone[i]]) && Math.abs(p[i * 3 + 1] - y) <= 1.6) pts.push(p[i * 3], p[i * 3 + 2]); });
+    return convexHullPerimeter(pts) * s;
+  };
+  const L = asset.info.levels;
+  return { height: asset.info.heightCm * s, chest: at(L.chest), waist: at(L.waist), hip: at(L.hip) };
+}
+
 export function placementFor(info: AvatarInfo, heightCm: number, anchorWorld: THREE.Vector3): Placement {
-  const scale = Math.max(0.6, Math.min(1.5, heightCm / info.heightCm));
+  const scale = heightScale(info, heightCm);
   return { scale, position: anchorWorld.clone().sub(info.anchor.clone().multiplyScalar(scale)) };
 }
 
@@ -551,7 +556,10 @@ export interface AvatarInstance {
 /** Chest / waist / hip scale factors and the height-dependent blend levels for a body target. */
 function girthLevels(asset: AvatarAsset, t: BodyTarget) {
   const b = asset.info.baseline, L = asset.info.levels;
-  const f = { chest: t.chest / (b.chest || t.chest), waist: t.waist / (b.waist || t.waist), hip: t.hip / (b.hip || t.hip) };
+  // the character is scaled uniformly to the requested height, which scales its girths too: divide that out,
+  // so the tape-measured girth of the scaled character equals the customer's measurement
+  const s = heightScale(asset.info, t.height);
+  const f = { chest: t.chest / (s * (b.chest || t.chest)), waist: t.waist / (s * (b.waist || t.waist)), hip: t.hip / (s * (b.hip || t.hip)) };
   const clamp = (v: number) => Math.max(0.7, Math.min(1.45, v));
   const levels: [number, number][] = [[L.hip - 35, clamp(f.hip)], [L.hip, clamp(f.hip)], [L.waist, clamp(f.waist)], [L.chest, clamp(f.chest)], [asset.info.neck.y + 2, 1]];
   const identity = Math.abs(f.chest - 1) < 1e-3 && Math.abs(f.waist - 1) < 1e-3 && Math.abs(f.hip - 1) < 1e-3;

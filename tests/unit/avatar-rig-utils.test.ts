@@ -169,3 +169,19 @@ describe("skin weight smoothing", () => {
     expect(Array.from(alone.skinIndex.slice(4, 5))).toEqual([2]);
   });
 });
+
+describe("tape-measure girth", () => {
+  it("convex hull perimeter of a circle sample is 2πr, and concave dents are bridged like a tape", async () => {
+    const { convexHullPerimeter, ringGirth } = await import("@/lib/three/avatar-rig-utils");
+    const pts: number[] = [];
+    for (let k = 0; k < 360; k++) pts.push(10 * Math.cos((k * Math.PI) / 180), 10 * Math.sin((k * Math.PI) / 180));
+    expect(convexHullPerimeter(pts)).toBeCloseTo(2 * Math.PI * 10, 1);
+    // a dent (navel) does not shorten the tape
+    pts.push(0, 5);
+    expect(convexHullPerimeter(pts)).toBeCloseTo(2 * Math.PI * 10, 1);
+    // ringGirth only uses vertices near the height and inside the mask
+    const pos = new Float32Array([...Array.from({ length: 360 }, (_, k) => [10 * Math.cos((k * Math.PI) / 180), 50, 10 * Math.sin((k * Math.PI) / 180)]).flat(), 100, 50, 0, 0, 90, 0]);
+    const g = ringGirth(pos, (i) => i < 360, 50, 1);
+    expect(g.perimeter).toBeCloseTo(2 * Math.PI * 10, 1);
+  });
+});

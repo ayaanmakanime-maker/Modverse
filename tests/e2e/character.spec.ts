@@ -87,4 +87,19 @@ test.describe("supplied FBX characters", () => {
     expect(glb.length).toBeGreaterThan(50_000);
     expect(errors).toEqual([]);
   });
+  test("Atelier Pro: saved measurements are applied to the avatar and tape-checked on the 3D body", async ({ page }) => {
+    test.setTimeout(240_000);
+    await register(page, "Tape Body");
+    const res = await page.request.post("/api/account/measurements", { data: { name: "My tape", audience: "men", measurements: { height: 190, chest: 104, waist: 90, hip: 102 } }, headers: { origin: new URL(page.url()).origin } });
+    expect(res.ok()).toBe(true);
+    await openEditor(page, "tee-classic-crew", "men", "pro");
+    await page.getByTestId("tab-fit").click();
+    await page.getByTestId("avatar-profile").selectOption({ label: "My tape" });
+    const tape = page.getByTestId("avatar-tape");
+    await expect(tape).toBeVisible({ timeout: 180_000 });
+    // a 190 cm body: before the fix the height scale inflated girths by ~8 %; now each girth is within 1.5 cm
+    for (const k of ["height", "chest", "waist", "hip"]) {
+      await expect.poll(async () => Math.abs(Number(await tape.locator(`[data-key="${k}"]`).getAttribute("data-delta"))), { timeout: 30_000 }).toBeLessThanOrEqual(1.5);
+    }
+  });
 });

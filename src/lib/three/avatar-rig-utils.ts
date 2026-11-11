@@ -407,3 +407,32 @@ export function smoothSkinWeights(points: Float32Array, skinIndex: Uint16Array, 
   }
   return { skinIndex: idx as Uint16Array, skinWeight: wt as Float32Array };
 }
+
+/** Perimeter of the convex hull of 2D points (x, z pairs): what a tape measure around a body section reads. */
+export function convexHullPerimeter(pts: number[]): number {
+  const n = pts.length / 2;
+  if (n < 3) return 0;
+  const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => pts[a * 2] - pts[b * 2] || pts[a * 2 + 1] - pts[b * 2 + 1]);
+  const cross = (o: number, a: number, b: number) => (pts[a * 2] - pts[o * 2]) * (pts[b * 2 + 1] - pts[o * 2 + 1]) - (pts[a * 2 + 1] - pts[o * 2 + 1]) * (pts[b * 2] - pts[o * 2]);
+  const lower: number[] = [], upper: number[] = [];
+  for (const i of idx) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], i) <= 0) lower.pop(); lower.push(i); }
+  for (let k = idx.length - 1; k >= 0; k--) { const i = idx[k]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], i) <= 0) upper.pop(); upper.push(i); }
+  const hull = lower.slice(0, -1).concat(upper.slice(0, -1));
+  let p = 0;
+  for (let k = 0; k < hull.length; k++) { const a = hull[k], b = hull[(k + 1) % hull.length]; p += Math.hypot(pts[b * 2] - pts[a * 2], pts[b * 2 + 1] - pts[a * 2 + 1]); }
+  return p;
+}
+
+/** Tape-measure girth of a body at height `y`: convex hull of the included vertices within ±band of that height. */
+export function ringGirth(positions: Float32Array, include: (i: number) => boolean, y: number, band = 1.2): { perimeter: number; zc: number } {
+  const pts: number[] = [];
+  let z0 = Infinity, z1 = -Infinity;
+  for (let i = 0; i < positions.length / 3; i++) {
+    if (Math.abs(positions[i * 3 + 1] - y) > band || !include(i)) continue;
+    const x = positions[i * 3], z = positions[i * 3 + 2];
+    pts.push(x, z);
+    if (z < z0) z0 = z;
+    if (z > z1) z1 = z;
+  }
+  return { perimeter: convexHullPerimeter(pts), zc: isFinite(z0) ? (z0 + z1) / 2 : 0 };
+}
