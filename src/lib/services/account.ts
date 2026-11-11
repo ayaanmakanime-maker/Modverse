@@ -39,6 +39,9 @@ export const bodySchema = z.object({
   bicep: z.number().positive().optional(),
   wrist: z.number().positive().optional(),
   torsoLength: z.number().positive().optional(),
+  inseam: z.number().positive().optional(),
+  thigh: z.number().positive().optional(),
+  calf: z.number().positive().optional(),
 });
 
 const provenanceSchema = z.object({ source: z.enum(["user", "camera", "derived"]), confidence: z.enum(["high", "medium", "low"]), toleranceCm: z.number().min(0).max(30).optional(), at: z.string().max(40).optional() });

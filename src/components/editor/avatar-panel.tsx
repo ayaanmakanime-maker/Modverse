@@ -93,6 +93,10 @@ export function AvatarStudio({ config, avatar, setAvatar }: { config: DesignConf
   };
   return (
     <div className="space-y-3" data-testid="avatar-studio">
+      <a href="/design/human-studio" target="_blank" rel="noopener" className="block rounded-lg border border-champagne/50 bg-surface-2 p-2 text-[0.68rem] hover:border-champagne" data-testid="open-human-studio">
+        <span className="block font-medium text-bone">Human Studio →</span>
+        <span className="text-mute">A 3D body shaped to all your measurements (13 tape values, checked on the model), wearing 3D collection garments fitted to it.</span>
+      </a>
       <div className="rounded-lg border border-line p-2 text-[0.65rem]" data-testid="avatar-my-body">
         <p className="text-bone-2">Your body on the avatar</p>
         {signedIn ? (
