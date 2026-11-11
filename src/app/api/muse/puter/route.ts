@@ -15,7 +15,7 @@ export const GET = route({}, async () => {
 });
 
 /** Application-level usage log: which job ran, on which model, and whether it failed. Never the prompt or the answer. */
-const usage = z.object({ job: z.enum(["conversation", "proposal", "vision", "image", "sign_in"]), model: z.string().max(80), ok: z.boolean(), error: z.enum(["declined", "allowance", "rate_limit", "model", "network", "unknown"]).optional(), ms: z.number().int().min(0).max(600_000).optional() });
+const usage = z.object({ job: z.enum(["conversation", "proposal", "vision", "image", "tryon", "sign_in"]), model: z.string().max(80), ok: z.boolean(), error: z.enum(["declined", "allowance", "rate_limit", "model", "network", "refused", "upstream", "unknown"]).optional(), ms: z.number().int().min(0).max(600_000).optional() });
 export const POST = route({ rate: { name: "muse", ...LIMITS.muse } }, async ({ body, user, ipHash }) => {
   const u = await body(usage);
   await audit({ actorUserId: user?.id ?? null, action: u.ok ? "muse.puter_use" : "muse.puter_error", entityType: "muse", entityId: u.job, details: { model: u.model, error: u.error ?? null, ms: u.ms ?? null }, ipHash });

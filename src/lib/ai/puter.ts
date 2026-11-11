@@ -17,12 +17,12 @@ interface PuterApi {
   ai: {
     chat(messages: unknown, opts?: { model?: string }): Promise<unknown>;
     chat(prompt: string, image: string, opts?: { model?: string }): Promise<unknown>;
-    txt2img(prompt: string, opts?: { model?: string }): Promise<HTMLImageElement>;
+    txt2img(prompt: string, opts?: { model?: string; input_images?: (string | Blob)[]; test_mode?: boolean }): Promise<HTMLImageElement>;
     listModels?(): Promise<PuterModel[]>;
   };
   auth: { isSignedIn(): boolean; signIn(): Promise<unknown> };
 }
-export type PuterErrorCode = "declined" | "allowance" | "rate_limit" | "model" | "network" | "unknown";
+export type PuterErrorCode = "declined" | "allowance" | "rate_limit" | "model" | "network" | "refused" | "upstream" | "unknown";
 export class PuterError extends Error {
   constructor(public code: PuterErrorCode, message: string) { super(message); }
 }
@@ -52,6 +52,8 @@ export function toPuterError(e: unknown): PuterError {
   const code = String((typeof raw === "object" && raw ? raw.error?.code ?? raw.code : "") ?? "").toLowerCase();
   const msg = String(typeof raw === "string" ? raw : raw?.error?.message ?? raw?.message ?? "").slice(0, 200);
   const t = `${code} ${msg}`.toLowerCase();
+  if (/moderation|content.?filter|safety|flagged/.test(t)) return new PuterError("refused", "The image model's safety filter refused this request. Try a different photo (fully clothed, one adult, plain background) or garment.");
+  if (/upstream_failed|upstream/.test(t)) return new PuterError("upstream", "The image provider failed to generate the picture. This is usually temporary: try again.");
   if (/cancel|closed|denied|auth|sign.?in|unauthori[sz]ed|401/.test(t)) return new PuterError("declined", "Puter sign-in was cancelled. The Muse will keep using ModVerse's built-in assistant.");
   if (/insufficient|funds|credit|allowance|quota|usage.?limit|402/.test(t)) return new PuterError("allowance", "Your Puter account has no AI allowance left. Top it up at puter.com, or keep using the built-in assistant. ModVerse credits can't pay Puter charges.");
   if (/rate|too many|429/.test(t)) return new PuterError("rate_limit", "Puter is rate-limiting requests. Wait a moment and try again.");
@@ -149,6 +151,26 @@ export async function puterConceptImage(cfg: PuterConfig, prompt: string): Promi
   const model = await pickModel(cfg, "image");
   try {
     const img = await p.ai.txt2img(`Fashion concept, flat product presentation: ${prompt}`, model ? { model } : undefined);
+    return { src: img.src, model: model ?? "puter-default" };
+  } catch (e) { throw toPuterError(e); }
+}
+
+/**
+ * Photo try-on: the customer's photo (image 1) and a front render of the chosen garment (image 2) go to an image-to-image
+ * model through Puter. The result is an AI visualisation, not a fit measurement.
+ */
+export async function puterTryOn(cfg: PuterConfig, personPhoto: string, garmentImage: string, garmentLabel: string): Promise<{ src: string; model: string }> {
+  const p = await loadPuter();
+  const model = await pickModel(cfg, "image");
+  const prompt = [
+    "Virtual try-on. Image 1 is a photo of a person. Image 2 is a garment shown on its own (front view).",
+    `Dress the person from image 1 in the garment from image 2 (${garmentLabel}).`,
+    "Keep the person exactly as they are: same face, identity, skin tone, hair, body shape and proportions, pose, hands, background and lighting.",
+    "Replace only the clothing the garment covers. Reproduce the garment faithfully: same colours, fabric look, collar, sleeves, length, and every graphic, logo-free artwork and text in the same place and size.",
+    "Fit it naturally to this person's body with realistic folds and shadows. Do not slim, enlarge or retouch the person. Photorealistic, same framing as image 1.",
+  ].join(" ");
+  try {
+    const img = await p.ai.txt2img(prompt, { ...(model ? { model } : {}), input_images: [personPhoto, garmentImage] });
     return { src: img.src, model: model ?? "puter-default" };
   } catch (e) { throw toPuterError(e); }
 }

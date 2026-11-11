@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("live camera trial room starts, tracks, reports performance and stops", async ({ page }) => {
-  await page.goto("/try-on");
+  await page.goto("/try-on/live");
   await expect(page.getByTestId("trial-room")).toBeVisible();
   await page.getByTestId("start-camera").click();
   await expect(page.getByTestId("stop-camera")).toBeVisible({ timeout: 90_000 });
@@ -27,7 +27,7 @@ test("trial room explains camera permission denial", async ({ page }) => {
   await page.addInitScript(() => {
     navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error("denied"), { name: "NotAllowedError" }));
   });
-  await page.goto("/try-on");
+  await page.goto("/try-on/live");
   await page.getByTestId("start-camera").click();
   await expect(page.getByText(/Camera permission was denied/)).toBeVisible();
 });
@@ -47,7 +47,7 @@ test("editor fit analysis keeps estimates, simulation and verified fit separate"
 });
 
 test("trial room fit check: per-zone fit by size, best size, fit map", async ({ page }) => {
-  await page.goto("/try-on");
+  await page.goto("/try-on/live");
   const fc = page.getByTestId("fit-check");
   await expect(fc.getByTestId("fit-verdict")).toContainText("Add measurements");
   await fc.getByTestId("fit-q-chest").fill("104");

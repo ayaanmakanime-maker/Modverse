@@ -13,7 +13,6 @@ import { estimateFromHeightWeight } from "@/lib/garment/fit";
 import type { CameraEstimateResult } from "@/lib/tryon/camera-measure";
 import { bodyFromInputs, FitCheckPanel, type QuickBody } from "./FitCheckPanel";
 
-const GarmentViewer = dynamic(() => import("@/components/three/GarmentViewer").then((m) => m.GarmentViewer), { ssr: false, loading: () => <BrandLoader label="Preparing 3D" /> });
 const TrialRoom = dynamic(() => import("./TrialRoom").then((m) => m.TrialRoom), { ssr: false, loading: () => <BrandLoader label="Preparing trial room" /> });
 
 export function TryOnPicker({ saved }: { saved: { id: string; name: string; config: DesignConfig }[] }) {
@@ -39,8 +38,6 @@ export function TryOnPicker({ saved }: { saved: { id: string; name: string; conf
   const [camera, setCamera] = useState<Partial<Record<"shoulder" | "armLength" | "torsoLength", number>>>({});
   const { body: fitBody, provenance } = useMemo(() => bodyFromInputs(profile, quick, camera, (h, w) => estimateFromHeightWeight(config.audience, h, w)), [profile, quick, camera, config.audience]);
   const fit = useMemo(() => checkAllSizes(config, fitBody, provenance), [config, fitBody, provenance]);
-  const [mode, setMode] = useState<"camera" | "model">("camera");
-  const [motion, setMotion] = useState<"rest" | "idle" | "walk">("rest");
   const [sizePick, setSizePick] = useState<string | null>(null);
   useEffect(() => setSizePick(null), [choice, audience]);
   const size = sizePick ?? fit.best ?? config.size;
@@ -79,24 +76,7 @@ export function TryOnPicker({ saved }: { saved: { id: string; name: string; conf
           <p><b className="text-bone-2">C</b> — Experimental: person segmentation keeps the garment on your body and forearms pass in front of it.</p>
         </div>
       </aside>
-      <div className="min-w-0">
-        <div className="mb-3 flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Trial room mode">
-          <button role="radio" aria-checked={mode === "camera"} className={`mv-chip ${mode === "camera" ? "!border-champagne !text-bone" : ""}`} onClick={() => setMode("camera")} data-testid="tryon-mode-camera">Live camera</button>
-          <button role="radio" aria-checked={mode === "model"} className={`mv-chip ${mode === "model" ? "!border-champagne !text-bone" : ""}`} onClick={() => setMode("model")} data-testid="tryon-mode-model">3D model with my measurements</button>
-        </div>
-        {mode === "camera" ? <TrialRoom config={sized} body={body} fitMap={fitMap} onCameraEstimate={onCamera} /> : (
-          <div data-testid="tryon-model">
-            <div className="h-[70vh] min-h-[420px] overflow-hidden rounded-2xl border border-line">
-              <GarmentViewer config={sized} view="front" showAvatar avatar={{ body: body as never, appearance: { skinTone: "#C68E6A", build: "average", bodyType: sized.audience === "women" ? "feminine" : "masculine", hair: "short", motion } }} controls="full" />
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="text-mute">Movement</span>
-              {(["rest", "idle", "walk"] as const).map((m) => <button key={m} className={`mv-chip !py-0.5 ${motion === m ? "!border-champagne !text-bone" : ""}`} onClick={() => setMotion(m)} data-testid={`tryon-motion-${m}`}>{m === "rest" ? "Standing" : m === "idle" ? "Idle" : "Walk"}</button>)}
-            </div>
-            <p className="mt-2 text-xs text-mute">{body ? "The model is scaled to your height and its chest, waist and hips are matched to your measurements; size " + size + " is the garment shown." : "Add measurements (a profile, or height and weight on the left) and the model takes your proportions. Until then it shows the standard body for size " + size + "."} The garment is fitted to the model and follows its movement, but it is not a cloth simulation: tightness and looseness come from the measurement fit check on the left, not from this picture.</p>
-          </div>
-        )}
-      </div>
+      <TrialRoom config={sized} body={body} fitMap={fitMap} onCameraEstimate={onCamera} />
     </div>
   );
 }

@@ -293,7 +293,7 @@ export function MeasurementsPanel({ mode }: { mode: EditorMode }) {
 
 interface MeasurementProfile { id: string; name: string; audience: string; measurements: Record<string, number>; provenance?: ProvenanceMap; fitPreference: "closer" | "true" | "looser" }
 
-export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar: (a: AvatarState) => void }) {
+export function FitPanel({ avatar, setAvatar, pro }: { avatar: AvatarState; setAvatar: (a: AvatarState) => void; pro: boolean }) {
   const config = useEditor((s) => s.config);
   const commit = useEditor((s) => s.commit);
   const { user } = useSession();
@@ -363,9 +363,14 @@ export function FitPanel({ avatar, setAvatar }: { avatar: AvatarState; setAvatar
           <FitAnalysisView config={config} body={body} provenance={provenance} verified={verified} />
         </Group>
       )}
-      <Group title="Avatar — Atlas · Aura">
-        <AvatarStudio config={config} avatar={avatar} setAvatar={setAvatar} />
-      </Group>
+      {/* 3D avatars are an Atelier Pro feature */}
+      {pro ? (
+        <Group title="Avatar — Atlas · Aura">
+          <AvatarStudio config={config} avatar={avatar} setAvatar={setAvatar} />
+        </Group>
+      ) : (
+        <p className="rounded-lg border border-line p-3 text-[0.68rem] text-mute" data-testid="avatar-pro-only">3D avatars with your body measurements are part of <b className="text-bone-2">Atelier Pro</b>. Switch the mode at the top to use them.</p>
+      )}
     </div>
   );
 }

@@ -1,9 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { ADMIN, login, logout, register } from "./helpers";
-
-const characters = ["man.fbx", "woman.fbx"].every((f) => fs.existsSync(path.join(process.cwd(), "public", "avatars", f)));
 
 test("scan accuracy: a tape comparison is recorded with consent, shows up in the admin statistics, and the contributor can delete it", async ({ page }) => {
   test.setTimeout(180_000);
@@ -57,20 +53,14 @@ test("scan accuracy: a tape comparison is recorded with consent, shows up in the
   expect(await csv.text()).toContain("chest_scan,chest_tape");
 });
 
-test("trial room: 3D model mode wears the garment on the rigged character with the customer's proportions", async ({ page }) => {
-  test.skip(!characters, "the character files are not installed in public/avatars");
-  test.setTimeout(240_000);
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/try-on");
-  await page.getByTestId("tryon-mode-model").click();
-  const viewer = page.getByTestId("tryon-model").getByTestId("garment-viewer");
-  await expect(viewer).toHaveAttribute("data-avatar", "character", { timeout: 180_000 });
-  await expect(viewer).toHaveAttribute("data-garment", "skinned", { timeout: 60_000 });
-  await page.getByTestId("tryon-motion-walk").click();
-  await expect(viewer).toHaveAttribute("data-motion", "walk");
-  await page.getByTestId("tryon-motion-rest").click();
-  await page.getByTestId("tryon-mode-camera").click();
-  await expect(page.getByTestId("tryon-model")).toHaveCount(0);
-  expect(errors).toEqual([]);
+test("3D avatars are Atelier Pro only: Atelier shows a note, Atelier Pro shows the avatar studio", async ({ page }) => {
+  await page.goto("/design/new?model=tee-classic-crew&audience=men&mode=atelier");
+  await page.getByTestId("tab-fit").click();
+  await expect(page.getByTestId("avatar-pro-only")).toContainText("Atelier Pro");
+  await expect(page.getByTestId("avatar-studio")).toHaveCount(0);
+  await expect(page.getByTestId("toolbar-avatar")).toHaveCount(0);
+  await page.goto("/design/new?model=tee-classic-crew&audience=men&mode=pro");
+  await page.getByTestId("tab-fit").click();
+  await expect(page.getByTestId("avatar-studio")).toBeVisible();
+  await expect(page.getByTestId("avatar-pro-only")).toHaveCount(0);
 });

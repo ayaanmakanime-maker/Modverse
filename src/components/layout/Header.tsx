@@ -84,7 +84,7 @@ export function Header() {
             {NAV.map((n) => <Link key={n.href} href={n.href} className="mv-display border-b border-line py-4 text-3xl">{n.label}</Link>)}
             <div className="mt-6 flex gap-4 text-sm text-mute">
               <Link href="/library" className="flex items-center gap-2"><Library className="size-4" /> Creative Library</Link>
-              <Link href="/try-on" className="flex items-center gap-2"><Camera className="size-4" /> Trial room</Link>
+              <Link href="/try-on" className="flex items-center gap-2"><Camera className="size-4" /> AI photo try-on</Link>
             </div>
           </nav>
         </div>
