@@ -113,6 +113,12 @@ export function Editor({ initial }: { initial: EditorInitial }) {
   useEffect(() => {
     if (!MODE_TABS[mode].includes(tab)) setTab(MODE_TABS[mode][0]);
   }, [mode, tab]);
+  // Deep link to a panel, e.g. /design/new?model=…&tab=upload from the Creative Library.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
+    if (t && MODE_TABS[initial.mode].includes(t)) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Without a GPU, a live 3D pane makes every edit wait for a CPU-rendered frame: open in 2D instead.
   useEffect(() => {
@@ -321,7 +327,7 @@ function EditorLayout(p: {
       case "measurements": return <MeasurementsPanel mode={p.mode} />;
       case "fabric": return <FabricPanel mode={p.mode} />;
       case "panels": return <PanelsPanel onPickPattern={(panel) => { p.setPatternTarget(panel); p.setTab("library"); }} />;
-      case "library": return <LibraryPanel patternTarget={p.patternTarget} onPatternApplied={() => p.setPatternTarget(null)} />;
+      case "library": return <LibraryPanel patternTarget={p.patternTarget} onPatternApplied={() => p.setPatternTarget(null)} onUpload={() => p.setTab("upload")} />;
       case "text": return <TextPanel />;
       case "upload": return <UploadPanel />;
       case "layers": return <LayersPanel />;
