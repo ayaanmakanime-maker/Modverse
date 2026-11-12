@@ -1,0 +1,107 @@
+{
+  "id": "toigo-male-suit-tie-and-jacket",
+  "name": "Male Suit Tie And Jacket",
+  "originalName": "toigo_male_suit_tie_and_jacket",
+  "audience": "men",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "male suit tie and jacket by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "suits01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits01/suits01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "2b1d8676f3863b188e9eea98c1d8f234543d54c440e791d92b819f8ee1861f19"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"male suit tie and jacket\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-male-suit-tie-and-jacket.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Suit-tie-Jacket-bump.png",
+      "original/Suit-tie-Jacket-diff.png",
+      "original/Suit-tie-Jacket-spec.png",
+      "original/jacket_tie_pants.mhmat",
+      "original/jacket_tie_pants.obj",
+      "original/toigo_male_suit_tie_and_jacket.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "Suit-tie-Jacket-spec.png",
+        "sha256": "f8f66b5ed833f8ef2418f340f42e6b5d7bf75f31ae5bf3e593ba6cdacfa9f81b",
+        "bytes": 21376
+      },
+      {
+        "name": "Suit-tie-Jacket-bump.png",
+        "sha256": "82323b583a893feb3ec8fb37d91c338865c42fb659d30805eb2a9c4d42cda581",
+        "bytes": 303361
+      },
+      {
+        "name": "jacket_tie_pants.mhmat",
+        "sha256": "88074bc1c5f9d7fe09bbffd84fe0a4bad3e2930c02911103a112cea917159e4e",
+        "bytes": 576
+      },
+      {
+        "name": "Suit-tie-Jacket-diff.png",
+        "sha256": "27d98ecf5500f89d1bf363510def211e9e8c74f4ecc44daad7a7916e32dfc250",
+        "bytes": 264694
+      },
+      {
+        "name": "jacket_tie_pants.obj",
+        "sha256": "7d80f673d1645bfcf6b6747f4a9e418c0cab65ac6330718cfc760962497ccb7d",
+        "bytes": 823197
+      },
+      {
+        "name": "toigo_male_suit_tie_and_jacket.mhclo",
+        "sha256": "7f927081c996cf42014ed2c78b9f10914740c7503eeaf9e176df0fc250dc2803",
+        "bytes": 674367
+      }
+    ],
+    "glbBytes": 602124
+  },
+  "geometry": {
+    "vertices": 10982,
+    "triangles": 19202,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 106.1,
+      "height": 149.4,
+      "depth": 38.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "pants"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -9,7 +9,7 @@ export const GET = route({ auth: "user" }, async ({ user }) => {
   const rows = await db.select().from(libraryFavorites).where(eq(libraryFavorites.userId, user.id)).orderBy(desc(libraryFavorites.createdAt));
   return { ids: rows.map((r) => r.assetId) };
 });
-const schema = z.object({ assetId: z.string().regex(/^MV[GPTCE]_\d{3}$/) });
+const schema = z.object({ assetId: z.string().regex(/^[A-Za-z0-9_.-]{3,128}$/) });
 export const POST = route({ auth: "user" }, async ({ user, body }) => {
   const { assetId } = await body(schema);
   const db = await getDb();

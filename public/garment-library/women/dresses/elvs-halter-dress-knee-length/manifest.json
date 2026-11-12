@@ -1,0 +1,105 @@
+{
+  "id": "elvs-halter-dress-knee-length",
+  "name": "Halter Dress Knee Length",
+  "originalName": "elvs_halter_dress_knee_length",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "halter dress knee length by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"halter dress knee length\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-halter-dress-knee-length.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_halter_dress_knee_length.mhclo",
+      "original/elvs_short_halterdress1.mhmat",
+      "original/elvs_short_halterdress1.obj",
+      "original/shortiehalternormals.png",
+      "original/shortiehaltertex2.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_short_halterdress1.mhmat",
+        "sha256": "9d3d9b6e8c3ac176b368c89b5d6351571e1619d7b10c60c5c287c7c4b1ff80cf",
+        "bytes": 926
+      },
+      {
+        "name": "shortiehalternormals.png",
+        "sha256": "06ffbf9bae6634eb7ad5dd4ef72a5a3de6060b638bd3f63fbb3a360f79b2f844",
+        "bytes": 2289500
+      },
+      {
+        "name": "elvs_short_halterdress1.obj",
+        "sha256": "8d5ea3ad990bd3457cdf132d851b419e4e542412db4afe7b7e2b1e45a2f16e6e",
+        "bytes": 584449
+      },
+      {
+        "name": "elvs_halter_dress_knee_length.mhclo",
+        "sha256": "ccd86144dba6347c106a98e083c0fc4a0db766189ce3730dda91bc677e6d680b",
+        "bytes": 341162
+      },
+      {
+        "name": "shortiehaltertex2.png",
+        "sha256": "58b9f35adae228d48662691570c19ed7342f1a52139f97b6c082acfbcc254880",
+        "bytes": 2193551
+      }
+    ],
+    "glbBytes": 1275948
+  },
+  "geometry": {
+    "vertices": 9528,
+    "triangles": 9596,
+    "hasUv": true,
+    "uvCoverage": 0.93,
+    "boundsCm": {
+      "width": 50.1,
+      "height": 103.7,
+      "depth": 43.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.3961,
+      0,
+      0.7922
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "ladiesware",
+    "female",
+    "halter",
+    "halter dress"
+  ],
+  "integrationStatus": "integrated"
+}

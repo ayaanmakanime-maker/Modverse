@@ -1,0 +1,93 @@
+{
+  "id": "toigo-halter-dress-knee-length",
+  "name": "Halter Dress Knee Length",
+  "originalName": "toigo_halter_dress_knee_length",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "halter dress knee length by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"halter dress knee length\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-halter-dress-knee-length.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/DressCloth3UV.png",
+      "original/dress_knee_halter.mhmat",
+      "original/dress_knee_halter.obj",
+      "original/toigo_halter_dress_knee_length.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "dress_knee_halter.mhmat",
+        "sha256": "ccdb35f08daf4b4896e6f7a655c89eee39170793fe3d095482ab326056dfa64b",
+        "bytes": 513
+      },
+      {
+        "name": "dress_knee_halter.obj",
+        "sha256": "b7edb42f6a8087c46ea79c011669f2207c5f5656a6c17ff1d9435c8a05dfa4f6",
+        "bytes": 160743
+      },
+      {
+        "name": "toigo_halter_dress_knee_length.mhclo",
+        "sha256": "043447253bdb06272eb2565cc7fb484f5cf1c010d0e251314135b72287a5c374",
+        "bytes": 138176
+      },
+      {
+        "name": "DressCloth3UV.png",
+        "sha256": "45ec64abbb9346751de8059f7c77bc719c9a7d5186c895168f1a8432ea0ec26a",
+        "bytes": 668702
+      }
+    ],
+    "glbBytes": 385260
+  },
+  "geometry": {
+    "vertices": 2181,
+    "triangles": 3936,
+    "hasUv": true,
+    "uvCoverage": 0.8,
+    "boundsCm": {
+      "width": 48.9,
+      "height": 90.1,
+      "depth": 34.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.08369,
+      0.005596,
+      0.005999
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

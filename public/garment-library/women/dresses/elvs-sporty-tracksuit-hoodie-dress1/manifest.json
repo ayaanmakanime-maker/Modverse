@@ -1,0 +1,100 @@
+{
+  "id": "elvs-sporty-tracksuit-hoodie-dress1",
+  "name": "Sporty Tracksuit Hoodie Dress",
+  "originalName": "elvs_sporty_tracksuit_hoodie_dress1",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "hoodie dress",
+  "source": {
+    "pack": "suits03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits03/suits03_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "74ace28794d27186a3f3ee26058f16906fe3c46f9f7e35a9ac7f622cd5e821eb"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"sporty tracksuit hoodie dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-sporty-tracksuit-hoodie-dress1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_hoodie_dress_sw1.mhmat",
+      "original/elvs_hoodie_dress_sw1.obj",
+      "original/elvs_sporty_tracksuit_hoodie_dress1.mhclo",
+      "original/hoodietexture1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_sporty_tracksuit_hoodie_dress1.mhclo",
+        "sha256": "a6b00908ab4aa2bdad33df5d192a62bdfe47ccf55af2da1f5953ba4cfed9adb6",
+        "bytes": 350051
+      },
+      {
+        "name": "hoodietexture1.png",
+        "sha256": "4befe3b632406587166e4b62f42b2193f6335014d025df1173b45e54bcd688be",
+        "bytes": 4929133
+      },
+      {
+        "name": "elvs_hoodie_dress_sw1.mhmat",
+        "sha256": "4682c851928be04e8e17cf57b306484f234def50474ab1f3f3aad0ab81802a7a",
+        "bytes": 827
+      },
+      {
+        "name": "elvs_hoodie_dress_sw1.obj",
+        "sha256": "6f6b7a8558e47cc55beae6e89e41525dfb13efa301b493c0846e13b33e1709a0",
+        "bytes": 682112
+      }
+    ],
+    "glbBytes": 647488
+  },
+  "geometry": {
+    "vertices": 10860,
+    "triangles": 10784,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 94.8,
+      "height": 124.4,
+      "depth": 40.3
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "casual",
+    "sport",
+    "contemporary",
+    "dress",
+    "hoodie"
+  ],
+  "integrationStatus": "integrated"
+}

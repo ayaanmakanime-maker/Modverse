@@ -10,6 +10,8 @@ import { COLLARS, CUFFS, PLACKETS, NECKLINES, POCKET_STYLES, BUTTON_MATERIALS } 
 import { COLLECTIONS } from "../library/collections";
 import { INTEGRATIONS } from "../integrations/registry";
 import { getLibraryIndex } from "../library/server";
+import { loadOpenRegistry } from "../library/open-registry";
+import { classify, searchTextFor, tokens } from "../library/taxonomy";
 import { hashPassword } from "../auth/password";
 import { DEFAULT_PRICING } from "../garment/pricing";
 
@@ -18,9 +20,9 @@ const CATEGORY_DEFS = [
   { id: "women", name: "Women", description: "T-shirts and shirts on women's blocks with shaped, relaxed and cropped silhouettes.", sort: 2 },
 ];
 
-function seedFingerprint(libraryGeneratedAt: string): string {
+function seedFingerprint(libraryGeneratedAt: string, openGeneratedAt: string): string {
   return createHash("sha256")
-    .update(JSON.stringify([GARMENT_MODELS.map((m) => [m.id, m.basePrice, m.audiences]), FABRICS.map((f) => f.id), INTEGRATIONS.map((i) => i.id), libraryGeneratedAt, "v3"]))
+    .update(JSON.stringify([GARMENT_MODELS.map((m) => [m.id, m.basePrice, m.audiences]), FABRICS.map((f) => f.id), INTEGRATIONS.map((i) => i.id), libraryGeneratedAt, openGeneratedAt, "v4"]))
     .digest("hex")
     .slice(0, 16);
 }
@@ -28,10 +30,11 @@ function seedFingerprint(libraryGeneratedAt: string): string {
 /** Idempotent reference-data seed: catalogue, fabrics, Creative Library, integrations, settings. */
 export async function seedReferenceData(db: Db): Promise<{ seeded: boolean }> {
   const index = getLibraryIndex();
-  const fp = seedFingerprint(index.generatedAt);
+  const open = loadOpenRegistry();
+  const fp = seedFingerprint(index.generatedAt, open?.generatedAt ?? "none");
   const existing = await db.select().from(s.platformSettings).where(eq(s.platformSettings.key, "reference_seed"));
   const [{ value: assetCount }] = await db.select({ value: count() }).from(s.creativeAssets);
-  if (existing[0] && (existing[0].value as { fingerprint?: string }).fingerprint === fp && assetCount === index.assets.length) {
+  if (existing[0] && (existing[0].value as { fingerprint?: string }).fingerprint === fp && assetCount === index.assets.length + (open?.assets.length ?? 0)) {
     await ensureBootstrapAccounts(db);
     return { seeded: false };
   }
@@ -81,15 +84,43 @@ export async function seedReferenceData(db: Db): Promise<{ seeded: boolean }> {
       await tx.insert(s.assetCollections).values({ slug: c.slug, name: c.name, description: c.description, sort: i })
         .onConflictDoUpdate({ target: s.assetCollections.slug, set: { name: c.name, description: c.description, sort: i } });
 
-    const rows = index.assets.map((a) => ({
-      id: a.id, kind: a.kind, name: a.name, collectionSlug: a.collection, sourceFile: a.sourceFile, url: a.url, baseUrl: a.baseUrl ?? null,
-      license: a.license, width: a.width, height: a.height, colors: a.colors, tags: a.tags, editableTexts: a.editableTexts ?? null,
-      featured: /_00[1-2]_|MVG_0(01|26|51|76)\b/.test(a.sourceFile ?? "") || ["MVG_001", "MVG_026", "MVG_051", "MVG_076", "MVG_101", "MVG_126"].includes(a.id),
-    }));
-    for (let i = 0; i < rows.length; i += 200) {
-      await tx.insert(s.creativeAssets).values(rows.slice(i, i + 200)).onConflictDoUpdate({
+    const collectionKw = new Map(COLLECTIONS.map((c) => [c.slug, [c.name, ...c.keywords]]));
+    const rows: (typeof s.creativeAssets.$inferInsert)[] = index.assets.map((a) => {
+      const kw = tokens(a.name, a.tags, collectionKw.get(a.collection) ?? [a.collectionName]);
+      const categories = a.kind === "graphic" || a.kind === "element" ? classify(kw) : [];
+      return {
+        id: a.id, kind: a.kind, name: a.name, collectionSlug: a.collection, sourceFile: a.sourceFile, url: a.url, baseUrl: a.baseUrl ?? null,
+        license: a.license, width: a.width, height: a.height, colors: a.colors, tags: a.tags, editableTexts: a.editableTexts ?? null,
+        featured: /_00[1-2]_|MVG_0(01|26|51|76)\b/.test(a.sourceFile ?? "") || ["MVG_001", "MVG_026", "MVG_051", "MVG_076", "MVG_101", "MVG_126"].includes(a.id),
+        creator: "ModVerse", style: "modverse", categories, searchText: searchTextFor(a.name, a.tags, categories, collectionKw.get(a.collection) ?? [a.collectionName]),
+      };
+    });
+    // Open graphics (Graphics Library registry): sources, one collection per source, then the assets.
+    if (open) {
+      for (const [i, src] of open.sources.entries()) {
+        await tx.insert(s.assetCollections).values({ slug: `open_${src.id}`, name: src.name, description: `${src.licence} · ${src.creator}`, sort: 100 + i })
+          .onConflictDoUpdate({ target: s.assetCollections.slug, set: { name: src.name, description: `${src.licence} · ${src.creator}`, sort: 100 + i } });
+        const row = { id: src.id, name: src.name, sourceUrl: src.sourceUrl, package: src.package, creator: src.creator, licence: src.licence, licenceUrl: src.licenceUrl, commercial: src.commercial, attributionRequired: src.attributionRequired, attribution: src.attribution, redistribution: src.redistribution, originalFormat: src.originalFormat, optimizedFormat: src.optimizedFormat, downloadedAt: src.downloadedAt, style: src.style, assetCount: src.count };
+        // the admin's approval decision is kept on re-import
+        await tx.insert(s.graphicSources).values({ ...row, approval: src.approval }).onConflictDoUpdate({ target: s.graphicSources.id, set: { ...row, updatedAt: new Date() } });
+      }
+      const bySource = new Map(open.sources.map((x) => [x.id, x]));
+      for (const a of open.assets) {
+        const src = bySource.get(a.source)!;
+        rows.push({
+          id: a.id, kind: "graphic", name: a.name, collectionSlug: `open_${a.source}`, sourceFile: null, url: a.url, baseUrl: null, license: src.licence, width: a.width, height: a.height,
+          colors: a.colors, tags: a.tags, editableTexts: null, featured: false, creator: src.creator, style: a.style, categories: a.categories,
+          searchText: searchTextFor(a.name, a.tags, a.categories, [src.name, a.style]), sourceId: a.source, sourceUrl: a.sourceUrl, attribution: src.attribution,
+        });
+      }
+    }
+    for (let i = 0; i < rows.length; i += 250) {
+      await tx.insert(s.creativeAssets).values(rows.slice(i, i + 250)).onConflictDoUpdate({
         target: s.creativeAssets.id,
-        set: { name: sql`excluded.name`, url: sql`excluded.url`, baseUrl: sql`excluded.base_url`, colors: sql`excluded.colors`, tags: sql`excluded.tags`, editableTexts: sql`excluded.editable_texts`, width: sql`excluded.width`, height: sql`excluded.height` },
+        set: {
+          name: sql`excluded.name`, url: sql`excluded.url`, baseUrl: sql`excluded.base_url`, colors: sql`excluded.colors`, tags: sql`excluded.tags`, editableTexts: sql`excluded.editable_texts`, width: sql`excluded.width`, height: sql`excluded.height`,
+          categories: sql`excluded.categories`, searchText: sql`excluded.search_text`, style: sql`excluded.style`, creator: sql`excluded.creator`, sourceId: sql`excluded.source_id`, sourceUrl: sql`excluded.source_url`, attribution: sql`excluded.attribution`, license: sql`excluded.license`,
+        },
       });
     }
     const pal = index.assets.filter((a) => a.kind === "palette").map((p) => ({ id: p.id, name: p.name, collectionSlug: p.collection, colors: p.colors }));

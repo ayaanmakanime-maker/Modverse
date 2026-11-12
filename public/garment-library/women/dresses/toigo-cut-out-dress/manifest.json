@@ -1,0 +1,93 @@
+{
+  "id": "toigo-cut-out-dress",
+  "name": "Cut Out Dress",
+  "originalName": "toigo_cut_out_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "cut out dress by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"cut out dress\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-cut-out-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/cutOutDress.png",
+      "original/dress_cut_outs.mhmat",
+      "original/dress_cut_outs.obj",
+      "original/toigo_cut_out_dress.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "dress_cut_outs.mhmat",
+        "sha256": "461e55b205637cc771ee57e81472b9b5f9e50b5cdd3b374974157a96ba740958",
+        "bytes": 502
+      },
+      {
+        "name": "cutOutDress.png",
+        "sha256": "bd40ac98ce72e49ebb39a8b5eac60216f0d9c1becfd1960a8d114a766ed66785",
+        "bytes": 7579328
+      },
+      {
+        "name": "toigo_cut_out_dress.mhclo",
+        "sha256": "71cedf6a1e0dc49125951d62584b4cf47e09182a21fc3908ef847e82447e7841",
+        "bytes": 214581
+      },
+      {
+        "name": "dress_cut_outs.obj",
+        "sha256": "b9a01ed51ef9cb06efbe8c549c6c211b5a2b02769a4ca8f382261c0ded01d21d",
+        "bytes": 259279
+      }
+    ],
+    "glbBytes": 545480
+  },
+  "geometry": {
+    "vertices": 3662,
+    "triangles": 6156,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 88.1,
+      "height": 71.9,
+      "depth": 27.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

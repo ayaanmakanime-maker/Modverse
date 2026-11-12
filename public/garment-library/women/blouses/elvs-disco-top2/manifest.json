@@ -1,0 +1,106 @@
+{
+  "id": "elvs-disco-top2",
+  "name": "Disco Top2",
+  "originalName": "elvs_disco_top2",
+  "audience": "women",
+  "category": "blouses",
+  "collection": "Blouses & tunics",
+  "description": "blouse",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"disco top2\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-disco-top2.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_disco_top2.mhclo",
+      "original/elvs_discotop2.mhmat",
+      "original/elvs_discotop2.obj",
+      "original/elvsdiscotop2tex2.png",
+      "original/normals1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "normals1.png",
+        "sha256": "587f5252493e081a11e76e334ce6f2d54ce6a217e0fe47c82e60544b3236436a",
+        "bytes": 1904672
+      },
+      {
+        "name": "elvsdiscotop2tex2.png",
+        "sha256": "c2038d7de847f59c54ff05a5ac948ec992047bf66a1b9935229a5520f86efa55",
+        "bytes": 1518855
+      },
+      {
+        "name": "elvs_disco_top2.mhclo",
+        "sha256": "f891f12b2c229e779b4effbc8fa6bbe873e0af412dbf224f912791719a93ea0c",
+        "bytes": 190348
+      },
+      {
+        "name": "elvs_discotop2.mhmat",
+        "sha256": "45d11b8a759b92229181398a43c9de4b75c003dd7d7147d9466b5c2a5fbed9a9",
+        "bytes": 888
+      },
+      {
+        "name": "elvs_discotop2.obj",
+        "sha256": "99d23d270d900f1cbaea2135ccc221a79b1c04b802ad479b66d2afe201ec1923",
+        "bytes": 365432
+      }
+    ],
+    "glbBytes": 675004
+  },
+  "geometry": {
+    "vertices": 5869,
+    "triangles": 5892,
+    "hasUv": true,
+    "uvCoverage": 0.91,
+    "boundsCm": {
+      "width": 33.7,
+      "height": 55.7,
+      "depth": 26.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "formal",
+    "festive",
+    "vintage",
+    "shirt",
+    "disco"
+  ],
+  "integrationStatus": "integrated"
+}

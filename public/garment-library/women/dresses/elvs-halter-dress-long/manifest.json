@@ -1,0 +1,105 @@
+{
+  "id": "elvs-halter-dress-long",
+  "name": "Halter Dress Long",
+  "originalName": "elvs_halter_dress_long",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "halter dress long by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"halter dress long\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-halter-dress-long.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_halter_dress_long.mhclo",
+      "original/elvs_long_halterdress1.mhmat",
+      "original/elvs_long_halterdress1.obj",
+      "original/halterdresslongnormals1.png",
+      "original/halterdresslongtex2.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_long_halterdress1.mhmat",
+        "sha256": "26e204d32607ef9c38bf3491be31ac584aa6b05a5a3829595f3bff36a9dcde8c",
+        "bytes": 936
+      },
+      {
+        "name": "halterdresslongtex2.png",
+        "sha256": "4e7c61cd8583f8af8423dea66efe4569ab9957bec0fd0b6e8ce398b5c7c65332",
+        "bytes": 1777882
+      },
+      {
+        "name": "halterdresslongnormals1.png",
+        "sha256": "99ef2e2c38b52a02313abc96a4d6c86eb803ae58b962f1812541fde45080b49a",
+        "bytes": 2561291
+      },
+      {
+        "name": "elvs_halter_dress_long.mhclo",
+        "sha256": "9151e05569d88f85e684078cca17e0f13e79330f0b29db8c10972a0bd4333735",
+        "bytes": 556799
+      },
+      {
+        "name": "elvs_long_halterdress1.obj",
+        "sha256": "51daeab59fc237a895d03bbd1de8bd42bcbbeaa936ce01cc9209192f0826d7cc",
+        "bytes": 977924
+      }
+    ],
+    "glbBytes": 1402932
+  },
+  "geometry": {
+    "vertices": 15755,
+    "triangles": 15548,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 55.6,
+      "height": 121.4,
+      "depth": 47.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.3843,
+      0,
+      0.3922
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "ladiesware",
+    "female",
+    "halter",
+    "halter dress"
+  ],
+  "integrationStatus": "integrated"
+}

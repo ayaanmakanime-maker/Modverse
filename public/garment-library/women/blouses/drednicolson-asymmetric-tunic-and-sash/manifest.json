@@ -1,0 +1,108 @@
+{
+  "id": "drednicolson-asymmetric-tunic-and-sash",
+  "name": "Asymmetric Tunic And Sash",
+  "originalName": "drednicolson_asymmetric_tunic_and_sash",
+  "audience": "women",
+  "category": "blouses",
+  "collection": "Blouses & tunics",
+  "description": "asymmetric tunic and sash by DredNicolson (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "DredNicolson",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"asymmetric tunic and sash\" by DredNicolson, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "drednicolson-asymmetric-tunic-and-sash.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Asymmetric_Tunic_and_Sash_diff.jpg",
+      "original/Asymmetric_Tunic_and_Sash_nrml.jpg",
+      "original/Asymmetric_Tunic_and_Sash_spec.jpg",
+      "original/asymmetric_tunic_and_sash.mhmat",
+      "original/asymmetric_tunic_and_sash.obj",
+      "original/drednicolson_asymmetric_tunic_and_sash.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "asymmetric_tunic_and_sash.obj",
+        "sha256": "3ec22a4c4c13e14d2740b1da932da1e0d899fdabdf204086b23b411569c345d0",
+        "bytes": 176551
+      },
+      {
+        "name": "Asymmetric_Tunic_and_Sash_spec.jpg",
+        "sha256": "33c19f60f6b7cef7f52b312647f787a4e1e16a810efbe33b1fb3868c16c6cef9",
+        "bytes": 576119
+      },
+      {
+        "name": "Asymmetric_Tunic_and_Sash_diff.jpg",
+        "sha256": "81c26578ca67f5933d37e071d2540c858c2c673ff11e846a109ef3324df531fc",
+        "bytes": 585791
+      },
+      {
+        "name": "asymmetric_tunic_and_sash.mhmat",
+        "sha256": "cc1cb4cfbd21f585c4641b18094ad5546bd0edd17352a48cc87ec419a72fdf2f",
+        "bytes": 844
+      },
+      {
+        "name": "Asymmetric_Tunic_and_Sash_nrml.jpg",
+        "sha256": "fade11db70c0e1192fcc2ca08a4204fbe592649c38d7b8915209917c513dbed8",
+        "bytes": 814001
+      },
+      {
+        "name": "drednicolson_asymmetric_tunic_and_sash.mhclo",
+        "sha256": "30c04197c19f6fb7915de0a49ad980ed5208b3e58c498ed04248ad21306d668c",
+        "bytes": 150843
+      }
+    ],
+    "glbBytes": 533096
+  },
+  "geometry": {
+    "vertices": 2466,
+    "triangles": 4256,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 38,
+      "height": 63.1,
+      "depth": 27.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "asymmetric",
+    "female"
+  ],
+  "integrationStatus": "integrated"
+}

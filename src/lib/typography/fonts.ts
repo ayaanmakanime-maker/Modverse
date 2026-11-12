@@ -59,6 +59,14 @@ export const FONTS: FontDef[] = [
   { family: "Baloo 2", pkg: "baloo-2", category: "indic", weights: [400, 700], italic: [], subsets: ["devanagari", "latin"], scripts: ["Hindi", "Marathi"], license: "OFL-1.1", minPrintSizeMm: 5, description: "Rounded friendly Devanagari + Latin." },
   { family: "Noto Sans Tamil", pkg: "noto-sans-tamil", category: "indic", weights: [400, 700], italic: [], subsets: ["tamil", "latin"], scripts: ["Tamil"], license: "OFL-1.1", minPrintSizeMm: 5, description: "Tamil + Latin." },
   { family: "Noto Sans Bengali", pkg: "noto-sans-bengali", category: "indic", weights: [400, 700], italic: [], subsets: ["bengali", "latin"], scripts: ["Bengali", "Assamese"], license: "OFL-1.1", minPrintSizeMm: 5, description: "Bengali + Latin." },
+  { family: "Noto Sans Telugu", pkg: "noto-sans-telugu", category: "indic", weights: [400, 700], italic: [], subsets: ["telugu", "latin"], scripts: ["Telugu"], license: "OFL-1.1", minPrintSizeMm: 5, description: "Telugu + Latin." },
+  { family: "Noto Sans Gujarati", pkg: "noto-sans-gujarati", category: "indic", weights: [400, 700], italic: [], subsets: ["gujarati", "latin"], scripts: ["Gujarati"], license: "OFL-1.1", minPrintSizeMm: 5, description: "Gujarati + Latin." },
+  { family: "Noto Naskh Arabic", pkg: "noto-naskh-arabic", category: "indic", weights: [400, 700], italic: [], subsets: ["arabic", "latin"], scripts: ["Arabic", "Urdu"], license: "OFL-1.1", minPrintSizeMm: 6, description: "Arabic script (Naskh), right-to-left + Latin." },
+  { family: "Noto Nastaliq Urdu", pkg: "noto-nastaliq-urdu", category: "indic", weights: [400, 700], italic: [], subsets: ["arabic", "latin"], scripts: ["Urdu"], license: "OFL-1.1", minPrintSizeMm: 7, description: "Urdu in the Nastaliq calligraphic style + Latin." },
+  { family: "Great Vibes", pkg: "great-vibes", category: "script", weights: [400], italic: [], subsets: LATIN, license: "OFL-1.1", minPrintSizeMm: 7, description: "Formal copperplate calligraphy." },
+  { family: "Kaushan Script", pkg: "kaushan-script", category: "script", weights: [400], italic: [], subsets: LATIN, license: "OFL-1.1", minPrintSizeMm: 6, description: "Energetic brush lettering." },
+  { family: "Pirata One", pkg: "pirata-one", category: "display", weights: [400], italic: [], subsets: LATIN, license: "OFL-1.1", minPrintSizeMm: 6, description: "Gothic blackletter." },
+  { family: "Cinzel", pkg: "cinzel", category: "serif", weights: [400, 700, 900], italic: [], subsets: LATIN, license: "OFL-1.1", minPrintSizeMm: 5, description: "Classical Roman capitals, vintage titling." },
 ];
 
 export const FONT_BY_FAMILY = new Map(FONTS.map((f) => [f.family, f]));
@@ -85,10 +93,13 @@ export function detectScripts(text: string): string[] {
     if (cp >= 0x0900 && cp <= 0x097f) s.add("devanagari");
     else if (cp >= 0x0b80 && cp <= 0x0bff) s.add("tamil");
     else if (cp >= 0x0980 && cp <= 0x09ff) s.add("bengali");
+    else if (cp >= 0x0c00 && cp <= 0x0c7f) s.add("telugu");
+    else if (cp >= 0x0a80 && cp <= 0x0aff) s.add("gujarati");
+    else if ((cp >= 0xac00 && cp <= 0xd7af) || (cp >= 0x1100 && cp <= 0x11ff)) s.add("korean");
     else if (cp >= 0x0400 && cp <= 0x04ff) s.add("cyrillic");
     else if (cp >= 0x3040 && cp <= 0x30ff) s.add("japanese");
     else if (cp >= 0x4e00 && cp <= 0x9fff) s.add("cjk");
-    else if (cp >= 0x0600 && cp <= 0x06ff) s.add("arabic");
+    else if ((cp >= 0x0600 && cp <= 0x06ff) || (cp >= 0x0750 && cp <= 0x077f) || (cp >= 0xfb50 && cp <= 0xfdff) || (cp >= 0xfe70 && cp <= 0xfeff)) s.add("arabic");
     else if (cp > 0x024f && !(cp >= 0x2000 && cp <= 0x2bff) && !(cp >= 0x1f000)) s.add("other");
   }
   return [...s];

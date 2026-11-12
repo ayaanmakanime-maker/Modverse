@@ -1,0 +1,93 @@
+{
+  "id": "toigo-camisole-top",
+  "name": "Camisole Top",
+  "originalName": "toigo_camisole_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "camisole top by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"camisole top\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-camisole-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/CamisoleTop.png",
+      "original/camisole_top.mhmat",
+      "original/camisole_top.obj",
+      "original/toigo_camisole_top.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "CamisoleTop.png",
+        "sha256": "9277a2c8bbd15c379302b8f08f33420e87e8df4cfb234a83b698856c595a8385",
+        "bytes": 4827382
+      },
+      {
+        "name": "toigo_camisole_top.mhclo",
+        "sha256": "2954430d051b9707acdb9fee2aebdc8a250aab473f32452ef6b86684e8c26ffc",
+        "bytes": 287125
+      },
+      {
+        "name": "camisole_top.obj",
+        "sha256": "2f4377c34c55608299ebae72717073b258b12f0ba1783d10db1fc037601be377",
+        "bytes": 352621
+      },
+      {
+        "name": "camisole_top.mhmat",
+        "sha256": "c12632e85622cc6b64a6e8f81fbbfc6862d6a56c1df332fb3c8644dbccba4bdc",
+        "bytes": 502
+      }
+    ],
+    "glbBytes": 435072
+  },
+  "geometry": {
+    "vertices": 5096,
+    "triangles": 8232,
+    "hasUv": true,
+    "uvCoverage": 0.93,
+    "boundsCm": {
+      "width": 31.5,
+      "height": 41.8,
+      "depth": 23.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

@@ -1,0 +1,102 @@
+{
+  "id": "punkduck-off-shoulder-long-sleeve-top",
+  "name": "Off-Shoulder Long-Sleeve Top",
+  "originalName": "punkduck_off-shoulder_long-sleeve_top",
+  "audience": "women",
+  "category": "shirts",
+  "collection": "Shirts",
+  "description": "off-shoulder long-sleeve top by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"off-shoulder long-sleeve top\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-off-shoulder-long-sleeve-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/offshoulder_top.mhmat",
+      "original/offshoulder_top.obj",
+      "original/offshoulder_top.png",
+      "original/offshoulder_top_normals.png",
+      "original/punkduck_off-shoulder_long-sleeve_top.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "offshoulder_top.png",
+        "sha256": "66bd01cbc182185ab652049595f4084efc4856ad92c1381192fb4218df592e8a",
+        "bytes": 1219392
+      },
+      {
+        "name": "offshoulder_top_normals.png",
+        "sha256": "08ba9cfe4d531aee786b2204108f5d6bc445a7fb8b1902c7478b764b52683611",
+        "bytes": 2099105
+      },
+      {
+        "name": "offshoulder_top.obj",
+        "sha256": "64b34ae3c01528610bb54c7ce0bc827b46e99d40dc34c9a8518d22a87ef8e042",
+        "bytes": 189297
+      },
+      {
+        "name": "punkduck_off-shoulder_long-sleeve_top.mhclo",
+        "sha256": "63b97cfd0029ec71b6c4506b431ee647246a828b1c2e52924573002577c81a76",
+        "bytes": 159515
+      },
+      {
+        "name": "offshoulder_top.mhmat",
+        "sha256": "01f1303d8163e62b66c982282978fba4be726036ed444b0713c335780f1524e3",
+        "bytes": 884
+      }
+    ],
+    "glbBytes": 277964
+  },
+  "geometry": {
+    "vertices": 2730,
+    "triangles": 4496,
+    "hasUv": true,
+    "uvCoverage": 0.93,
+    "boundsCm": {
+      "width": 88.3,
+      "height": 54,
+      "depth": 30.2
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "shirt"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -9,7 +9,7 @@ import { getModel } from "../garment/models";
 import { designConfigSchema, type DesignConfig } from "../garment/schema";
 import { validateDesign } from "../garment/validation";
 import { PANELS } from "../garment/types";
-import { assetColorsFor } from "../library/server";
+import { assetColorsFor, assetCreditsFor } from "../library/server";
 
 export type DesignMode = "studio" | "atelier" | "pro";
 
@@ -21,7 +21,7 @@ export async function loadBodyForProfile(db: Db, userId: string, profileId: stri
 
 export function validationContext(config: DesignConfig, body?: Record<string, number>) {
   const ids = config.layers.filter((l) => l.type === "graphic").map((l) => (l as { assetId: string }).assetId);
-  return { body, assetColors: assetColorsFor(ids) };
+  return { body, assetColors: assetColorsFor(ids), assetCredits: assetCreditsFor(ids) };
 }
 
 /** Fetch a project the user may access (owner, or staff/admin). */

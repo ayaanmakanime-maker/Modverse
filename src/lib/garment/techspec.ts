@@ -120,7 +120,7 @@ export function buildTechSpec(config: DesignConfig, meta: { name: string; versio
       const f = FONT_BY_FAMILY.get(l.fontFamily);
       detail = `"${l.text}" · ${l.fontFamily} ${l.fontWeight}${l.italic ? " italic" : ""} · ${(l.fontSize * 10).toFixed(1)} mm · ${l.color}${l.curve.mode !== "none" ? ` · ${l.curve.mode} ${l.curve.amount}` : ""}${f ? ` · ${f.license}` : l.fontAssetId ? " · customer-uploaded font (rights confirmed by uploader)" : ""}${l.effects.length ? ` · ${l.effects.length} layered effect(s)` : ""}`;
     } else if (l.type === "graphic") {
-      detail = `${l.source} asset ${l.assetId}${Object.keys(l.colorMap).length ? ` · recoloured ${Object.entries(l.colorMap).map(([a, b]) => `${a}→${b}`).join(", ")}` : ""}`;
+      detail = `${l.source} asset ${l.assetId}${Object.keys(l.colorMap).length ? ` · recoloured ${Object.entries(l.colorMap).map(([a, b]) => `${a}→${b}`).join(", ")}` : ""}${ctx.assetCredits?.[l.assetId] ? ` · ${ctx.assetCredits[l.assetId]}` : ""}`;
     } else if (l.type === "drawing") {
       detail = `freehand drawing · ${l.strokes.length} stroke(s) · colours ${[...new Set(l.strokes.filter((s) => s.tool !== "eraser").map((s) => s.color.toUpperCase()))].join(", ") || "—"}`;
     } else {

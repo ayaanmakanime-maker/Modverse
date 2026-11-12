@@ -1,0 +1,102 @@
+{
+  "id": "punkduck-v-neck-top",
+  "name": "V Neck Top",
+  "originalName": "punkduck_v_neck_top",
+  "audience": "women",
+  "category": "shirts",
+  "collection": "Shirts",
+  "description": "v neck top by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"v neck top\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-v-neck-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_v_neck_top.mhclo",
+      "original/vnecktop.mhmat",
+      "original/vnecktop.obj",
+      "original/vnecktop.png",
+      "original/vnecktop_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "punkduck_v_neck_top.mhclo",
+        "sha256": "6f663ed6613962c8e2c13f9834a7dad1529cedfb9dc1da3dcc007d6250385a45",
+        "bytes": 73699
+      },
+      {
+        "name": "vnecktop.png",
+        "sha256": "fcbf77b937f9d46662323d1c71ccd8b12c52f07411c3d23f02371dab830bdb18",
+        "bytes": 1718089
+      },
+      {
+        "name": "vnecktop.mhmat",
+        "sha256": "5a3c3444c3a5a4f57ed793f28ac49ee39df0afff5b0cb224051c8a9595d6edcf",
+        "bytes": 862
+      },
+      {
+        "name": "vnecktop.obj",
+        "sha256": "4d6f572a0cd3926b65686889da18be42ca664b5ae2803fc8843a94996c11ad22",
+        "bytes": 81029
+      },
+      {
+        "name": "vnecktop_normals.png",
+        "sha256": "70467f93ba00dd8f4d1de4955e8ca451259635e67fdc6cbe6bc8ce119a901628",
+        "bytes": 408297
+      }
+    ],
+    "glbBytes": 114604
+  },
+  "geometry": {
+    "vertices": 1225,
+    "triangles": 1996,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 38.3,
+      "height": 52.2,
+      "depth": 27.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "shirt"
+  ],
+  "integrationStatus": "integrated"
+}

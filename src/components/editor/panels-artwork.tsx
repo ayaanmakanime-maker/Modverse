@@ -12,6 +12,8 @@ import { copySelection, hasClipboard, insertLibraryItem, insertTypography, inser
 import { searchTypography, TYPOGRAPHY_CATEGORIES, TYPOGRAPHY_PRESETS, type TypographyCategory } from "@/lib/typography/presets";
 import { useCustomFonts } from "@/lib/typography/custom-fonts";
 import { CustomFontUpload } from "./properties";
+import { CategoryBrowser, filterQuery, GraphicsSearchBox, isDarkArt, STYLE_OPTIONS } from "@/components/library/GraphicsFinder";
+import { CATEGORY_BY_ID, CATEGORY_GROUPS, GRAPHIC_CATEGORIES } from "@/lib/library/taxonomy";
 import { COLLECTIONS } from "@/lib/library/collections";
 import type { LibraryAssetKind } from "@/lib/library/types";
 import { api, errorMessage } from "@/lib/client/api";
@@ -61,7 +63,7 @@ function TypographyGrid({ q, category, preset }: { q: string; category: Typograp
   );
 }
 
-export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarget?: PanelId | null; onPatternApplied?: () => void }) {
+export function LibraryPanel({ patternTarget, onPatternApplied, onUpload }: { patternTarget?: PanelId | null; onPatternApplied?: () => void; onUpload?: () => void }) {
   const config = useEditor((s) => s.config);
   const commit = useEditor((s) => s.commit);
   const { user } = useSession();
@@ -77,6 +79,12 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
   const [preset, setPreset] = useState<PlacementPreset | "">("");
   const [typoCat, setTypoCat] = useState<TypographyCategory | "">("");
   const [panel, setPanel] = useState<PanelId | "allover">(patternTarget ?? "allover");
+  const [category, setCategory] = useState("");
+  const [style, setStyle] = useState("");
+  const [noCredit, setNoCredit] = useState(false);
+  const [catCounts, setCatCounts] = useState<Record<string, number> | null>(null);
+  const graphicKind = kind === "graphic" || kind === "element";
+  useEffect(() => { api<{ facets: Record<string, number> }>("/api/library?limit=1&facets=1").then((r) => setCatCounts(r.facets)).catch(() => undefined); }, []);
   const add = useAddAsset();
   useEffect(() => {
     if (patternTarget) {
@@ -117,7 +125,7 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
           return;
         }
         url = `/api/library?ids=${ids.join(",")}&limit=100`;
-      } else url = `/api/library?kind=${kind}&limit=48&offset=${off}${collection ? `&collection=${collection}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+      } else url = `/api/library?kind=${kind}&limit=48&offset=${off}${collection ? `&collection=${collection}` : ""}${graphicKind ? filterQuery({ q, category, style, source: "", noCredit }) : q ? `&q=${encodeURIComponent(q)}` : ""}`;
       const r = await api<{ total: number; items: AssetRow[] }>(url);
       setTotal(r.total);
       setItems((prev) => (reset ? r.items : [...prev, ...r.items]));
@@ -127,12 +135,12 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
     } finally {
       setLoading(false);
     }
-  }, [kind, collection, q, offset, favs, user]);
+  }, [kind, collection, q, offset, favs, user, graphicKind, category, style, noCredit]);
   useEffect(() => {
     const t = setTimeout(() => load(true), q ? 250 : 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, collection, q]);
+  }, [kind, collection, q, category, style, noCredit]);
 
   async function toggleFav(id: string) {
     if (!user) return toast("Sign in to save favourites", "info");
@@ -173,7 +181,30 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
       <div className="flex gap-1 overflow-x-auto pb-1 mv-scroll">
         {KIND_TABS.map((t) => <button key={t.value} onClick={() => setKind(t.value)} data-active={kind === t.value} className="mv-chip shrink-0 !px-2 !py-0.5 !text-[0.65rem]">{t.label}</button>)}
       </div>
-      {!["favorites", "recent", "compositions"].includes(kind) && (
+      {graphicKind && (
+        <div className="space-y-1.5" data-testid="library-graphics-search">
+          <div className="flex gap-1.5">
+            <GraphicsSearchBox compact value={q} onChange={setQ} onCategory={setCategory} placeholder="Search 20,000 graphics…" ariaLabel="Search library" />
+            {onUpload && <button type="button" className="mv-chip shrink-0 !px-2 !py-0.5 !text-[0.62rem]" onClick={onUpload} title="Upload your own PNG, JPG, WebP or SVG" data-testid="library-upload"><Upload className="size-3" /> Your PNG</button>}
+          </div>
+          <div className="flex gap-1.5">
+            <Select aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value)} className="!py-1 !text-xs" data-testid="library-category">
+              <option value="">All categories</option>
+              {CATEGORY_GROUPS.map((g) => <optgroup key={g.id} label={g.label}>{GRAPHIC_CATEGORIES.filter((c) => c.group === g.id && (!catCounts || (catCounts[c.id] ?? 0) > 0)).map((c) => <option key={c.id} value={c.id}>{c.label}{catCounts?.[c.id] ? ` (${catCounts[c.id]})` : ""}</option>)}</optgroup>)}
+            </Select>
+            <Select aria-label="Style" value={style} onChange={(e) => setStyle(e.target.value)} className="!w-32 !py-1 !text-xs" data-testid="library-style">{STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
+          </div>
+          <label className="flex items-center gap-1.5 text-[0.62rem] text-mute"><input type="checkbox" checked={noCredit} onChange={(e) => setNoCredit(e.target.checked)} /> Only graphics that need no credit line</label>
+          {!q && !category && (
+            <details className="rounded-lg border border-line p-1.5">
+              <summary className="cursor-pointer text-[0.65rem] text-bone-2">Browse categories</summary>
+              <div className="mt-1.5 max-h-48 overflow-y-auto mv-scroll"><CategoryBrowser compact counts={catCounts} onPick={setCategory} /></div>
+            </details>
+          )}
+          {category && CATEGORY_BY_ID[category]?.note && <p className="rounded-lg border border-line p-1.5 text-[0.6rem] text-bone-2">{CATEGORY_BY_ID[category].note}</p>}
+        </div>
+      )}
+      {!graphicKind && !["favorites", "recent", "compositions"].includes(kind) && (
         <div className="flex gap-1.5">
           <input className="mv-input !py-1.5 !text-xs" placeholder={kind === "typography" ? "Search typography…" : "Search the library…"} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search library" />
           {kind === "typography" ? (
@@ -230,7 +261,7 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
                       <span className="text-[0.68rem]">{a.name}</span>
                     </button>
                   ) : (
-                    <button draggable onDragStart={(e) => setDragPayload(e, { type: "library", item: a })} onClick={() => (a.kind === "pattern" ? applyPattern(a) : add(a, preset || undefined))} className="mv-checker block aspect-[5/6] w-full cursor-grab overflow-hidden rounded-lg border border-line p-1 transition hover:border-bone active:cursor-grabbing" title={`${a.name} · ${a.collectionSlug.replace(/_/g, " ")} — click to add or drag onto the garment`} data-testid={`asset-${a.id}`}>
+                    <button draggable onDragStart={(e) => setDragPayload(e, { type: "library", item: a })} onClick={() => (a.kind === "pattern" ? applyPattern(a) : add(a, preset || undefined))} className={clsx("block aspect-[5/6] w-full cursor-grab overflow-hidden rounded-lg border border-line p-1 transition hover:border-bone active:cursor-grabbing", isDarkArt(a.colors) ? "bg-[#ECE8E1]" : "mv-checker")} title={`${a.name} · ${a.collectionSlug.startsWith("open_") ? (a as AssetRow & { license?: string }).license ?? "" : a.collectionSlug.replace(/_/g, " ")} — click to add or drag onto the garment`} data-testid={`asset-${a.id}`}>
                       <img src={a.url!} alt={a.name} className="pointer-events-none h-full w-full object-contain" loading="lazy" draggable={false} />
                     </button>
                   )}
@@ -244,7 +275,7 @@ export function LibraryPanel({ patternTarget, onPatternApplied }: { patternTarge
           </>
         )}
       </div>
-      <p className="text-[0.62rem] text-mute">ModVerse Creative Library (supplied v0.1 + Studio Library) — original SVG artwork. Not sewing patterns or stitch files.</p>
+      <p className="text-[0.62rem] text-mute">ModVerse artwork plus openly licensed graphics (licence and creator in the Creative Library; required credits are added to your order documents). Not sewing patterns or stitch files.</p>
     </div>
   );
 }
@@ -307,6 +338,29 @@ export function TextPanel() {
 
 type UploadRow = UploadItem;
 
+/** Not signed in: offer a one-click guest account right here (keeps the open design), or sign in. */
+function UploadSignIn() {
+  const { setUser } = useSession();
+  const [guest, setGuest] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api<{ enabled: boolean }>("/api/auth/guest").then((r) => setGuest(r.enabled)).catch(() => undefined); }, []);
+  return (
+    <Notice tone="info">
+      <p>Uploads are stored privately in your account, so you need one to upload your own PNG, JPG, WebP or SVG.</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {guest && (
+          <Button size="sm" loading={busy} data-testid="upload-guest" onClick={async () => {
+            setBusy(true);
+            try { const r = await api<{ user: Parameters<typeof setUser>[0] }>("/api/auth/guest", { method: "POST" }); setUser(r.user); toast("Guest account ready: upload your artwork"); }
+            catch (e) { toast(errorMessage(e), "bad"); } finally { setBusy(false); }
+          }}>Continue as guest</Button>
+        )}
+        <a className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" href={`/login?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/design/new")}`}>Sign in</a>
+      </div>
+    </Notice>
+  );
+}
+
 export function UploadPanel() {
   const { user } = useSession();
   const [busy, setBusy] = useState(false);
@@ -358,7 +412,7 @@ export function UploadPanel() {
             <Button size="sm" loading={busy} onClick={() => fileRef.current?.click()}><Upload className="size-3.5" /> Upload PNG, JPG, WebP or SVG</Button>
             <p className="text-[0.65rem] text-mute">Max 12 MB. SVGs are sanitised. 200–300 DPI at print size recommended. Uploads are private to your account. You can also drop files onto the garment or paste an image (⌘V).</p>
           </>
-        ) : <Notice tone="info">Sign in to upload artwork — uploads are stored privately in your account.</Notice>}
+        ) : <UploadSignIn />}
         {uploads.length > 0 && (
           <div className="grid grid-cols-3 gap-1.5">
             {uploads.map((u) => (

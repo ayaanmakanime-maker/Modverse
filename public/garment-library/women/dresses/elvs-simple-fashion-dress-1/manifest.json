@@ -1,0 +1,97 @@
+{
+  "id": "elvs-simple-fashion-dress-1",
+  "name": "Simple Fashion Dress",
+  "originalName": "elvs_simple_fashion_dress_1",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "simple fashion dress by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"simple fashion dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-simple-fashion-dress-1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/dresstex1.png",
+      "original/elv_simple_fashiondress1a.mhmat",
+      "original/elv_simple_fashiondress1a.obj",
+      "original/elvs_simple_fashion_dress_1.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elv_simple_fashiondress1a.mhmat",
+        "sha256": "69782ed7ee18b25ff5758234614402ebf9cfd2ce519937f18c0f58bb7c35be1c",
+        "bytes": 817
+      },
+      {
+        "name": "elvs_simple_fashion_dress_1.mhclo",
+        "sha256": "1154023d8f1e615052bc43a088cac97d0c1096e7681a70d90fab4eabcdeeb340",
+        "bytes": 66750
+      },
+      {
+        "name": "elv_simple_fashiondress1a.obj",
+        "sha256": "40bf41388690aedfc6625f3672e4e5db80f249a6ae008f9f4656f3fec962ac1a",
+        "bytes": 73228
+      },
+      {
+        "name": "dresstex1.png",
+        "sha256": "4eee29176253be2485beba0799a27540499fa7657a4d260236f2e1e7197ada87",
+        "bytes": 2683070
+      }
+    ],
+    "glbBytes": 649484
+  },
+  "geometry": {
+    "vertices": 1119,
+    "triangles": 1800,
+    "hasUv": true,
+    "uvCoverage": 0.99,
+    "boundsCm": {
+      "width": 43.4,
+      "height": 114.1,
+      "depth": 28.2
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.1109,
+      0.19
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "ladies ware",
+    "fashion"
+  ],
+  "integrationStatus": "integrated"
+}

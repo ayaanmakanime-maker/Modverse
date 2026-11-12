@@ -1,0 +1,109 @@
+{
+  "id": "mindfront-kimono",
+  "name": "Kimono",
+  "originalName": "mindfront_kimono",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Kimonos",
+  "description": "kimono by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"kimono\" by Mindfront, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-kimono.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/F_Kimono_COL.png",
+      "original/F_Kimono_NRM.png",
+      "original/F_Kimono_SPEC.png",
+      "original/f_kimono.mhmat",
+      "original/f_kimono.obj",
+      "original/mindfront_kimono.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "F_Kimono_NRM.png",
+        "sha256": "e925f39fb718658331dc917731c4a408f9013eff727c5cd63344d003007399ef",
+        "bytes": 2933005
+      },
+      {
+        "name": "mindfront_kimono.mhclo",
+        "sha256": "c1c736e8449f65d19e408b43fa5ab20106deedfa9d5563952dbbf1f9519c8f1f",
+        "bytes": 240398
+      },
+      {
+        "name": "F_Kimono_SPEC.png",
+        "sha256": "3ba0f09b2d947d33cc0a630e59d95ba76800321379081564e511a086475f825b",
+        "bytes": 1437651
+      },
+      {
+        "name": "f_kimono.mhmat",
+        "sha256": "3d9beb418e5a8dfc5f8d4b539591f2d5719a3ab9402499b969c9626b45b84b43",
+        "bytes": 594
+      },
+      {
+        "name": "f_kimono.obj",
+        "sha256": "db3c68dac67b15f46b187442570e67ed0d25496db8d7226cbcdd18e40546b5e2",
+        "bytes": 292761
+      },
+      {
+        "name": "F_Kimono_COL.png",
+        "sha256": "dbb80df9187513e418c8d062c39e3da1743b096887f9a75bc1e3737814fad9eb",
+        "bytes": 802227
+      }
+    ],
+    "glbBytes": 303928
+  },
+  "geometry": {
+    "vertices": 4092,
+    "triangles": 6922,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 91.2,
+      "height": 140.3,
+      "depth": 33.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "robe",
+    "casual"
+  ],
+  "integrationStatus": "integrated"
+}

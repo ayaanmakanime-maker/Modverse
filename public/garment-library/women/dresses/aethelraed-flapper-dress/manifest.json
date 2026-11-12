@@ -1,0 +1,97 @@
+{
+  "id": "aethelraed-flapper-dress",
+  "name": "Flapper Dress",
+  "originalName": "aethelraed_flapper_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "flapper dress by Aethelraed_Unraed (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "Aethelraed_Unraed",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"flapper dress\" by Aethelraed_Unraed, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "aethelraed-flapper-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/aethelraed_flapper_dress.mhclo",
+      "original/flapper_dress_1.obj",
+      "original/flapper_dress_green.png",
+      "original/green.mhmat"
+    ],
+    "originalChecksums": [
+      {
+        "name": "flapper_dress_1.obj",
+        "sha256": "b85166d2eaa99d8f7d492068b7c26cb1c30e05b1ef492bbda6e0ae0583b9d1a5",
+        "bytes": 543183
+      },
+      {
+        "name": "green.mhmat",
+        "sha256": "1fbccc3aaa7afdf43e91884601c235b03156bc023ce34f5f5e52b7cb9e8a07ab",
+        "bytes": 507
+      },
+      {
+        "name": "flapper_dress_green.png",
+        "sha256": "dfc2c638617608bbb0d3066384d5581fb7a0e8d88a70e0ce436c13a309f13a30",
+        "bytes": 1322372
+      },
+      {
+        "name": "aethelraed_flapper_dress.mhclo",
+        "sha256": "39147be04b4e70ef401c2c24db99956530dac5a697c78112818b8ed97b2e1b6e",
+        "bytes": 455151
+      }
+    ],
+    "glbBytes": 513428
+  },
+  "geometry": {
+    "vertices": 6862,
+    "triangles": 12846,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 60.3,
+      "height": 116.4,
+      "depth": 27.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "historical",
+    "dress"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -102,8 +102,8 @@ test("complete customer journey from idea to verified order data", async ({ page
   const cfg = (await (await page.request.get(`/api/designs/${id}`)).json()).version.config;
   expect(cfg.panels.sleeveRight.color).toBe("#6E1423");
 
-  // 15. Live try-on with the saved design (fake camera in CI)
-  await page.goto("/try-on");
+  // 15. Live try-on with the saved design (fake camera in CI; the live room is behind MODVERSE_LIVE_TRYON)
+  await page.goto("/try-on/live");
   await page.getByTestId("tryon-garment").selectOption({ value: `saved:${id}` });
   await page.getByTestId("start-camera").click();
   await expect(page.getByTestId("stop-camera")).toBeVisible({ timeout: 90_000 });

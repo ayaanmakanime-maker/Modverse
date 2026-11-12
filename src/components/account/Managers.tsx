@@ -68,6 +68,7 @@ export function MeasurementsManager() {
           </div>
         );
       })}
+      <ScanComparisons />
       <Modal open={!!edit} onClose={() => setEdit(null)} title={edit?.id ? "Edit measurements" : "New measurement profile"}>
         {edit && (
           <div className="space-y-3">
@@ -209,6 +210,26 @@ export function SettingsPanel() {
         </div>
         <Button type="submit" variant="danger" size="sm" disabled={del.confirm !== "DELETE" || !del.password}>Delete my account</Button>
       </form>
+    </div>
+  );
+}
+
+/** The scan-versus-tape comparisons this person contributed to accuracy testing: they can see and delete each one. */
+function ScanComparisons() {
+  const { items, reload } = useList<{ id: string; subject: string; device: string; createdAt: string; pairs: Record<string, { scanCm: number | null; tapeCm: number }> }>("/api/fit-validation", "samples");
+  if (!items?.length) return null;
+  return (
+    <div className="mv-card p-4" data-testid="scan-comparisons">
+      <p className="font-medium">Scan accuracy comparisons</p>
+      <p className="text-xs text-mute">Numbers you agreed to share to test the scanner (camera value / tape value, cm). Delete any of them at any time.</p>
+      <ul className="mt-2 space-y-1 text-xs">
+        {items.map((c) => (
+          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-1">
+            <span className="text-bone-2">{c.subject} · {new Date(c.createdAt).toLocaleDateString("en-IN")} · {Object.entries(c.pairs).map(([k, v]) => `${k} ${v.scanCm ?? "—"}/${v.tapeCm}`).join(", ")}</span>
+            <button className="text-mute underline" onClick={async () => { try { await api(`/api/fit-validation?id=${c.id}`, { method: "DELETE" }); reload(); } catch (e) { toast(errorMessage(e), "bad"); } }} data-testid="scan-comparison-delete">Delete</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

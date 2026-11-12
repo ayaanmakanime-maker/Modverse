@@ -1,0 +1,93 @@
+{
+  "id": "toigo-halter-dress-midi",
+  "name": "Halter Dress Midi",
+  "originalName": "toigo_halter_dress_midi",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "halter dress midi by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "dress01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress01/dress01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "f49ba54a3c93acd3c3307cc5a96cfc65daf8abfed9212a7e580791d821c9e93a"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"halter dress midi\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-halter-dress-midi.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/DressClothUV.png",
+      "original/dress_midi_halter.mhmat",
+      "original/dress_midi_halter.obj",
+      "original/toigo_halter_dress_midi.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "dress_midi_halter.mhmat",
+        "sha256": "62c5ae6c3860951cff71fe14ce41849f1baa8de480dc8c7bc9b2e8ef170896e3",
+        "bytes": 501
+      },
+      {
+        "name": "DressClothUV.png",
+        "sha256": "e426a20f1f1f47b08910263945e8312e4f2087bd68d278845e0e13dc4230f5f1",
+        "bytes": 5756589
+      },
+      {
+        "name": "toigo_halter_dress_midi.mhclo",
+        "sha256": "1ab5986d058dd9a0dc6872f24ef8a47aa171835db8a0dab67c4d8ba97e9da0df",
+        "bytes": 180634
+      },
+      {
+        "name": "dress_midi_halter.obj",
+        "sha256": "6091ab3ef6352f997ef1207150b07918b776089461853baded57680d4c8b4918",
+        "bytes": 213691
+      }
+    ],
+    "glbBytes": 274644
+  },
+  "geometry": {
+    "vertices": 2841,
+    "triangles": 5184,
+    "hasUv": true,
+    "uvCoverage": 0.99,
+    "boundsCm": {
+      "width": 43.5,
+      "height": 108.7,
+      "depth": 28.3
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.52,
+      0.0125,
+      0.01819
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

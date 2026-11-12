@@ -28,6 +28,6 @@ export default defineConfig({
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 180_000,
-    env: { MODVERSE_DATA_DIR: ".data/e2e", ADMIN_EMAIL: E2E_ADMIN.email, ADMIN_PASSWORD: E2E_ADMIN.password, MODVERSE_DISABLE_RATE_LIMIT: "true", MODVERSE_DEMO_ACCOUNTS: "false" },
+    env: { MODVERSE_DATA_DIR: ".data/e2e", ADMIN_EMAIL: E2E_ADMIN.email, ADMIN_PASSWORD: E2E_ADMIN.password, MODVERSE_DISABLE_RATE_LIMIT: "true", MODVERSE_DEMO_ACCOUNTS: "false", MODVERSE_LIVE_TRYON: "true" },
   },
 });

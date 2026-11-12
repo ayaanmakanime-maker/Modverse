@@ -1,0 +1,106 @@
+{
+  "id": "elvs-fringe-leather-dress",
+  "name": "Fringe Leather Dress",
+  "originalName": "elvs_fringe_leather_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "fringe_dress",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"fringe leather dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-fringe-leather-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_fringe_leather_dress.mhclo",
+      "original/elvs_leather_fringedress1.mhmat",
+      "original/elvs_leather_fringedress1.obj",
+      "original/leatherfdresstex1.png",
+      "original/normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "leatherfdresstex1.png",
+        "sha256": "60da5d75bc8e48971d65b78f312387bd1d0feda795bee819dfbc18a4d3cb5526",
+        "bytes": 2260952
+      },
+      {
+        "name": "normals.png",
+        "sha256": "d18c6117ff8911b142ae563151c6895efbf26092e8fb6d1589a0476c6a369bb6",
+        "bytes": 1648723
+      },
+      {
+        "name": "elvs_fringe_leather_dress.mhclo",
+        "sha256": "a72dbc42a6cb9d25d33b53bee2eaf27cad282b3666e1e348d20c30c640f69400",
+        "bytes": 537088
+      },
+      {
+        "name": "elvs_leather_fringedress1.obj",
+        "sha256": "30503d8dbe3b7538a201bc008606cca3fc20b853ad017f5afc73cb6ae355e57e",
+        "bytes": 877597
+      },
+      {
+        "name": "elvs_leather_fringedress1.mhmat",
+        "sha256": "9bf03d781b2dcb86856e46e38642f972667796691638010b6d9bcf90335be8c7",
+        "bytes": 898
+      }
+    ],
+    "glbBytes": 801104
+  },
+  "geometry": {
+    "vertices": 15153,
+    "triangles": 11762,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 38.7,
+      "height": 108.4,
+      "depth": 27.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "fantasy",
+    "festive",
+    "vintage",
+    "dress",
+    "dress"
+  ],
+  "integrationStatus": "integrated"
+}

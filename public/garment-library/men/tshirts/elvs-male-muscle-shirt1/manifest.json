@@ -1,0 +1,99 @@
+{
+  "id": "elvs-male-muscle-shirt1",
+  "name": "Male Muscle Shirt",
+  "originalName": "elvs_male_muscle_shirt1",
+  "audience": "men",
+  "category": "tshirts",
+  "collection": "T-shirts",
+  "description": "male muscle shirt by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male muscle shirt\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-male-muscle-shirt1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_male_muscle_shirt1.mhclo",
+      "original/mens_tanks_elvmuscle1f.mhmat",
+      "original/mens_tanks_elvmuscle1f.obj",
+      "original/toptex1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_male_muscle_shirt1.mhclo",
+        "sha256": "c3d9a9d34b1a6f53aca668654d660ecefd2f0669691a2671d0a3689573c562b3",
+        "bytes": 219796
+      },
+      {
+        "name": "mens_tanks_elvmuscle1f.mhmat",
+        "sha256": "aa3b24f2f022c1e949d4916ffead0d80203647b2c70d5afb2841891efe34e0b9",
+        "bytes": 806
+      },
+      {
+        "name": "mens_tanks_elvmuscle1f.obj",
+        "sha256": "a305c255dccc1cd28ceb797b6262b3e1a5f61774324b0a6b2f240bf75502f913",
+        "bytes": 258312
+      },
+      {
+        "name": "toptex1.png",
+        "sha256": "b1a28ecd914d9ee0b9aeba4fdf8e90f0feb686ba12760cacada0baa773c5f6ad",
+        "bytes": 128128
+      }
+    ],
+    "glbBytes": 236160
+  },
+  "geometry": {
+    "vertices": 3405,
+    "triangles": 6256,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 44.8,
+      "height": 47.1,
+      "depth": 24.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.03204,
+      0.06279
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "shirt",
+    "menswear",
+    "fashion",
+    "traditional",
+    "sleeveless"
+  ],
+  "integrationStatus": "integrated"
+}

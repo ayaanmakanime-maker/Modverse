@@ -25,8 +25,9 @@ test("Men and Women navigation with distinct T-shirt and shirt models; the Kids 
 
 test("Creative Library browser uses the real library", async ({ page }) => {
   await page.goto("/library");
-  await expect(page.getByText(/1232 graphics/)).toBeVisible();
+  await expect(page.getByText(/\d{1,3}(,\d{2,3})+ graphics in \d+ categories/)).toBeVisible();
   await expect(page.getByTestId("library-item").first()).toBeVisible();
+  await page.getByText("ModVerse collections").click();
   await page.getByRole("button", { name: /Space Astronomy/ }).click();
   await expect(page.getByText(/^25 assets/)).toBeVisible();
   await page.getByTestId("library-item").first().click();

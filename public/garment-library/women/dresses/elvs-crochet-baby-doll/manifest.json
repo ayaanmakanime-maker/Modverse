@@ -1,0 +1,105 @@
+{
+  "id": "elvs-crochet-baby-doll",
+  "name": "Crochet Baby Doll",
+  "originalName": "elvs_crochet_baby_doll",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "crochet baby doll by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"crochet baby doll\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-crochet-baby-doll.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/babydoll_elvruff1a.mhmat",
+      "original/babydoll_elvruff1a.obj",
+      "original/elvs_crochet_baby_doll.mhclo",
+      "original/normals.png",
+      "original/ruffbabydolltex7b.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "babydoll_elvruff1a.obj",
+        "sha256": "dfb6a72523be6344c322ec3488690856834267b94ced17f08fbd8547485a91aa",
+        "bytes": 2868669
+      },
+      {
+        "name": "normals.png",
+        "sha256": "6267f36bed1ec12a31b0a6501f9d23b01d595a3b44540bf0f42bd771e9104b16",
+        "bytes": 3714183
+      },
+      {
+        "name": "babydoll_elvruff1a.mhmat",
+        "sha256": "839eab4e1c7e7b64b09c85b43b30ec41fd8aadae6a1b111d02d46bef77face9d",
+        "bytes": 879
+      },
+      {
+        "name": "ruffbabydolltex7b.png",
+        "sha256": "24eb09153c46acdf49bab0ac6a7237e2f51ec6a224224016505978e06ab876f6",
+        "bytes": 3491676
+      },
+      {
+        "name": "elvs_crochet_baby_doll.mhclo",
+        "sha256": "7f834e2e1d6e3c93dda199370a1767ea17061b51035b880df145925ea2a63d9d",
+        "bytes": 1558192
+      }
+    ],
+    "glbBytes": 3052984
+  },
+  "geometry": {
+    "vertices": 40604,
+    "triangles": 45701,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 48.5,
+      "height": 63.5,
+      "depth": 39
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.64,
+      0.5459,
+      0.563
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "babydoll",
+    "ruffle",
+    "ladies ware",
+    "mini dress"
+  ],
+  "integrationStatus": "integrated"
+}

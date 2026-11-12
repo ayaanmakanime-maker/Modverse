@@ -1,0 +1,109 @@
+{
+  "id": "punkduck-lace-up-blouse",
+  "name": "Lace Up Blouse",
+  "originalName": "punkduck_lace_up_blouse",
+  "audience": "women",
+  "category": "blouses",
+  "collection": "Blouses & tunics",
+  "description": "lace up blouse by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"lace up blouse\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-lace-up-blouse.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/lace_up_blouse.mhmat",
+      "original/lace_up_blouse.obj",
+      "original/lace_up_blouse.png",
+      "original/lace_up_blouse_nodesetup.png",
+      "original/lace_up_blouse_norm.png",
+      "original/punkduck_lace_up_blouse.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "lace_up_blouse.obj",
+        "sha256": "5186822a2ff1aaf3a4cc13364ed2fa16a366a4a62363b63059926e287c27f7d9",
+        "bytes": 206496
+      },
+      {
+        "name": "lace_up_blouse_nodesetup.png",
+        "sha256": "2e124dae0c23b388c95bbf6649de9b77a3b446e4e11c36aa96a6977691ac4ca3",
+        "bytes": 239471
+      },
+      {
+        "name": "lace_up_blouse.png",
+        "sha256": "cacd2a0c87012bbf2846d7c837a5e8eb17d9c7c40eba459b095e999f662f9629",
+        "bytes": 328228
+      },
+      {
+        "name": "punkduck_lace_up_blouse.mhclo",
+        "sha256": "5ed236fcdaa95a1befed46478b0bb861c8874cd9f27b833953a96e66e895f3a7",
+        "bytes": 173404
+      },
+      {
+        "name": "lace_up_blouse_norm.png",
+        "sha256": "287b3b246ae8b25e108ab6cdaf89f54798c417b4796cbe24e6f4a97e77595c98",
+        "bytes": 2186636
+      },
+      {
+        "name": "lace_up_blouse.mhmat",
+        "sha256": "b439b13604913da6802cac3fc90853b02b81f7c71473d696b09065731f29a4a9",
+        "bytes": 867
+      }
+    ],
+    "glbBytes": 266228
+  },
+  "geometry": {
+    "vertices": 2930,
+    "triangles": 4954,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 92.8,
+      "height": 62.3,
+      "depth": 31.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "costume",
+    "female",
+    "blouse"
+  ],
+  "integrationStatus": "integrated"
+}

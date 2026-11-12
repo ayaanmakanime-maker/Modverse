@@ -1,0 +1,109 @@
+{
+  "id": "mindfront-cardigan-long-open-front",
+  "name": "Cardigan Long Open Front",
+  "originalName": "mindfront_cardigan_long_open_front",
+  "audience": "women",
+  "category": "knitwear",
+  "collection": "Cardigans",
+  "description": "cardigan long open front by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"cardigan long open front\" by Mindfront, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-cardigan-long-open-front.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/F_Cardigan_Long_Open_Front.png",
+      "original/F_Cardigan_Long_Open_Front_NRM.png",
+      "original/F_Cardigan_Long_Open_Front_SPEC.png",
+      "original/f_cardigan_long_open_front.mhmat",
+      "original/f_cardigan_long_open_front.obj",
+      "original/mindfront_cardigan_long_open_front.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "mindfront_cardigan_long_open_front.mhclo",
+        "sha256": "d81cc099550a052492f39b14411687e5cad6dea721547c8ac138a64e5a613377",
+        "bytes": 308613
+      },
+      {
+        "name": "F_Cardigan_Long_Open_Front.png",
+        "sha256": "2592f2dc676e48ee4f1555a78c471231b9a982959319b56e02be3c89818744a0",
+        "bytes": 25955089
+      },
+      {
+        "name": "F_Cardigan_Long_Open_Front_NRM.png",
+        "sha256": "d42820e618c3ed6a7e04bde772c67361c844e472be25e3a63ac4df0e03361311",
+        "bytes": 22285027
+      },
+      {
+        "name": "F_Cardigan_Long_Open_Front_SPEC.png",
+        "sha256": "22468816d00e962923a14d7c8eaf22e8eb0280d2e8584a3133149acc94324fff",
+        "bytes": 7303220
+      },
+      {
+        "name": "f_cardigan_long_open_front.mhmat",
+        "sha256": "d5589cb614e2ea8796e946224db97c63806c722a27ecd54d4e28ddbb89310a3d",
+        "bytes": 667
+      },
+      {
+        "name": "f_cardigan_long_open_front.obj",
+        "sha256": "0f4ec514aa38b371b43c37d476b16e3f249892cb16a1e23631cd02d31e8d19ed",
+        "bytes": 391887
+      }
+    ],
+    "glbBytes": 1262944
+  },
+  "geometry": {
+    "vertices": 6030,
+    "triangles": 8984,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 92.6,
+      "height": 106.6,
+      "depth": 29.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "sweater",
+    "cardigan"
+  ],
+  "integrationStatus": "integrated"
+}

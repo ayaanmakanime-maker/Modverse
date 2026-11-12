@@ -1,0 +1,105 @@
+{
+  "id": "toigo-male-double-breasted-suit",
+  "name": "Male Double-Breasted Suit",
+  "originalName": "toigo_male_double-breasted_suit",
+  "audience": "men",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "male double-breasted suit by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "suits01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits01/suits01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "2b1d8676f3863b188e9eea98c1d8f234543d54c440e791d92b819f8ee1861f19"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"male double-breasted suit\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-male-double-breasted-suit.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/DB-suit-norm.png",
+      "original/DB-suit-spec.png",
+      "original/DB-suit.png",
+      "original/suit_double_breasted.mhmat",
+      "original/suit_double_breasted.obj",
+      "original/toigo_male_double-breasted_suit.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "toigo_male_double-breasted_suit.mhclo",
+        "sha256": "f2a801dcdc36add906e5ec86712007059d6a799585a4434eefab2a10521293f7",
+        "bytes": 364521
+      },
+      {
+        "name": "suit_double_breasted.obj",
+        "sha256": "6bdfe62ca674b169db7a8a3b1df7508e194ed21ab0d252e8ff29a1c0c54e201f",
+        "bytes": 435209
+      },
+      {
+        "name": "suit_double_breasted.mhmat",
+        "sha256": "36cb1dbf3f71d0db88302cf3c8da49b30223a44894bcd9b5b54407f206b8f026",
+        "bytes": 557
+      },
+      {
+        "name": "DB-suit.png",
+        "sha256": "0bc92b75e95e4d9a7e2d5f0d9ce1dad6ed442442d4d93217d3fd3984e5ac5a26",
+        "bytes": 2615885
+      },
+      {
+        "name": "DB-suit-norm.png",
+        "sha256": "e319cfe8f91fc473a85e38303ecc70b48f427877d367bfbbeed9e2c59f30c94f",
+        "bytes": 2694821
+      },
+      {
+        "name": "DB-suit-spec.png",
+        "sha256": "e9833b05fcc3e9f89d0ca6e4ae1f919185e0dcb481bb68464f13b46b872b15ad",
+        "bytes": 33746
+      }
+    ],
+    "glbBytes": 745160
+  },
+  "geometry": {
+    "vertices": 6021,
+    "triangles": 10062,
+    "hasUv": true,
+    "uvCoverage": 0.93,
+    "boundsCm": {
+      "width": 101.8,
+      "height": 145.7,
+      "depth": 34.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

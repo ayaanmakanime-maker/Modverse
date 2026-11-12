@@ -1,0 +1,105 @@
+{
+  "id": "toigo-suit-with-dinner-jacket",
+  "name": "Suit With Dinner Jacket",
+  "originalName": "toigo_suit_with_dinner_jacket",
+  "audience": "men",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "suit with dinner jacket by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "suits01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits01/suits01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "2b1d8676f3863b188e9eea98c1d8f234543d54c440e791d92b819f8ee1861f19"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"suit with dinner jacket\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-suit-with-dinner-jacket.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/SuitDinnerJacket-norm.png",
+      "original/SuitDinnerJacket-spec.png",
+      "original/SuitDinnerJacket.png",
+      "original/suit_dinner_jacket.mhmat",
+      "original/suit_dinner_jacket.obj",
+      "original/toigo_suit_with_dinner_jacket.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "suit_dinner_jacket.mhmat",
+        "sha256": "775e98eaae91e5d5fa5a334fa67910f49c0b61ef104574b2229a7d47035965ea",
+        "bytes": 582
+      },
+      {
+        "name": "suit_dinner_jacket.obj",
+        "sha256": "76ab0a64933f23c08d721524b21be47a9bfd2dae159b01d24ee47137862d6f49",
+        "bytes": 663525
+      },
+      {
+        "name": "toigo_suit_with_dinner_jacket.mhclo",
+        "sha256": "ef83aa8df98402e5523d67c1557dcaa301e2dc8d168f77cfd6561f3e22a53d00",
+        "bytes": 547155
+      },
+      {
+        "name": "SuitDinnerJacket.png",
+        "sha256": "83d78368f20b5a5dda93ec1828f8ba70af3acda30b0b2b6a682126e276a0af4f",
+        "bytes": 4837996
+      },
+      {
+        "name": "SuitDinnerJacket-spec.png",
+        "sha256": "b9480171c870d2dad1c2373ef0496043c821c59c130355c6c8e63f14076d43fe",
+        "bytes": 4094416
+      },
+      {
+        "name": "SuitDinnerJacket-norm.png",
+        "sha256": "c8e5628ac38c45e92afc9ee6f2df384219a7298bcbde7995132a954b98b929d7",
+        "bytes": 5127717
+      }
+    ],
+    "glbBytes": 1002636
+  },
+  "geometry": {
+    "vertices": 9363,
+    "triangles": 15300,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 103.7,
+      "height": 146,
+      "depth": 36.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

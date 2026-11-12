@@ -22,7 +22,7 @@ import { ZONE_LABELS } from "./Canvas2D";
 import { ProLayerSections, RegionCopy } from "./pro-panels";
 
 const CATS: { value: FontCategory | "all"; label: string }[] = [
-  { value: "all", label: "All" }, { value: "sans", label: "Sans" }, { value: "serif", label: "Serif" }, { value: "display", label: "Display" }, { value: "script", label: "Script" }, { value: "mono", label: "Mono" }, { value: "indic", label: "Indian scripts" },
+  { value: "all", label: "All" }, { value: "sans", label: "Sans" }, { value: "serif", label: "Serif" }, { value: "display", label: "Display" }, { value: "script", label: "Script" }, { value: "mono", label: "Mono" }, { value: "indic", label: "Indian & world scripts" },
 ];
 
 /** Upload a customer font (requires a rights confirmation) — used in the font picker and the Text panel. */

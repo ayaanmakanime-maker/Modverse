@@ -1,0 +1,115 @@
+{
+  "id": "mindfront-lusekofta",
+  "name": "Lusekofta",
+  "originalName": "mindfront_lusekofta",
+  "audience": "women",
+  "category": "knitwear",
+  "collection": "Cardigans",
+  "description": "lusekofta by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"lusekofta\" by Mindfront, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-lusekofta.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/F_Lusekofta.png",
+      "original/F_Lusekofta_METAL.png",
+      "original/F_Lusekofta_NRM.png",
+      "original/F_Lusekofta_SPEC.png",
+      "original/f_lusekofta.mhmat",
+      "original/f_lusekofta.obj",
+      "original/mindfront_lusekofta.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "F_Lusekofta_NRM.png",
+        "sha256": "16f1f969195e03801e94b47db208852037ccd21771b71ade7b67e02552d606c7",
+        "bytes": 28642201
+      },
+      {
+        "name": "F_Lusekofta.png",
+        "sha256": "7f3414e4ac2efb72a95a17a5623fbacd74a6680b128686f2d543f6bf18ed41f1",
+        "bytes": 29450295
+      },
+      {
+        "name": "mindfront_lusekofta.mhclo",
+        "sha256": "4e1814a05c661aca3956e880cd13674656830f901953a01023f1e94f13598339",
+        "bytes": 97937
+      },
+      {
+        "name": "F_Lusekofta_METAL.png",
+        "sha256": "f1b75f93f65052ce12cdba744caa027f61c3e46747f2b8f3e2f918701dbb8761",
+        "bytes": 152539
+      },
+      {
+        "name": "F_Lusekofta_SPEC.png",
+        "sha256": "bc3edf82dc73126ad71144d4ad2998ce4224714f7e150689c1494a6b660b4d9f",
+        "bytes": 12733796
+      },
+      {
+        "name": "f_lusekofta.obj",
+        "sha256": "02ef53f6d62e379b0f98f2210dd4f8e529002f650ffca82f32f0dc22fc0b6304",
+        "bytes": 108837
+      },
+      {
+        "name": "f_lusekofta.mhmat",
+        "sha256": "7805bb48e667bd373332d928628f59dd4ed253bc58479b687cc38fa9eb67f13c",
+        "bytes": 607
+      }
+    ],
+    "glbBytes": 708424
+  },
+  "geometry": {
+    "vertices": 1645,
+    "triangles": 2608,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 90.4,
+      "height": 50.8,
+      "depth": 28.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "sweater",
+    "cardigan"
+  ],
+  "integrationStatus": "integrated"
+}

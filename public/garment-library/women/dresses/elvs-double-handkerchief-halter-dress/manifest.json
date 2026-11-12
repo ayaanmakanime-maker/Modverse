@@ -1,0 +1,105 @@
+{
+  "id": "elvs-double-handkerchief-halter-dress",
+  "name": "Double Handkerchief Halter Dress",
+  "originalName": "elvs_double_handkerchief_halter_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "double handkerchief halter dress by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"double handkerchief halter dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-double-handkerchief-halter-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/chiefdoubletex1.png",
+      "original/doublechiefhalterdress1.mhmat",
+      "original/doublechiefhalterdress1.obj",
+      "original/elvs_double_handkerchief_halter_dress.mhclo",
+      "original/normalschiefdb.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "normalschiefdb.png",
+        "sha256": "aa6ad17267f70fb2fe6e65240e147401c5a3930ef0018af0ede3b8e741064a19",
+        "bytes": 2144849
+      },
+      {
+        "name": "elvs_double_handkerchief_halter_dress.mhclo",
+        "sha256": "f4b41f4728061a776fae6fb70bfbd7f13003a671e595beae3040d79e1e9ffee1",
+        "bytes": 758622
+      },
+      {
+        "name": "chiefdoubletex1.png",
+        "sha256": "d22f063e361c15da24a253c8420b444ef39fdd17be4a311ab80bc856e8adc3f6",
+        "bytes": 1858239
+      },
+      {
+        "name": "doublechiefhalterdress1.mhmat",
+        "sha256": "c12ae454c959fcb68a276b05b0a03fd514bec437b2d0bf4c31f5fbce05fb911f",
+        "bytes": 930
+      },
+      {
+        "name": "doublechiefhalterdress1.obj",
+        "sha256": "fe72d865f2f07efba9cbe0f8664ce3986015c29f86ad1139dda3195240b57fea",
+        "bytes": 1381043
+      }
+    ],
+    "glbBytes": 1436056
+  },
+  "geometry": {
+    "vertices": 21648,
+    "triangles": 21954,
+    "hasUv": true,
+    "uvCoverage": 0.92,
+    "boundsCm": {
+      "width": 63.6,
+      "height": 132.9,
+      "depth": 49.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.3843,
+      0,
+      0.3922
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress",
+    "ladiesware",
+    "female",
+    "halter",
+    "halter dress"
+  ],
+  "integrationStatus": "integrated"
+}

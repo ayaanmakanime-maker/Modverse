@@ -37,6 +37,30 @@ export function BodyScanner({ audience, onApply, onClose, signedIn }: { audience
   const [status, setStatus] = useState<"idle" | "loading" | "running" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ScanMeasurement[]>([]);
+  // Accuracy validation: what the camera produced (before corrections) next to a tape measurement of the same person.
+  const [scanned, setScanned] = useState<ScanMeasurement[]>([]);
+  const [validate, setValidate] = useState(false);
+  const [tape, setTape] = useState<Record<string, string>>({});
+  const [subject, setSubject] = useState("");
+  const [device, setDevice] = useState("");
+  const [shareOk, setShareOk] = useState(false);
+  const [sent, setSent] = useState(false);
+  async function contribute() {
+    const pairs: Record<string, { scanCm: number | null; tapeCm: number; status: string }> = {};
+    for (const r of scanned) {
+      const t = Number(tape[r.key]);
+      if (!(t >= 5 && t <= 260)) continue;
+      const fromCamera = r.status === "measured" || r.status === "estimated";
+      pairs[r.key] = { scanCm: fromCamera && r.valueCm !== null ? r.valueCm : null, tapeCm: t, status: r.status };
+    }
+    if (!Object.keys(pairs).length) return toast("Enter at least one tape measurement.", "bad");
+    setBusy(true);
+    try {
+      await api("/api/fit-validation", { body: { subject, audience, device, pairs, consent: true } });
+      setSent(true);
+      toast("Thank you — your comparison was recorded.", "ok");
+    } catch (e) { toast(errorMessage(e), "bad"); } finally { setBusy(false); }
+  }
   const [store, setStore] = useState(false);
   const [busy, setBusy] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -123,7 +147,9 @@ export function BodyScanner({ audience, onApply, onClose, signedIn }: { audience
 
   function finish(views = captured) {
     stop();
-    setResults(computeScan(Number(height) || null, views));
+    const computed = computeScan(Number(height) || null, views);
+    setResults(computed);
+    setScanned(computed);
     setStep("review");
   }
 
@@ -219,6 +245,29 @@ export function BodyScanner({ audience, onApply, onClose, signedIn }: { audience
               </>
             )}
           </div>
+          {signedIn && (
+            <div className="rounded-xl border border-line p-3" data-testid="scan-validate">
+              <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={validate} onChange={(e) => setValidate(e.target.checked)} data-testid="scan-validate-toggle" /> I also measured with a tape — compare it with the scan to help test accuracy</label>
+              {validate && (sent ? <p className="mt-2 text-xs text-ok">Recorded. You can review or delete your comparisons under Account → Measurements.</p> : (
+                <div className="mt-2 space-y-2">
+                  <p className="text-[0.68rem] text-mute">Enter what the tape showed for the same person, in cm. Only the numbers are stored (camera value, tape value, device note), linked to a code you choose instead of a name. No image is ever stored.</p>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {scanned.filter((r) => r.key !== "height").map((r) => (
+                      <label key={r.key} className="text-[0.65rem] text-mute">{LABEL[r.key]} <span className="text-bone-2">{r.status === "measured" || r.status === "estimated" ? `(scan ${r.valueCm})` : "(no scan value)"}</span>
+                        <input className="mv-input !px-1.5 !py-0.5 !text-xs tabular-nums" inputMode="decimal" placeholder="tape cm" value={tape[r.key] ?? ""} onChange={(e) => setTape({ ...tape, [r.key]: e.target.value.replace(/[^\d.]/g, "") })} data-testid={`tape-${r.key}`} />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <input className="mv-input !w-36 !text-xs" placeholder="Person code, e.g. P01" value={subject} onChange={(e) => setSubject(e.target.value.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 24))} aria-label="Person code" data-testid="tape-subject" />
+                    <input className="mv-input !w-48 !text-xs" placeholder="Device (optional), e.g. Pixel 7" value={device} onChange={(e) => setDevice(e.target.value.slice(0, 80))} aria-label="Device" />
+                  </div>
+                  <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={shareOk} onChange={(e) => setShareOk(e.target.checked)} data-testid="tape-consent" /> I agree that these numbers are used to measure and improve the scanner&apos;s accuracy. I can delete them later.</label>
+                  <Button size="sm" variant="ghost" disabled={!shareOk || !subject || busy} onClick={contribute} data-testid="tape-submit">Record comparison</Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

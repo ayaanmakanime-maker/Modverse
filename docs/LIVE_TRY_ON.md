@@ -1,6 +1,23 @@
-# Live virtual try-on (V2)
+# Try-on
 
-`/try-on` — a live-camera, on-device AR trial room (`src/components/tryon/TrialRoom.tsx`). It is separate from product photography and from photo-based "AI try-on": the garment is the customer's real design (same composer as the editor and 3D) positioned on their body in real time.
+## Current state (owner's decision)
+* **The live camera trial room is hidden** while it is reworked. It moved to `/try-on/live`, which answers 404 unless the server runs with `MODVERSE_LIVE_TRYON=true` (the Playwright server sets it so its tests keep running). It is not linked anywhere and is marked `noindex`.
+* **3D avatars are an Atelier Pro feature.** The Fit tab in Studio and Atelier shows a note instead of the avatar studio, and the toolbar avatar switch only appears in Atelier Pro. The measurement fit check stays in every mode.
+* **`/try-on` is now the AI photo try-on (beta).**
+
+## AI photo try-on (`/try-on`, `src/components/tryon/PhotoTryOn.tsx`)
+1. **Photo.** The customer drops or picks a JPEG / PNG / WebP (≤ 20 MB, ≥ 320 px). It is decoded in the browser (EXIF orientation applied by the browser), downscaled to ≤ 1536 px and kept in the tab's memory. HEIC gets an explanation. An **on-device pose check** (MediaPipe Pose, image mode) warns when no person or more than one person is found, shoulders or hips are out of frame, or the person is turned sideways. It is advice, not a gate.
+2. **Garment.** My designs (signed in), any made-to-order model in Men / Women with a colour, or any garment of the 3D collection (searchable grid). The **reference image is rendered in the browser**: made-to-order designs through the normal 3D viewer (front view, transparent background, then trimmed and put on white, so the customer's artwork and text are in it); collection garments are rendered from their GLB at 1024 px with an orthographic front camera.
+3. **Consent and generation.** Two explicit checkboxes: sending the photo and garment image to Puter on the customer's own Puter account (user pays), and that the photo shows the customer or a consenting adult. Puter.js is loaded only when Generate is pressed. `puterTryOn` (`src/lib/ai/puter.ts`) calls `puter.ai.txt2img(prompt, { model, input_images: [photo, garment] })` — image-to-image with two inputs — with a prompt that keeps the person's identity, body shape, pose, background and lighting and copies the garment's colours, construction and graphics. The model is the admin's preferred image model from `/admin/muse` when Puter lists it, else Puter's default.
+4. **Result.** Side by side with the original, labelled "AI visualisation, not a fit check", downloadable as PNG. Safety-filter refusals (`moderation_flagged`), provider failures, missing allowance (402) and cancelled sign-in each get their own message.
+
+**Privacy.** ModVerse's server never receives the photo or the result. It records only that a try-on ran (`/api/muse/puter`: job `tryon`, model, outcome, duration) in the audit log. The Playwright test checks that no large request leaves the page and that Puter is not contacted before consent.
+
+**Accuracy — honest limits.** The output is a generative picture. It usually keeps the face and pose but can alter body shape, hands, garment details or text, and it does not know the garment's size. Results have **not been evaluated on real customer photos** (no Puter account is available to the build); the e2e test uses a stubbed Puter. Sizing must come from measurements (fit check in the design studio; avatars in Atelier Pro).
+
+## Live camera trial room (hidden, `/try-on/live`)
+
+A live-camera, on-device AR trial room (`src/components/tryon/TrialRoom.tsx`). It is separate from product photography and from photo-based "AI try-on": the garment is the customer's real design (same composer as the editor and 3D) positioned on their body in real time.
 
 ## Technology
 | Component | Use | Licence / cost |
@@ -58,3 +75,14 @@ Account → Measurements and the editor's Fit tab. Steps: **consent** → **heig
 
 ## Light mode
 All of ModVerse (store, editor, trial room, admin and partner portals) has a white light theme: header/editor/admin toggle or Account → Settings → Appearance (Dark · Light · System). The preference is stored in a cookie and rendered on the server, so pages never flash the wrong theme; logos switch to the dark-lettering artwork and the 3D studio backdrop turns white.
+
+
+## Accuracy validation (how to find out how good the scan is)
+The scanner has never been benchmarked on real people in this repository, so no accuracy figure is published. The tooling to measure it now exists:
+1. In the scanner's review step a signed-in person ticks **"I also measured with a tape"**, enters the tape values, a person code (not a name), optionally the device, and gives consent. The camera's own values (before any correction) are stored next to the tape values. No image is stored.
+2. `/admin/fit-validation` (staff) shows, per region and per range: sample count, mean absolute error, RMSE, bias (scan − tape), error %, worst error, and repeatability (pooled SD of repeat scans of the same person). It also shows how often the size recommended from the scan matches the size from the tape, and a CSV download.
+3. The page states what the data supports: fewer than 5 people is "not evidence", fewer than 30 is "pilot", and only then a study. Protocol: scan each volunteer twice with the same code, one trained person takes the tape measurements, cover the size range and the devices you care about.
+Contributors can list and delete their comparisons under Account → Measurements; they are erased with the account. Table: `fit_validation_samples` (migration 0008).
+
+## 3D model mode
+`/try-on` has a second mode beside the live camera: **3D model with my measurements**. It shows the chosen garment and size on the rigged Man / Woman character, scaled to the customer's height with chest, waist and hips matched to their measurements, standing, idle or walking. The garment is skinned to the character (see 3D_SYSTEM.md), not cloth-simulated: the fit verdicts still come from the measurement fit check.

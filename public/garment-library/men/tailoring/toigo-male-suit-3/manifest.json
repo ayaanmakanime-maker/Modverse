@@ -1,0 +1,105 @@
+{
+  "id": "toigo-male-suit-3",
+  "name": "Male Suit 3",
+  "originalName": "toigo_male_suit_3",
+  "audience": "men",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "male suit 3 by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "suits01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits01/suits01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "2b1d8676f3863b188e9eea98c1d8f234543d54c440e791d92b819f8ee1861f19"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"male suit 3\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-male-suit-3.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/NewSuit3-norm.png",
+      "original/NewSuit3-spec.png",
+      "original/NewSuit3.png",
+      "original/suit3.mhmat",
+      "original/suit3.obj",
+      "original/toigo_male_suit_3.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "NewSuit3.png",
+        "sha256": "7a3fa6cf10d3fcc2946469efcf066e2f5898d1a9dfa10a3df4a1ff2495dc17dc",
+        "bytes": 2396683
+      },
+      {
+        "name": "toigo_male_suit_3.mhclo",
+        "sha256": "e5457dffafce4a5f44e179278c712e64a040b5e5e3aa41f15ed8100be5694c01",
+        "bytes": 577386
+      },
+      {
+        "name": "NewSuit3-spec.png",
+        "sha256": "a08f5774194f56770cc9fecb117667554b0769fdbb74dd87ecd3ac3df9da110b",
+        "bytes": 31606
+      },
+      {
+        "name": "suit3.mhmat",
+        "sha256": "be7be987fa5aede1aee34112cbbc1ff5a803240f21ee16f40655efb6161cd92e",
+        "bytes": 559
+      },
+      {
+        "name": "NewSuit3-norm.png",
+        "sha256": "118115b7ecd7254e3f0da718ac728ca9113ae602ba6e77f59b7272490eb87f95",
+        "bytes": 2834770
+      },
+      {
+        "name": "suit3.obj",
+        "sha256": "1412a998988f19696e00637afd69e64499d727a0c6ab7527f8713129990f0e43",
+        "bytes": 704735
+      }
+    ],
+    "glbBytes": 861208
+  },
+  "geometry": {
+    "vertices": 9795,
+    "triangles": 16250,
+    "hasUv": true,
+    "uvCoverage": 0.81,
+    "boundsCm": {
+      "width": 105.4,
+      "height": 149.4,
+      "depth": 38.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.6403,
+      0.6403,
+      0.6403
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

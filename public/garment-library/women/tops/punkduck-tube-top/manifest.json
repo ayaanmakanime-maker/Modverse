@@ -1,0 +1,103 @@
+{
+  "id": "punkduck-tube-top",
+  "name": "Tube Top",
+  "originalName": "punkduck_tube_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "tube top by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"tube top\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-tube-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_tube_top.mhclo",
+      "original/tubetop.mhmat",
+      "original/tubetop.obj",
+      "original/tubetop.png",
+      "original/tubetop_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "tubetop_normals.png",
+        "sha256": "bbe0512684192be4154eb3006938b719f01ef1dc724ce0a5ee5664452b12576c",
+        "bytes": 3878606
+      },
+      {
+        "name": "tubetop.mhmat",
+        "sha256": "395b0b8aef24ec357db70d18964b2a365cff1ce932f3d512253de645f8091419",
+        "bytes": 852
+      },
+      {
+        "name": "tubetop.obj",
+        "sha256": "09c5e31ac03eb7b5e1430ee59a84cbdb7b9a1ae1c96771022e95652da1ce5d45",
+        "bytes": 67811
+      },
+      {
+        "name": "tubetop.png",
+        "sha256": "dd2f71cbfee75a9640e6c3759987a81004bc323ac14e355e11a8786b10b48761",
+        "bytes": 3259893
+      },
+      {
+        "name": "punkduck_tube_top.mhclo",
+        "sha256": "a352fc96802eeb4eab6aa926be91f51e0126bcaf50d36ff29b88981b93185c1d",
+        "bytes": 62855
+      }
+    ],
+    "glbBytes": 181100
+  },
+  "geometry": {
+    "vertices": 982,
+    "triangles": 1756,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 29.3,
+      "height": 29.3,
+      "depth": 23.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "shirt",
+    "top"
+  ],
+  "integrationStatus": "integrated"
+}

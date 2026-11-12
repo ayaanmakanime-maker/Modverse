@@ -1,0 +1,102 @@
+{
+  "id": "punkduck-sleeveless-crop-top",
+  "name": "Sleeveless Crop Top",
+  "originalName": "punkduck_sleeveless_crop_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tops",
+  "description": "sleeveless crop top by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"sleeveless crop top\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-sleeveless-crop-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_sleeveless_crop_top.mhclo",
+      "original/sleevelesscroptop.mhmat",
+      "original/sleevelesscroptop.obj",
+      "original/sleevelesscroptop.png",
+      "original/sleevelesscroptop_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "punkduck_sleeveless_crop_top.mhclo",
+        "sha256": "ca19e749e3ac38aee5bb5c839d0b2b9f1741368ddbe1bf964e5c43752b30a984",
+        "bytes": 65859
+      },
+      {
+        "name": "sleevelesscroptop_normals.png",
+        "sha256": "876dc7388c48ee2918a3fa3f36ea61cb0da30df3e65111b47fa2019e99cdcbb2",
+        "bytes": 2400068
+      },
+      {
+        "name": "sleevelesscroptop.obj",
+        "sha256": "e3c201ab1ae35ba96081cb9ccf4c82c7e368e0c204f187413a9dbffbf69b295d",
+        "bytes": 71641
+      },
+      {
+        "name": "sleevelesscroptop.png",
+        "sha256": "5de5a4e3115a05f98dcc0473597f0c29ca38853fc016fcf311ed129eac4e917c",
+        "bytes": 1239109
+      },
+      {
+        "name": "sleevelesscroptop.mhmat",
+        "sha256": "b67cd5532f850964d1f7b8450264fa8dd26e37c120bcb5eeeb03cffcdc1c68a2",
+        "bytes": 892
+      }
+    ],
+    "glbBytes": 109060
+  },
+  "geometry": {
+    "vertices": 1085,
+    "triangles": 1804,
+    "hasUv": true,
+    "uvCoverage": 0.86,
+    "boundsCm": {
+      "width": 29.3,
+      "height": 37.6,
+      "depth": 23.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "top"
+  ],
+  "integrationStatus": "integrated"
+}

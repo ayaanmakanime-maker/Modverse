@@ -115,6 +115,26 @@ export const childProfiles = pgTable(
   (t) => [index("child_guardian_idx").on(t.guardianUserId)],
 );
 
+/**
+ * Scan-accuracy validation: one row per scan of a consenting person, pairing what the camera produced with a tape
+ * measurement taken by hand. Numbers only: no image, no name (the subject is a code the contributor chooses).
+ */
+export const fitValidationSamples = pgTable(
+  "fit_validation_samples",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    subject: text("subject").notNull(),
+    audience: text("audience", { enum: ["men", "women"] }).notNull(),
+    device: text("device").notNull().default(""),
+    /** { chest: { scanCm, tapeCm, status }, … } */
+    pairs: jsonb("pairs").notNull(),
+    consent: boolean("consent").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("fit_validation_user_idx").on(t.userId)],
+);
+
 export const measurementProfiles = pgTable(
   "measurement_profiles",
   {
@@ -237,10 +257,43 @@ export const creativeAssets = pgTable(
     editableTexts: jsonb("editable_texts"),
     active: boolean("active").notNull().default(true),
     featured: boolean("featured").notNull().default(false),
+    /** Graphics registry (v25): where the asset came from and how it may be used. Null source = ModVerse library. */
+    sourceId: text("source_id"),
+    sourceUrl: text("source_url"),
+    creator: text("creator"),
+    attribution: text("attribution"),
+    categories: jsonb("categories").notNull().default([]),
+    style: text("style"),
+    /** Lower-case name, keywords and category labels, space separated with leading and trailing spaces (word search). */
+    searchText: text("search_text").notNull().default(""),
+    approval: text("approval", { enum: ["approved", "pending", "rejected"] }).notNull().default("approved"),
     createdAt: createdAt(),
   },
-  (t) => [index("assets_kind_idx").on(t.kind), index("assets_collection_idx").on(t.collectionSlug)],
+  (t) => [index("assets_kind_idx").on(t.kind), index("assets_collection_idx").on(t.collectionSlug), index("assets_source_idx").on(t.sourceId)],
 );
+
+/** Graphics registry: one row per external source (licence, creator, terms, provenance, approval). */
+export const graphicSources = pgTable("graphic_sources", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  package: text("package"),
+  creator: text("creator").notNull(),
+  licence: text("licence").notNull(),
+  licenceUrl: text("licence_url"),
+  commercial: boolean("commercial").notNull(),
+  attributionRequired: boolean("attribution_required").notNull(),
+  attribution: text("attribution").notNull(),
+  redistribution: text("redistribution").notNull(),
+  originalFormat: text("original_format").notNull(),
+  optimizedFormat: text("optimized_format").notNull(),
+  downloadedAt: text("downloaded_at").notNull(),
+  approval: text("approval", { enum: ["approved", "pending", "rejected"] }).notNull().default("approved"),
+  style: text("style"),
+  assetCount: integer("asset_count").notNull().default(0),
+  notes: text("notes"),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
 
 export const colourPalettes = pgTable("colour_palettes", {
   id: text("id").primaryKey(),

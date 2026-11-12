@@ -57,6 +57,20 @@
       "when": 1793964370150,
       "tag": "0007_v23_guest_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794337231532,
+      "tag": "0008_v24_fit_validation",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794408744624,
+      "tag": "0009_v25_graphics_registry",
+      "breakpoints": true
     }
   ]
 }

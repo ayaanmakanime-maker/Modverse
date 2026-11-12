@@ -1,0 +1,99 @@
+{
+  "id": "elvs-sarong-cover-up",
+  "name": "Sarong Cover Up",
+  "originalName": "elvs_sarong_cover_up",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tops",
+  "description": "sarong cover up by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"sarong cover up\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-sarong-cover-up.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_sarong_cover_up.mhclo",
+      "original/sarong1.png",
+      "original/sarong_coverup1.mhmat",
+      "original/sarong_coverup1.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_sarong_cover_up.mhclo",
+        "sha256": "3e1c7d2ba9971adc2ad8542a71a9d4359f2d6e18c684ca4a8d54ea7e975f0231",
+        "bytes": 106663
+      },
+      {
+        "name": "sarong_coverup1.mhmat",
+        "sha256": "044929b86554a006602363a50b107da8e6f63a6cc298f5aa494de97d420ac534",
+        "bytes": 787
+      },
+      {
+        "name": "sarong1.png",
+        "sha256": "17797d1a69c51ba6b33fbc6879606b55fd83531b7f811201e6437d954e39da8d",
+        "bytes": 2507441
+      },
+      {
+        "name": "sarong_coverup1.obj",
+        "sha256": "760629d6e93dbc84155e59e95525bad320ab86c49d5d64908f565c8b6b8cf178",
+        "bytes": 128479
+      }
+    ],
+    "glbBytes": 392732
+  },
+  "geometry": {
+    "vertices": 2152,
+    "triangles": 2930,
+    "hasUv": true,
+    "uvCoverage": 0.88,
+    "boundsCm": {
+      "width": 39.1,
+      "height": 95.9,
+      "depth": 27.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.6392,
+      0.6392,
+      0.6392
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "sarong",
+    "wrap",
+    "ladies wear",
+    "summer",
+    "cover up"
+  ],
+  "integrationStatus": "integrated"
+}

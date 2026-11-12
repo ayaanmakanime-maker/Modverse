@@ -1,0 +1,99 @@
+{
+  "id": "elvs-male-athletic-tank1",
+  "name": "Male Athletic Tank",
+  "originalName": "elvs_male_athletic_tank1",
+  "audience": "men",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "male athletic tank by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male athletic tank\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-male-athletic-tank1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_male_athletic_tank1.mhclo",
+      "original/m_wifebeater_elv1.mhmat",
+      "original/m_wifebeater_elv1.obj",
+      "original/wb_normals.png",
+      "original/wb_tex3.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "m_wifebeater_elv1.mhmat",
+        "sha256": "67798f6ddfd9ec5337bc6161a6a6eb3bbae9947deb80daad2a23764014bbfbe5",
+        "bytes": 899
+      },
+      {
+        "name": "m_wifebeater_elv1.obj",
+        "sha256": "12bf7cb9ecfd188e95834760405dce79eb3789786a4ca59404be2af3c81d2f36",
+        "bytes": 5414048
+      },
+      {
+        "name": "elvs_male_athletic_tank1.mhclo",
+        "sha256": "8cbb66fdebf9674f0ce764035933bb266116bc19a40e7a72e1ce4bd26122ab8d",
+        "bytes": 3923383
+      },
+      {
+        "name": "wb_tex3.png",
+        "sha256": "a1addd408bca175bbf816e83745c5ac9812fb6cebead62106f8bf0b56ac69460",
+        "bytes": 103998
+      },
+      {
+        "name": "wb_normals.png",
+        "sha256": "17e3e427635c154f871147685dfd4924db3e7db571cda062af914d8d13937f40",
+        "bytes": 183377
+      }
+    ],
+    "glbBytes": 3980964
+  },
+  "geometry": {
+    "vertices": 77546,
+    "triangles": 112004,
+    "hasUv": true,
+    "uvCoverage": 0.99,
+    "boundsCm": {
+      "width": 33.6,
+      "height": 57.3,
+      "depth": 28.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.392156862745,
+      0.392156862745,
+      0.392156862745
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

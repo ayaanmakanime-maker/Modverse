@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { FlaskConical, Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
+import { Download, FlaskConical, Undo2, Redo2, Save, ShoppingBag, Shirt, Palette, Scissors, Layers as LayersIcon, Type, Image as ImageIcon, Upload, Sparkles, CheckCircle2, History, Ruler, FileText, User, Wand2, Box, Columns2, PenTool, AlertTriangle, LayoutGrid } from "lucide-react";
 import { useEditor, type EditorMode } from "@/lib/editor/store";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { getModel } from "@/lib/garment/models";
@@ -15,7 +15,8 @@ import type { PanelId } from "@/lib/garment/types";
 import { api, errorMessage } from "@/lib/client/api";
 import { useSession } from "@/components/session";
 import { Logo, BrandLoader } from "@/components/brand/Logo";
-import { Badge, Button, Notice, Segmented, Select, toast } from "@/components/ui";
+import { Badge, Button, Modal, Notice, Segmented, Select, toast } from "@/components/ui";
+import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { Canvas2D } from "./Canvas2D";
 import { ACCEPTED_ARTWORK, copySelection, pasteClipboard, uploadAndInsert, ZONE_DEFAULT_PRESET } from "@/lib/editor/insert";
 import { SelectedProperties } from "./properties";
@@ -113,6 +114,12 @@ export function Editor({ initial }: { initial: EditorInitial }) {
   useEffect(() => {
     if (!MODE_TABS[mode].includes(tab)) setTab(MODE_TABS[mode][0]);
   }, [mode, tab]);
+  // Deep link to a panel, e.g. /design/new?model=…&tab=upload from the Creative Library.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab") as Tab | null;
+    if (t && MODE_TABS[initial.mode].includes(t)) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Without a GPU, a live 3D pane makes every edit wait for a CPU-rendered frame: open in 2D instead.
   useEffect(() => {
@@ -304,6 +311,7 @@ function EditorLayout(p: {
   patternTarget: PanelId | null; setPatternTarget: (p: PanelId | null) => void;
   mobilePanel: boolean; setMobilePanel: (b: boolean) => void; selectedId: string | null;
 }) {
+  const [exportOpen, setExportOpen] = useState(false);
   const production = useEditor((s) => s.production);
   const guides3d = useEditor((s) => s.guides3d);
   const config = useEditor((s) => s.config);
@@ -321,13 +329,13 @@ function EditorLayout(p: {
       case "measurements": return <MeasurementsPanel mode={p.mode} />;
       case "fabric": return <FabricPanel mode={p.mode} />;
       case "panels": return <PanelsPanel onPickPattern={(panel) => { p.setPatternTarget(panel); p.setTab("library"); }} />;
-      case "library": return <LibraryPanel patternTarget={p.patternTarget} onPatternApplied={() => p.setPatternTarget(null)} />;
+      case "library": return <LibraryPanel patternTarget={p.patternTarget} onPatternApplied={() => p.setPatternTarget(null)} onUpload={() => p.setTab("upload")} />;
       case "text": return <TextPanel />;
       case "upload": return <UploadPanel />;
       case "layers": return <LayersPanel />;
       case "fabriclab": return <FabricLabPanel />;
       case "muse": return <MusePanel />;
-      case "fit": return <FitPanel avatar={p.avatar} setAvatar={(a) => { p.setAvatar(a); if (a.on && !p.avatar.on && p.view === "2d") p.setView("split"); }} />;
+      case "fit": return <FitPanel pro={p.mode === "pro"} avatar={p.avatar} setAvatar={(a) => { p.setAvatar(a); if (a.on && !p.avatar.on && p.view === "2d") p.setView("split"); }} />;
       case "versions": return <div className="space-y-5"><HistoryPanel /><VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} /></div>;
       case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} exportGlb={() => p.viewer.current?.exportGlb() ?? Promise.resolve(null)} />;
       case "check": return (
@@ -403,7 +411,8 @@ function EditorLayout(p: {
               <div className="ml-auto flex flex-wrap items-center gap-1.5">
                 <Segmented size="sm" label="3D view" value={p.view3d} onChange={p.setView3d} options={[{ value: "front", label: "Front" }, { value: "back", label: "Back" }, { value: "left", label: "Side" }, { value: "three-quarter", label: "¾" }]} />
                 <Select aria-label="Lighting" value={p.lighting} onChange={(e) => p.setLighting(e.target.value as LightingPreset)} className="!w-auto !py-0.5 !text-[0.68rem]"><option value="studio">Studio light</option><option value="daylight">Daylight</option><option value="evening">Evening</option></Select>
-                <label className="flex items-center gap-1 text-[0.68rem] text-bone-2"><input type="checkbox" checked={p.avatar.on} onChange={(e) => p.setAvatar({ ...p.avatar, on: e.target.checked })} /> Avatar</label>
+                {p.mode === "pro" && <label className="flex items-center gap-1 text-[0.68rem] text-bone-2"><input type="checkbox" checked={p.avatar.on} onChange={(e) => p.setAvatar({ ...p.avatar, on: e.target.checked })} data-testid="toolbar-avatar" /> Avatar</label>}
+                <button type="button" className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" onClick={() => setExportOpen(true)} data-testid="open-export-3d"><Download className="mr-1 inline size-3" />Export 3D</button>
               </div>
             )}
           </div>
@@ -411,12 +420,16 @@ function EditorLayout(p: {
             {p.view !== "3d" && <div className="min-h-0 border-line md:border-r"><Canvas2D /></div>}
             {p.view !== "2d" && (
               <div className="relative min-h-0">
-                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.avatar.on} avatar={{ body: p.avatar.body, appearance: p.avatar.appearance }} controls="details" production={production} guides={guides3d} />
+                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.mode === "pro" && p.avatar.on} avatar={{ body: p.avatar.body, appearance: p.avatar.appearance }} controls="details" production={production} guides={guides3d} />
                 <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
               </div>
             )}
           </div>
         </main>
+        <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export the 3D garment" wide>
+          <p className="mb-3 text-xs text-bone-2">The garment exactly as shown in 3D, with your colours, panels and artwork{p.mode === "pro" && p.avatar.on ? " (worn shape; the avatar itself is not included)" : ""}. A visual model: not a graded production pattern.</p>
+          <Export3DPanel getRoot={() => p.viewer.current?.exportRoot()} name={p.name || model.name} />
+        </Modal>
 
         {/* Properties */}
         {isXL && <aside className="order-3 min-h-0 w-80 shrink-0 overflow-y-auto border-l border-line p-3 mv-scroll" aria-label="Properties">

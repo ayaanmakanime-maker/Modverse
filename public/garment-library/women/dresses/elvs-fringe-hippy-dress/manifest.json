@@ -1,0 +1,106 @@
+{
+  "id": "elvs-fringe-hippy-dress",
+  "name": "Fringe Hippy Dress",
+  "originalName": "elvs_fringe_hippy_dress",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "dress",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"fringe hippy dress\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-fringe-hippy-dress.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_fringe_dress1.mhmat",
+      "original/elvs_fringe_dress1.obj",
+      "original/elvs_fringe_hippy_dress.mhclo",
+      "original/fringestex12.png",
+      "original/fringestex12normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "fringestex12normals.png",
+        "sha256": "8af68f18bf7f24c6c20f9c9a251e0e58d0e2bc360319d415233d474fd6276988",
+        "bytes": 3711185
+      },
+      {
+        "name": "fringestex12.png",
+        "sha256": "0cd336ed860e78da68124d55f8b8c9eb5044769ed20b8e3cac22924683cf40f0",
+        "bytes": 3520644
+      },
+      {
+        "name": "elvs_fringe_dress1.mhmat",
+        "sha256": "4a1f902fbdf1c64d1c1da719f5249dca2a0be1c5795b6e123cc1e8f8f25541b4",
+        "bytes": 927
+      },
+      {
+        "name": "elvs_fringe_hippy_dress.mhclo",
+        "sha256": "7b2d7d9a04780b8253f97958f605364e65800edab5d20d1108fd1eb72ee8f332",
+        "bytes": 382543
+      },
+      {
+        "name": "elvs_fringe_dress1.obj",
+        "sha256": "470f5bf46ffb878fbf2a24fdd86422cda2f2862c4a53bd2a2300f9780c63757e",
+        "bytes": 549158
+      }
+    ],
+    "glbBytes": 1408772
+  },
+  "geometry": {
+    "vertices": 9633,
+    "triangles": 6768,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 41.2,
+      "height": 101,
+      "depth": 28.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "formal",
+    "festive",
+    "vintage",
+    "dress",
+    "fringe club"
+  ],
+  "integrationStatus": "integrated"
+}

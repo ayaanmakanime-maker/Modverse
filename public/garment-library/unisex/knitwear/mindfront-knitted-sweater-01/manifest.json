@@ -1,0 +1,107 @@
+{
+  "id": "mindfront-knitted-sweater-01",
+  "name": "Knitted Sweater 01",
+  "originalName": "mindfront_knitted_sweater_01",
+  "audience": "unisex",
+  "category": "knitwear",
+  "collection": "Sweaters",
+  "description": "knitted sweater 01 by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts02/shirts02_ccby.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "d711ca9f73212de855257ac08422e1e0ccb802e5231315c2a360d0fcfea5033e"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"knitted sweater 01\" by Mindfront, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-knitted-sweater-01.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Knitted_Sweater_01.png",
+      "original/Knitted_Sweater_01_NRM.png",
+      "original/Knitted_Sweater_01_SPEC.png",
+      "original/knitted_sweater_01.mhmat",
+      "original/knitted_sweater_01.obj",
+      "original/mindfront_knitted_sweater_01.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "mindfront_knitted_sweater_01.mhclo",
+        "sha256": "3583506f0d368843a903db0f317dd93dd70022b0081e06086d3ee7bcd5e4e212",
+        "bytes": 82032
+      },
+      {
+        "name": "Knitted_Sweater_01.png",
+        "sha256": "8e99b03efcd283ed8b4289db612c87267021250b6c9774cd19d05b95c0a6b2f8",
+        "bytes": 4204983
+      },
+      {
+        "name": "Knitted_Sweater_01_NRM.png",
+        "sha256": "d3fbeb7cdcfa78f37d38d44a898929774e3d186e44e1f8e446c59aeb4e16851d",
+        "bytes": 5861175
+      },
+      {
+        "name": "knitted_sweater_01.obj",
+        "sha256": "a86c9d400c5fffb1071ab4144cd49034d784041d216ae46a618fc90f3afc771f",
+        "bytes": 106522
+      },
+      {
+        "name": "knitted_sweater_01.mhmat",
+        "sha256": "1af23a024860e92a5e704bedb2f034bb500bfb3dd134d35b775c165b86c66903",
+        "bytes": 586
+      },
+      {
+        "name": "Knitted_Sweater_01_SPEC.png",
+        "sha256": "0284fe426c74706c8f749ff3cfcf689b49b4c397a5f836ddb050f4e146c2e93b",
+        "bytes": 1565723
+      }
+    ],
+    "glbBytes": 473724
+  },
+  "geometry": {
+    "vertices": 1583,
+    "triangles": 2628,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 91.6,
+      "height": 57.1,
+      "depth": 31
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "sweater"
+  ],
+  "integrationStatus": "integrated"
+}

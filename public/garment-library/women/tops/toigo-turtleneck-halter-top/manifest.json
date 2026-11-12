@@ -1,0 +1,93 @@
+{
+  "id": "toigo-turtleneck-halter-top",
+  "name": "Turtleneck Halter Top",
+  "originalName": "toigo_turtleneck_halter_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tanks & camisoles",
+  "description": "turtleneck halter top by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"turtleneck halter top\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-turtleneck-halter-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/ShadesTex-PINK.png",
+      "original/toigo_turtleneck_halter_top.mhclo",
+      "original/turtleneck_halter.mhmat",
+      "original/turtleneck_halter.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "toigo_turtleneck_halter_top.mhclo",
+        "sha256": "f9768a84dabe755ef6b50ca2e1763f2cbedc7e09ce4133bd2520c2430832582e",
+        "bytes": 195859
+      },
+      {
+        "name": "turtleneck_halter.mhmat",
+        "sha256": "faaf69214ad10fd23fe2ebbb07a886999f86a8fc6775ae00629ba5605307987c",
+        "bytes": 479
+      },
+      {
+        "name": "turtleneck_halter.obj",
+        "sha256": "de2bb66a761c74b90f4f289d244b5c49a566c7755f8fb7281a3c5e2c1d0ad64c",
+        "bytes": 235957
+      },
+      {
+        "name": "ShadesTex-PINK.png",
+        "sha256": "cd981ab28ff1916e168f64c7933a82a022fae670b6b301f0c307a1807f4a7b3a",
+        "bytes": 1775694
+      }
+    ],
+    "glbBytes": 247812
+  },
+  "geometry": {
+    "vertices": 3504,
+    "triangles": 5504,
+    "hasUv": true,
+    "uvCoverage": 0.58,
+    "boundsCm": {
+      "width": 30.8,
+      "height": 42.8,
+      "depth": 23.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

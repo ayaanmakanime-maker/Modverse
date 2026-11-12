@@ -53,6 +53,8 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | `npm run lint` · `typecheck` · `test` · `test:e2e` | Quality gates (see [docs/TESTING.md](docs/TESTING.md)) |
 | `npm run db:migrate` · `db:seed` · `db:reset` | Database lifecycle (`db:generate` creates new migrations) |
 | `npm run library:import` | Re-import the Creative Library from `assets/` |
+| `npm run graphics:import` | Re-import the openly licensed graphics and their registry (see docs/GRAPHICS_LIBRARY.md) |
+| `python3 -I scripts/human/build_human.py <mpfb.zip> .` | Rebuild the Human Studio body and the garment fitting data from the CC0 MakeHuman / MPFB data (needs numpy; see docs/HUMAN_STUDIO.md) |
 | `npm run fonts:sync` · `models:fetch` · `brand:derive` | Fonts, CV models, logo variants |
 | `npm run ai:eval` · `perf` | AI pipeline evaluation · performance probe against a running build |
 

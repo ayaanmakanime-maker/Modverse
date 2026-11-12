@@ -42,6 +42,8 @@ export interface ValidationContext {
   body?: Partial<BodyMeasurements>;
   /** Colours of library/uploaded SVG assets keyed by assetId (for contrast checks). */
   assetColors?: Record<string, string[]>;
+  /** Credit lines of openly licensed Graphics Library assets keyed by assetId (tech pack, order documents). */
+  assetCredits?: Record<string, string>;
 }
 
 const DISCLAIMER =

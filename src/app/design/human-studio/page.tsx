@@ -1,0 +1,30 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
+import { visibleGarments } from "@/lib/garment-library";
+import { HumanStudioLoader } from "@/components/human/HumanStudioLoader";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Human Studio · Atelier Pro" };
+
+/** Atelier Pro: a measured 3D body (CC0 MakeHuman) wearing 3D collection garments fitted through their .mhclo data. */
+export default async function HumanStudioPage() {
+  const garments = (await visibleGarments())
+    .filter((g) => existsSync(path.join(process.cwd(), "public/garment-library", g.path, "fit.json")))
+    .map((g) => ({ id: g.id, name: g.name, audience: g.audience, collection: g.collection, base: `/garment-library/${g.path}`, glb: `/garment-library/${g.path}/${g.glb}`, thumbnail: g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null, attribution: g.attribution, licence: g.licence }));
+  return (
+    <div className="min-h-dvh">
+      <header className="flex h-16 items-center gap-4 border-b border-line px-4 md:px-6">
+        <Link href="/design/new?mode=pro" className="flex items-center gap-2 text-sm text-mute hover:text-bone"><ArrowLeft className="size-4" /> <Logo variant="monogram" className="w-8" alt="ModVerse" /></Link>
+        <p className="mv-eyebrow">Atelier Pro · Human Studio</p>
+      </header>
+      <div className="mx-auto max-w-[1500px] px-4 py-6 md:px-6">
+        <h1 className="mv-display text-4xl">Human Studio</h1>
+        <p className="mt-2 max-w-3xl text-sm text-bone-2">Enter your tape measurements (or use a saved profile) and the 3D body is shaped to them, then measured again on the model so you can see how close it is. Try 3D collection garments on it: they are fitted to the body&apos;s real proportions.</p>
+        <HumanStudioLoader garments={garments} />
+      </div>
+    </div>
+  );
+}

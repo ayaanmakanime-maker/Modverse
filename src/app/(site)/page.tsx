@@ -111,7 +111,7 @@ export default function Home() {
             [Sparkles, "AI Muse", "Describe a garment in plain words — it builds and edits the real configuration, and tells you what it can't do."],
             [Type, "Typography editor", "34 licensed typefaces incl. Devanagari, Tamil and Bengali; curved, circular, outlined and layered text."],
             [Box, "Parametric 3D", "Every model, collar, cuff and proportion change rebuilds the 3D garment geometry live."],
-            [Camera, "Virtual trial room", "Live pose tracking in your browser. Camera frames never leave your device."],
+            [Camera, "AI photo try-on", "Upload a photo and see a garment on you, made by an image model on your own Puter account. A visualisation, not a fit check."],
             [Ruler, "Measurement fit", "Size recommendations from real garment dimensions — labelled as estimates, never as verified fit."],
             [Layers, "Manufacturing-aware", "Print areas, DPI, fabric and construction rules with explanations and one-click fixes."],
           ].map(([Icon, t, b]) => {

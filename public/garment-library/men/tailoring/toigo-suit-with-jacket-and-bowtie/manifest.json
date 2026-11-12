@@ -1,0 +1,105 @@
+{
+  "id": "toigo-suit-with-jacket-and-bowtie",
+  "name": "Suit With Jacket And Bowtie",
+  "originalName": "toigo_suit_with_jacket_and_bowtie",
+  "audience": "men",
+  "category": "tailoring",
+  "collection": "Suits & blazers",
+  "description": "suit with jacket and bowtie by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "suits01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/suits01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/suits01/suits01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "2b1d8676f3863b188e9eea98c1d8f234543d54c440e791d92b819f8ee1861f19"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"suit with jacket and bowtie\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-suit-with-jacket-and-bowtie.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/SuitBowtie-bump.png",
+      "original/SuitBowtie-diff2.png",
+      "original/SuitBowtie-spec.png",
+      "original/jacket_bowtie_pants.mhmat",
+      "original/jacket_bowtie_pants.obj",
+      "original/toigo_suit_with_jacket_and_bowtie.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "SuitBowtie-diff2.png",
+        "sha256": "9c386f415b3624527ea73b7772eceb35afb1e30a1cc92cd7d78c99ce997b6c0b",
+        "bytes": 1922445
+      },
+      {
+        "name": "SuitBowtie-bump.png",
+        "sha256": "ca412f5832bec875c3212727dfeacd87515abf89b2419c7247090fb0ba456981",
+        "bytes": 42564
+      },
+      {
+        "name": "toigo_suit_with_jacket_and_bowtie.mhclo",
+        "sha256": "ec88fc4b60531e0c601bd0f553576f32d54b49821990aae0f3f23391af65ba1c",
+        "bytes": 866807
+      },
+      {
+        "name": "SuitBowtie-spec.png",
+        "sha256": "28a8f6c21eb82511b7ef1baa056a08bc225241fc732925b42b9463e7f991d97d",
+        "bytes": 21376
+      },
+      {
+        "name": "jacket_bowtie_pants.mhmat",
+        "sha256": "8ebb7313b4dda918c43308290160f076dcf4bf608c63a7d1916d97a7a30f0ea0",
+        "bytes": 562
+      },
+      {
+        "name": "jacket_bowtie_pants.obj",
+        "sha256": "10e273f7eeb2238df1e2c6b7c3013fcb00a868f8e9fc88513e94e2204b20de49",
+        "bytes": 1080601
+      }
+    ],
+    "glbBytes": 857076
+  },
+  "geometry": {
+    "vertices": 14115,
+    "triangles": 24654,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 106.1,
+      "height": 149.4,
+      "depth": 38.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

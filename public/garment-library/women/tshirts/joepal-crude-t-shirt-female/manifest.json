@@ -1,0 +1,93 @@
+{
+  "id": "joepal-crude-t-shirt-female",
+  "name": "Crude T-Shirt Female",
+  "originalName": "joepal_crude_t-shirt_female",
+  "audience": "women",
+  "category": "tshirts",
+  "collection": "T-shirts",
+  "description": "crude t-shirt female by Joel Palmius (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts01/shirts01_cc0.zip",
+    "creator": "Joel Palmius",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "a5a723b0e84a109bb190fcfeac7f1de4138d875da3e30fe5b3340eac9f38bcd3"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"crude t-shirt female\" by Joel Palmius, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "joepal-crude-t-shirt-female.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/CrudeFemaleTshirtDiffuse.png",
+      "original/crudefemaletshirt.mhmat",
+      "original/crudefemaletshirt.obj",
+      "original/joepal_crude_t-shirt_female.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "CrudeFemaleTshirtDiffuse.png",
+        "sha256": "a9783054a946e51f2fde74cda2e9dc313d04ad1ddde811fe67f7a1616da0fc94",
+        "bytes": 244290
+      },
+      {
+        "name": "crudefemaletshirt.mhmat",
+        "sha256": "69749cb47afa4184ea3978153f34e1160a61675cf6ad7dce4f650a4bf1cacc1c",
+        "bytes": 494
+      },
+      {
+        "name": "crudefemaletshirt.obj",
+        "sha256": "83d20bb41bd5335d020c7e8b6bf5f969dd6cd93a5d5e84bac63cb222a135e9b4",
+        "bytes": 80936
+      },
+      {
+        "name": "joepal_crude_t-shirt_female.mhclo",
+        "sha256": "4feb91f93f9228d0ba3c030cf325f5896143583d81025311ae37b1c9c2dc04a7",
+        "bytes": 74804
+      }
+    ],
+    "glbBytes": 70168
+  },
+  "geometry": {
+    "vertices": 1152,
+    "triangles": 2068,
+    "hasUv": true,
+    "uvCoverage": 0.91,
+    "boundsCm": {
+      "width": 53.9,
+      "height": 48.6,
+      "depth": 25.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

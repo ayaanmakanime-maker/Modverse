@@ -1,0 +1,93 @@
+{
+  "id": "elvs-ladies-apron",
+  "name": "Ladies Apron",
+  "originalName": "elvs_ladies_apron",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tops",
+  "description": "ladies apron by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "dress02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/dress02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/dress02/dress02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "981f8b91d640415e7658ad700e987ecf28d5eb4e7337c02b715211ea483071b7"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"ladies apron\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-ladies-apron.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/apron2.png",
+      "original/elvs_ladies_apron.mhclo",
+      "original/elvs_lady_apron1.mhmat",
+      "original/elvs_lady_apron1.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_ladies_apron.mhclo",
+        "sha256": "f83d9db95ce07dc2600555d8dfc994a73c0b7f780cfc814a52826c7f364a966b",
+        "bytes": 1918669
+      },
+      {
+        "name": "apron2.png",
+        "sha256": "5a60cf4ee9f82779e3aaeb8794ccedd0da26b64875836d3e086ef570447f426a",
+        "bytes": 2616211
+      },
+      {
+        "name": "elvs_lady_apron1.obj",
+        "sha256": "de2c7536bdce7b212226e24b0c0ebb29bf4316c19ac82394b309ceb68bf0e12d",
+        "bytes": 2626977
+      },
+      {
+        "name": "elvs_lady_apron1.mhmat",
+        "sha256": "69f88bcd6b3b4dec150d9a53d24b5110c94376484768a2d16947b6301a1c517c",
+        "bytes": 765
+      }
+    ],
+    "glbBytes": 2334324
+  },
+  "geometry": {
+    "vertices": 37994,
+    "triangles": 54594,
+    "hasUv": true,
+    "uvCoverage": 0.93,
+    "boundsCm": {
+      "width": 42.1,
+      "height": 68.5,
+      "depth": 30.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

@@ -1,0 +1,103 @@
+{
+  "id": "punkduck-retro-top",
+  "name": "Retro Top",
+  "originalName": "punkduck_retro_top",
+  "audience": "women",
+  "category": "tops",
+  "collection": "Tops",
+  "description": "retro top by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "shirts03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/shirts03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/shirts03/shirts03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-10",
+    "archiveSha256": "b3ff3596723dbc87cb07389895da760b667cf413f2c67869ccb0cdfb82a79a8a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"retro top\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-retro-top.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_retro_top.mhclo",
+      "original/vintagetop.mhmat",
+      "original/vintagetop.obj",
+      "original/vintagetop.png",
+      "original/vintagetop_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "vintagetop_normals.png",
+        "sha256": "16b6f29b60260bfe24ef9c9834d8229226b3ff76e08fd1db1e21cee1649dad00",
+        "bytes": 571826
+      },
+      {
+        "name": "punkduck_retro_top.mhclo",
+        "sha256": "b7e1a554ce90ff4893cf14d6bd89acbac022eae47a0a8b1b2d307bfe6262acf3",
+        "bytes": 115406
+      },
+      {
+        "name": "vintagetop.mhmat",
+        "sha256": "4ffb75e26dfabffcb79a7efd626ef53e27fab34740fc16feacb1c82ca097fa38",
+        "bytes": 855
+      },
+      {
+        "name": "vintagetop.png",
+        "sha256": "74ad7715dc7fa699e23ca39a52d4c2b22bc1fa1ae43bf16a87de397537cd96d3",
+        "bytes": 627315
+      },
+      {
+        "name": "vintagetop.obj",
+        "sha256": "25fce21514f2614e91f3217db83499edc642361a9e180e1d98c5cb5833e8f09d",
+        "bytes": 130695
+      }
+    ],
+    "glbBytes": 212608
+  },
+  "geometry": {
+    "vertices": 1824,
+    "triangles": 3212,
+    "hasUv": true,
+    "uvCoverage": 0.87,
+    "boundsCm": {
+      "width": 57.7,
+      "height": 38,
+      "depth": 22.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "top",
+    "vintage"
+  ],
+  "integrationStatus": "integrated"
+}
