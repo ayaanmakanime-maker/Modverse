@@ -32,11 +32,12 @@ export function loadGarmentFit(base: string): Promise<GarmentFit> {
 }
 
 /** Garment vertex positions (cm) on the body `body` (base-mesh positions, cm). Offsets are stored in 1e-4 dm. */
-export function fitGarment(fit: GarmentFit, body: Float32Array, out: Float32Array = new Float32Array(fit.vertices * 3)): Float32Array {
+export function fitGarment(fit: GarmentFit, body: Float32Array, out: Float32Array = new Float32Array(fit.vertices * 3), rest: Float32Array = body): Float32Array {
+  // offset scales come from the unposed body (a posed limb would distort the axis-aligned extents)
   const axis = (k: 0 | 1 | 2, key: "x" | "y" | "z") => {
     const s = fit.scales[key];
     if (!s || !s.den) return 1;
-    return Math.abs(body[s.a * 3 + k] - body[s.b * 3 + k]) / Math.abs(s.den * 10);
+    return Math.abs(rest[s.a * 3 + k] - rest[s.b * 3 + k]) / Math.abs(s.den * 10);
   };
   const sx = axis(0, "x") * 1e-3, sy = axis(1, "y") * 1e-3, sz = axis(2, "z") * 1e-3; // 1e-4 dm → cm (× 10 × 1e-4)
   const { refs, weights, offsets } = fit;

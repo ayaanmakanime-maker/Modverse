@@ -1,142 +1,74 @@
 "use client";
 /**
- * Human Studio (Atelier Pro): a measured 3D body on the CC0 MakeHuman base mesh. The customer's tape measurements are
- * solved into MakeHuman measurement targets and tape-checked on the 3D body; garments from the 3D collection are
- * fitted to that body through their .mhclo data, so they follow its real proportions.
+ * Human Studio (Atelier Pro): a measured, customisable 3D person on the CC0 MakeHuman base mesh.
+ *  · Measure: tape measurements solved onto the body and tape-checked on it.
+ *  · Face / Look: ancestry mix, age, face shape and features; skin, eyes, hair, brows, lashes.
+ *  · Outfit: 3D collection garments, outfits, trousers and shoes, all fitted through their .mhclo data.
+ *  · Motion: posed and animated with the rig; loose fabric is cloth-simulated.
  */
-import { Canvas } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import type * as THREE from "three";
 import clsx from "clsx";
+import { Camera } from "lucide-react";
 import { api } from "@/lib/client/api";
 import { useSession } from "@/components/session";
-import { Button, Notice, Segmented, Slider, Spinner, toast } from "@/components/ui";
+import { Button, Notice, Segmented, Slider, Spinner, Tabs, toast } from "@/components/ui";
 import { Export3DPanel } from "@/components/three/Export3DPanel";
-import { bodyPositions, loadHumanAsset, measureBody, MEASURES, type BodyState, type ControlId, type HumanAsset, type MeasureId, type Sex } from "@/lib/human/model";
+import { bodyPositions, DEFAULT_LOOK, loadHumanAsset, lookMorphs, measureBody, MEASURES, type BodyState, type ControlId, type HumanAsset, type LookState, type MeasureId, type Sex } from "@/lib/human/model";
 import { fitBody, type FitResult } from "@/lib/human/solve";
-import { fitGarment, hiddenMask, loadGarmentFit, type GarmentFit } from "@/lib/human/fit-garment";
+import { loadGarmentFit, type GarmentFit } from "@/lib/human/fit-garment";
+import { loadPart, loadPartsIndex, partBase, type PartInfo, type PartKind, type PartMesh, type PartsIndex } from "@/lib/human/parts";
+import { POSES, type PoseId } from "@/lib/human/pose";
+import { HumanScene, type ViewId, type WornItem } from "./HumanScene";
 
 export interface HumanStudioGarment { id: string; name: string; audience: string; collection: string; base: string; glb: string; thumbnail: string | null; attribution: string; licence: string }
 
-const SKIN = ["#F1D3BC", "#E2B48F", "#C68E6A", "#A26A45", "#7A4B2E", "#4E2F1F"];
 const PROFILE_TO_MEASURE: Partial<Record<string, MeasureId>> = { height: "height", chest: "chest", waist: "waist", hip: "hip", neck: "neck", shoulder: "shoulder", armLength: "armLength", bicep: "bicep", wrist: "wrist", inseam: "inseam", thigh: "thigh", calf: "calf", torsoLength: "torsoLength" };
+const HAIR_TINTS: [string, string][] = [["Natural", "#ffffff"], ["Black", "#3b3634"], ["Dark brown", "#7a5a48"], ["Chestnut", "#b07a55"], ["Auburn", "#c96a4a"], ["Blonde", "#ffe6a8"], ["Grey", "#c9c9c9"], ["Blue", "#6f8fd6"], ["Pink", "#e58fb4"]];
+const BASE_COLORS = ["#1f1f24", "#f1eee8", "#6b7280", "#7c2d3a", "#1f3a5f", "#c8a27a"];
+const TONES = [{ id: "light", label: "Light" }, { id: "medium", label: "Medium" }, { id: "deep", label: "Deep" }] as const;
+type Tone = (typeof TONES)[number]["id"];
+type Tab = "measure" | "face" | "look";
+type Slots = Partial<Record<PartKind, string>>;
+const DEFAULT_SLOTS: Record<Sex, Slots> = {
+  male: { eyes: "low-poly", eyebrows: "eyebrow001", eyelashes: "eyelashes01", hair: "short02", bottoms: "toigo_wool_pants", shoes: "toigo_ankle_boots_male" },
+  female: { eyes: "low-poly", eyebrows: "eyebrow003", eyelashes: "eyelashes02", hair: "bob01", shoes: "toigo_ballet_flats" },
+};
 
-/* ------------------------------------------------------------------ 3D */
-
-function BodyMesh({ asset, positions, hidden, skin }: { asset: HumanAsset; positions: Float32Array; hidden: Uint8Array; skin: string }) {
-  const geo = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    const n = asset.orig.length;
-    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-    g.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-    g.setAttribute("uv", new THREE.BufferAttribute(asset.uv, 2));
-    return g;
-  }, [asset]);
-  const eyes = useMemo(() => { const g = new THREE.BufferGeometry(); g.setAttribute("position", geo.attributes.position); g.setAttribute("normal", geo.attributes.normal); g.setIndex(new THREE.BufferAttribute(asset.eyeIndex, 1)); return g; }, [asset, geo]);
-  // index without the body faces that a garment covers completely
-  useEffect(() => {
-    const idx = asset.bodyIndex, o = asset.orig, keep: number[] = [];
-    for (let t = 0; t < idx.length; t += 3) if (!(hidden[o[idx[t]]] && hidden[o[idx[t + 1]]] && hidden[o[idx[t + 2]]])) keep.push(idx[t], idx[t + 1], idx[t + 2]);
-    geo.setIndex(keep);
-  }, [asset, geo, hidden]);
-  useEffect(() => {
-    const pos = geo.attributes.position.array as Float32Array, nor = geo.attributes.normal.array as Float32Array;
-    const o = asset.orig;
-    // normals in base-vertex space (seam-free), then expanded to the render vertices
-    const nb = new Float32Array(positions.length);
-    const idx = asset.bodyIndex;
-    for (let t = 0; t < idx.length; t += 3) {
-      const a = o[idx[t]] * 3, b = o[idx[t + 1]] * 3, c = o[idx[t + 2]] * 3;
-      const ux = positions[b] - positions[a], uy = positions[b + 1] - positions[a + 1], uz = positions[b + 2] - positions[a + 2];
-      const vx = positions[c] - positions[a], vy = positions[c + 1] - positions[a + 1], vz = positions[c + 2] - positions[a + 2];
-      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-      for (const k of [a, b, c]) { nb[k] += nx; nb[k + 1] += ny; nb[k + 2] += nz; }
-    }
-    for (let r = 0; r < o.length; r++) {
-      const s = o[r] * 3;
-      pos[r * 3] = positions[s]; pos[r * 3 + 1] = positions[s + 1]; pos[r * 3 + 2] = positions[s + 2];
-      const l = Math.hypot(nb[s], nb[s + 1], nb[s + 2]) || 1;
-      nor[r * 3] = nb[s] / l; nor[r * 3 + 1] = nb[s + 1] / l; nor[r * 3 + 2] = nb[s + 2] / l;
-    }
-    geo.attributes.position.needsUpdate = true;
-    geo.attributes.normal.needsUpdate = true;
-    geo.computeBoundingSphere();
-    eyes.computeBoundingSphere();
-  }, [asset, geo, eyes, positions]);
+function Thumb({ kind, part, active, onClick }: { kind: PartKind; part: PartInfo; active: boolean; onClick: () => void }) {
   return (
-    <>
-      <mesh geometry={geo} name="human-body" castShadow receiveShadow>
-        <meshPhysicalMaterial color={skin} roughness={0.62} sheen={0.25} sheenRoughness={0.8} sheenColor="#ffd9c2" />
-      </mesh>
-      <mesh geometry={eyes} name="human-eyes"><meshStandardMaterial color="#2a1d17" roughness={0.15} /></mesh>
-    </>
+    <button type="button" onClick={onClick} title={`${part.name} · ${part.creator} · ${part.licence}`} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", active ? "border-champagne" : "border-line")} data-testid={`hm-${kind}-${part.id}`} aria-pressed={active}>
+      {part.thumb ? <img src={`${partBase(kind, part.id)}/thumb.webp`} alt="" className="aspect-square w-full rounded bg-surface-2 object-contain" loading="lazy" /> : <div className="aspect-square rounded bg-surface-2" />}
+      <span className="line-clamp-1 text-mute">{part.name}</span>
+    </button>
   );
 }
-
-const glbCache = new Map<string, Promise<THREE.Mesh>>();
-function loadGarmentMesh(url: string): Promise<THREE.Mesh> {
-  let p = glbCache.get(url);
-  if (!p) {
-    p = new GLTFLoader().loadAsync(url).then((g) => { let m: THREE.Mesh | null = null; g.scene.traverse((o) => { if (!m && (o as THREE.Mesh).isMesh) m = o as THREE.Mesh; }); if (!m) throw new Error("no mesh"); return m; });
-    p.catch(() => glbCache.delete(url));
-    glbCache.set(url, p);
-  }
-  return p;
-}
-
-function GarmentMesh({ url, fit, positions, tint, onReady }: { url: string; fit: GarmentFit; positions: Float32Array; tint: string; onReady: () => void }) {
-  const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
-  useEffect(() => {
-    let live = true;
-    loadGarmentMesh(url).then((src) => {
-      if (!live) return;
-      const m = new THREE.Mesh(src.geometry.clone(), (Array.isArray(src.material) ? src.material[0] : src.material).clone());
-      (m.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
-      m.name = "garment";
-      m.castShadow = true;
-      setMesh(m);
-    }).catch(() => toast("This garment could not be loaded", "bad"));
-    return () => { live = false; };
-  }, [url]);
-  useEffect(() => {
-    if (!mesh) return;
-    const attr = mesh.geometry.attributes.position as THREE.BufferAttribute;
-    if (attr.count !== fit.vertices) return;
-    fitGarment(fit, positions, attr.array as unknown as Float32Array<ArrayBuffer>);
-    attr.needsUpdate = true;
-    mesh.geometry.computeVertexNormals();
-    mesh.geometry.computeBoundingSphere();
-    onReady();
-  }, [mesh, fit, positions, onReady]);
-  useEffect(() => { if (mesh) (mesh.material as THREE.MeshStandardMaterial).color.set(tint); }, [mesh, tint]);
-  return mesh ? <primitive object={mesh} /> : null;
-}
-
-/* ------------------------------------------------------------------ studio */
 
 export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
   const { user } = useSession();
   const [asset, setAsset] = useState<HumanAsset | null>(null);
+  const [parts, setParts] = useState<PartsIndex | null>(null);
   const [loadErr, setLoadErr] = useState(false);
-  useEffect(() => { loadHumanAsset().then(setAsset).catch(() => setLoadErr(true)); }, []);
+  useEffect(() => { loadHumanAsset().then(setAsset).catch(() => setLoadErr(true)); loadPartsIndex().then(setParts).catch(() => setParts({ parts: [], skins: [], eyes: [] })); }, []);
 
-  const [sex, setSex] = useState<Sex>("male");
+  /* ---------------- body ---------------- */
+  const [sex, setSexRaw] = useState<Sex>("male");
   const [inputs, setInputs] = useState<Partial<Record<MeasureId, string>>>({});
-  const [fixed, setFixed] = useState<{ weight: number; muscle: number; cup: number }>({ weight: 0, muscle: 0, cup: 0 });
+  const [fixed, setFixed] = useState({ weight: 0, muscle: 0, cup: 0 });
   const [solved, setSolved] = useState<{ sex: Sex; controls: BodyState["controls"]; scale: number } | null>(null);
   const [fit, setFit] = useState<FitResult | null>(null);
   const [fitting, setFitting] = useState(false);
-  const [skin, setSkin] = useState(SKIN[2]);
+  const [look, setLook] = useState<LookState>(DEFAULT_LOOK);
+  const [smile, setSmile] = useState(0.25);
   const fixedControls = useMemo(() => ({ weight: fixed.weight || undefined, muscle: fixed.muscle || undefined, ...(sex === "female" ? { cup: fixed.cup || undefined } : {}) }) as Partial<Record<ControlId, number>>, [fixed, sex]);
   const state: BodyState = useMemo(() => {
     const base = solved && solved.sex === sex ? solved : { sex, controls: {}, scale: 1 };
-    return { sex, scale: base.scale, controls: { ...base.controls, ...Object.fromEntries(Object.entries(fixedControls).filter(([, v]) => v !== undefined)) } };
-  }, [solved, sex, fixedControls]);
+    const morphs = asset ? { ...lookMorphs(asset.meta, sex, look), "expr.mouth-corner-puller": smile } : {};
+    return { sex, scale: base.scale, morphs, controls: { ...base.controls, ...Object.fromEntries(Object.entries(fixedControls).filter(([, v]) => v !== undefined)) } };
+  }, [solved, sex, fixedControls, look, smile, asset]);
   const deferred = useDeferredValue(state);
-  const positions = useMemo(() => (asset ? bodyPositions(asset, deferred) : null), [asset, deferred]);
-  const measured = useMemo(() => (asset && positions ? measureBody(asset, positions) : null), [asset, positions]);
+  const rest = useMemo(() => (asset ? bodyPositions(asset, deferred) : null), [asset, deferred]);
+  const measured = useMemo(() => (asset && rest ? measureBody(asset, rest) : null), [asset, rest]);
 
   const targets = useMemo(() => Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, Number(v)]).filter(([, v]) => Number.isFinite(v as number) && (v as number) > 0)) as Partial<Record<MeasureId, number>>, [inputs]);
   const worker = useRef<Worker | null>(null);
@@ -147,22 +79,33 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
     const done = (r: FitResult) => { setSolved({ sex, controls: r.state.controls, scale: r.state.scale }); setFit(r); setFitting(false); };
     try {
       worker.current ??= new Worker(new URL("../../lib/human/fit.worker.ts", import.meta.url));
-      const id = Date.now();
-      const w = worker.current;
-      const r = await new Promise<FitResult>((resolve, reject) => {
+      const id = Date.now(), w = worker.current;
+      done(await new Promise<FitResult>((resolve, reject) => {
         const on = (e: MessageEvent<{ id: number; ok: boolean; result?: FitResult; error?: string }>) => { if (e.data.id !== id) return; w.removeEventListener("message", on); if (e.data.ok) resolve(e.data.result!); else reject(new Error(e.data.error)); };
         w.addEventListener("message", on);
         w.postMessage({ id, sex, targets, fixed: fixedControls });
-      });
-      done(r);
+      }));
     } catch {
-      // no worker: run here, after the spinner has painted
       setTimeout(() => done(fitBody(asset, sex, targets, fixedControls)), 30);
     }
   }
 
   const [profiles, setProfiles] = useState<{ id: string; name: string; audience: string; measurements: Record<string, number> }[]>([]);
   useEffect(() => { if (user) api<{ profiles: typeof profiles }>("/api/account/measurements").then((r) => setProfiles(r.profiles)).catch(() => undefined); }, [user]);
+
+  /* ---------------- look and outfit ---------------- */
+  const [tone, setTone] = useState<Tone>("medium");
+  const [shade, setShade] = useState(0);
+  const [eyeColor, setEyeColor] = useState("brown");
+  const [hairTint, setHairTint] = useState("#ffffff");
+  const [baseColor, setBaseColor] = useState(BASE_COLORS[0]);
+  const [slots, setSlots] = useState<Slots>(DEFAULT_SLOTS.male);
+  const [garmentId, setGarmentId] = useState("");
+  const [outfitId, setOutfitId] = useState("");
+  const [tint, setTint] = useState("#FFFFFF");
+  const defaultGarment = (v: Sex) => { const own = garments.filter((g) => (v === "female" ? g.audience === "women" : g.audience === "men")); return (own.find((g) => g.id === (v === "female" ? "aethelraed-flapper-dress" : "elvs-male-shirt-untucked-bd1")) ?? own[0])?.id ?? ""; };
+  useEffect(() => { setGarmentId(defaultGarment("male")); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const setSex = (v: Sex) => { setSexRaw(v); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[v]); setGarmentId(defaultGarment(v)); setOutfitId(""); };
   const applyProfile = (id: string) => {
     const p = profiles.find((x) => x.id === id);
     if (!p) return;
@@ -170,7 +113,6 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
     const next: Partial<Record<MeasureId, string>> = {};
     for (const [k, v] of Object.entries(p.measurements)) { const m = PROFILE_TO_MEASURE[k]; if (m && v > 0) next[m] = String(v); }
     setInputs(next);
-    setSolved(null); setFit(null);
   };
   async function saveProfile() {
     const name = window.prompt("Name for these measurements", "My body")?.trim();
@@ -182,123 +124,246 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
     catch { toast("Could not save the measurements", "bad"); }
   }
 
-  const [garmentId, setGarmentId] = useState<string>("");
-  const [gfit, setGfit] = useState<GarmentFit | null>(null);
-  const [garmentReady, setGarmentReady] = useState(false);
-  const [tint, setTint] = useState("#FFFFFF");
+  const bySex = (p: PartInfo) => !p.sex || p.sex === sex;
+  const list = (k: PartKind) => (parts?.parts ?? []).filter((p) => p.kind === k && bySex(p));
   const garment = garments.find((g) => g.id === garmentId) ?? null;
+  const shownGarments = garments.filter((g) => (sex === "female" ? g.audience === "women" : g.audience === "men"));
+
+  // load what is worn
+  const [loaded, setLoaded] = useState<Record<string, PartMesh>>({});
+  const [gfit, setGfit] = useState<{ id: string; fit: GarmentFit } | null>(null);
+  const wanted = useMemo(() => {
+    const ids: [PartKind, string][] = [];
+    for (const k of ["eyes", "eyebrows", "eyelashes", "hair", "shoes"] as PartKind[]) if (slots[k]) ids.push([k, slots[k]!]);
+    if (outfitId) ids.push(["outfits", outfitId]); else if (slots.bottoms) ids.push(["bottoms", slots.bottoms]);
+    return ids;
+  }, [slots, outfitId]);
   useEffect(() => {
-    setGfit(null); setGarmentReady(false);
+    if (!parts) return;
+    let live = true;
+    for (const [k, id] of wanted) {
+      const key = `${k}/${id}`;
+      const info = parts.parts.find((p) => p.kind === k && p.id === id);
+      if (!info || loaded[key]) continue;
+      loadPart(info).then((m) => live && setLoaded((x) => ({ ...x, [key]: m }))).catch(() => undefined);
+    }
+    return () => { live = false; };
+  }, [parts, wanted]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setGfit(null);
     if (!garment) return;
     let live = true;
-    loadGarmentFit(garment.base).then((f) => live && setGfit(f)).catch(() => toast("No fitting data for this garment", "bad"));
+    loadGarmentFit(garment.base).then((f) => live && setGfit({ id: garment.id, fit: f })).catch(() => toast("No fitting data for this garment", "bad"));
     return () => { live = false; };
   }, [garment]);
-  const hidden = useMemo(() => hiddenMask(gfit, asset?.meta.vertices ?? 0), [gfit, asset]);
-  const shown = garments.filter((g) => (sex === "female" ? g.audience === "women" : g.audience === "men"));
+  const items: WornItem[] = useMemo(() => {
+    const out: WornItem[] = [];
+    for (const [k, id] of wanted) {
+      const m = loaded[`${k}/${id}`];
+      if (!m) continue;
+      out.push({ key: `${k}/${id}${k === "eyes" ? `/${eyeColor}` : ""}`, kind: k, fit: m.fit, index: m.index, uv: m.uv, textureUrl: k === "eyes" ? `/avatars/human/eyes/${eyeColor}.webp` : m.textureUrl, color: m.color, alpha: m.info.alpha, twoSided: m.twoSided });
+    }
+    if (garment && gfit?.id === garment.id && !outfitId) out.push({ key: `garment/${garment.id}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb });
+    return out;
+  }, [wanted, loaded, garment, gfit, eyeColor, outfitId]);
+  const [ready, setReady] = useState<string[]>([]);
+
+  /* ---------------- motion and view ---------------- */
+  const [pose, setPose] = useState<PoseId>("relaxed");
+  const [life, setLife] = useState(true);
+  const [cloth, setCloth] = useState(true);
+  const [turntable, setTurntable] = useState(false);
+  const [view, setView] = useState<ViewId>("full");
+  const [tab, setTab] = useState<Tab>("measure");
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const onGarmentReady = useMemo(() => () => setGarmentReady(true), []);
+  const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const statsEl = useRef<HTMLElement | null>(null);
+  const snapshot = () => { const gl = glRef.current; if (!gl) return; const a = document.createElement("a"); a.href = gl.domElement.toDataURL("image/png"); a.download = "modverse-avatar.png"; a.click(); };
 
   if (loadErr) return <Notice tone="bad" title="The body model could not be loaded">Refresh the page to try again.</Notice>;
+  const faceGroups = asset ? [...new Set(asset.meta.faceControls.map((c) => c.group))] : [];
+  const setFace = (id: string, v: number) => setLook((l) => ({ ...l, face: { ...l.face, [id]: v } }));
+  const worn = (k: string) => ready.some((r) => r.startsWith(k));
   return (
-    <div className="mt-6 grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)_300px]" data-testid="human-studio">
-      {/* body */}
+    <div className="mt-6 grid gap-5 xl:grid-cols-[350px_minmax(0,1fr)_310px]" data-testid="human-studio">
+      {/* ---------- left: the person ---------- */}
       <section className="mv-card space-y-3 p-4">
-        <h2 className="font-medium text-bone">Your body</h2>
-        <Segmented<Sex> value={sex} onChange={(v) => { setSex(v); setSolved(null); setFit(null); setGarmentId(""); }} options={[{ value: "male", label: "Man" }, { value: "female", label: "Woman" }]} />
-        {user && profiles.length > 0 && (
-          <select className="mv-input !py-1.5 !text-xs" defaultValue="" onChange={(e) => applyProfile(e.target.value)} aria-label="Use saved measurements" data-testid="hm-profile">
-            <option value="">Use my saved measurements…</option>
-            {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+        <Segmented<Sex> value={sex} onChange={setSex} options={[{ value: "male", label: "Man" }, { value: "female", label: "Woman" }]} />
+        <Tabs<Tab> value={tab} onChange={setTab} tabs={[{ value: "measure", label: "Measure" }, { value: "face", label: "Face" }, { value: "look", label: "Skin & hair" }]} />
+
+        {tab === "measure" && (
+          <div className="space-y-3" data-testid="hm-tab-measure">
+            {user && profiles.length > 0 && (
+              <select className="mv-input !py-1.5 !text-xs" defaultValue="" onChange={(e) => applyProfile(e.target.value)} aria-label="Use saved measurements" data-testid="hm-profile">
+                <option value="">Use my saved measurements…</option>
+                {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            )}
+            <table className="w-full text-xs" data-testid="hm-table">
+              <thead className="text-[0.6rem] uppercase tracking-widest text-mute"><tr><th className="text-left font-normal">cm</th><th className="font-normal">You</th><th className="font-normal">Avatar</th></tr></thead>
+              <tbody>
+                {MEASURES.map((m) => {
+                  const t = targets[m.id], v = measured?.[m.id];
+                  const d = t && v !== undefined ? v - t : null;
+                  return (
+                    <tr key={m.id} title={`Measured ${m.how}`}>
+                      <td className="py-0.5 text-bone-2">{m.label}</td>
+                      <td className="py-0.5"><input inputMode="decimal" className="mv-input !w-16 !px-1.5 !py-0.5 text-right !text-xs" value={inputs[m.id] ?? ""} onChange={(e) => setInputs({ ...inputs, [m.id]: e.target.value.replace(/[^\d.]/g, "") })} aria-label={`Your ${m.label.toLowerCase()} (cm)`} data-testid={`hm-in-${m.id}`} /></td>
+                      <td className="py-0.5 text-right tabular-nums" data-testid={`hm-out-${m.id}`} data-delta={d === null ? "" : d.toFixed(2)}>
+                        {v !== undefined ? v.toFixed(1) : "…"}
+                        {d !== null && <span className={clsx("ml-1 text-[0.6rem]", Math.abs(d) <= 1 ? "text-ok" : Math.abs(d) <= 2.5 ? "text-warn" : "text-bad")}>{d >= 0 ? "+" : ""}{d.toFixed(1)}</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={runFit} disabled={!asset || !Object.keys(targets).length || fitting} loading={fitting} data-testid="hm-fit">Fit body to my measurements</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setSolved(null); setFit(null); }}>Reset body</Button>
+              {user && <Button size="sm" variant="ghost" onClick={saveProfile} disabled={!Object.keys(targets).length} data-testid="hm-save">Save to my account</Button>}
+            </div>
+            {fit && (
+              <p className="text-[0.65rem] text-mute" data-testid="hm-fit-result">
+                Fitted in {(fit.ms / 1000).toFixed(1)} s.{" "}
+                {fit.limited.length ? <span className="text-warn">At the edge of the body model: {fit.limited.join(", ")}. A value may be out of reach.</span> : "Every value is within the body model's range."}
+              </p>
+            )}
+            <p className="text-[0.62rem] text-mute">The avatar column is tape-measured on the unposed 3D body: girths around its convex outline, lengths along the skeleton. Hover a row to see where.</p>
+            <div className="space-y-1.5 border-t border-line pt-3">
+              <p className="text-xs text-bone-2">Build (kept while fitting)</p>
+              <Slider label="Body weight" unit="" min={-1} max={1} step={0.05} value={fixed.weight} onChange={(v) => setFixed({ ...fixed, weight: v })} />
+              <Slider label="Muscle" unit="" min={-1} max={1} step={0.05} value={fixed.muscle} onChange={(v) => setFixed({ ...fixed, muscle: v })} />
+              {sex === "female" && <Slider label="Cup size" unit="" min={-1} max={1} step={0.05} value={fixed.cup} onChange={(v) => setFixed({ ...fixed, cup: v })} />}
+            </div>
+          </div>
         )}
-        <table className="w-full text-xs" data-testid="hm-table">
-          <thead className="text-[0.6rem] uppercase tracking-widest text-mute"><tr><th className="text-left font-normal">cm</th><th className="font-normal">You</th><th className="font-normal">Avatar</th></tr></thead>
-          <tbody>
-            {MEASURES.map((m) => {
-              const t = targets[m.id], v = measured?.[m.id];
-              const d = t && v !== undefined ? v - t : null;
-              return (
-                <tr key={m.id} title={`Measured ${m.how}`}>
-                  <td className="py-0.5 text-bone-2">{m.label}</td>
-                  <td className="py-0.5"><input inputMode="decimal" className="mv-input !w-16 !px-1.5 !py-0.5 text-right !text-xs" value={inputs[m.id] ?? ""} onChange={(e) => setInputs({ ...inputs, [m.id]: e.target.value.replace(/[^\d.]/g, "") })} aria-label={`Your ${m.label.toLowerCase()} (cm)`} data-testid={`hm-in-${m.id}`} /></td>
-                  <td className="py-0.5 text-right tabular-nums" data-testid={`hm-out-${m.id}`} data-delta={d === null ? "" : d.toFixed(2)}>
-                    {v !== undefined ? v.toFixed(1) : "…"}
-                    {d !== null && <span className={clsx("ml-1 text-[0.6rem]", Math.abs(d) <= 1 ? "text-ok" : Math.abs(d) <= 2.5 ? "text-warn" : "text-bad")}>{d >= 0 ? "+" : ""}{d.toFixed(1)}</span>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={runFit} disabled={!asset || !Object.keys(targets).length || fitting} loading={fitting} data-testid="hm-fit">Fit body to my measurements</Button>
-          <Button size="sm" variant="ghost" onClick={() => { setSolved(null); setFit(null); }}>Reset body</Button>
-          {user && <Button size="sm" variant="ghost" onClick={saveProfile} disabled={!Object.keys(targets).length} data-testid="hm-save">Save to my account</Button>}
-        </div>
-        {fit && (
-          <p className="text-[0.65rem] text-mute" data-testid="hm-fit-result">
-            Fitted in {(fit.ms / 1000).toFixed(1)} s ({fit.evaluations} body evaluations).{" "}
-            {fit.limited.length ? <span className="text-warn">At the edge of the body model: {fit.limited.join(", ")}. A value may be out of reach.</span> : "Every value is within the body model's range."}
-          </p>
+
+        {tab === "face" && asset && (
+          <div className="max-h-[62vh] space-y-3 overflow-y-auto pr-1 mv-scroll" data-testid="hm-tab-face">
+            <div className="space-y-1.5">
+              <p className="text-xs text-bone-2">Ancestry mix</p>
+              {(["african", "asian", "caucasian"] as const).map((e) => <Slider key={e} label={e === "african" ? "African" : e === "asian" ? "Asian" : "European"} unit="" min={0} max={1} step={0.05} value={look.ancestry[e]} onChange={(v) => setLook({ ...look, ancestry: { ...look.ancestry, [e]: v } })} />)}
+              <Slider label="Age" unit="" min={0} max={1} step={0.05} value={look.age} onChange={(v) => setLook({ ...look, age: v })} />
+              <Slider label="Smile" unit="" min={0} max={1} step={0.05} value={smile} onChange={setSmile} />
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-bone-2">Face shape</p>
+              <div className="flex flex-wrap gap-1">
+                {[null, ...asset.meta.headShapes].map((s) => <button key={s ?? "natural"} className="mv-chip !px-2 !py-0.5 !text-[0.62rem]" data-active={look.headShape === s} onClick={() => setLook({ ...look, headShape: s })} data-testid={`hm-shape-${s ?? "natural"}`}>{s ? (s === "invertedtriangular" ? "Heart" : s[0].toUpperCase() + s.slice(1)) : "Natural"}</button>)}
+              </div>
+            </div>
+            {faceGroups.map((g) => (
+              <div key={g} className="space-y-1.5 border-t border-line pt-2">
+                <p className="text-xs text-bone-2">{g}</p>
+                {asset.meta.faceControls.filter((c) => c.group === g).map((c) => <Slider key={c.id} label={c.label} unit="" min={-1} max={1} step={0.05} value={look.face[c.id] ?? 0} onChange={(v) => setFace(c.id, v)} />)}
+              </div>
+            ))}
+            <Button size="sm" variant="ghost" onClick={() => setLook(DEFAULT_LOOK)} data-testid="hm-face-reset">Reset face</Button>
+          </div>
         )}
-        <p className="text-[0.62rem] text-mute">The avatar column is tape-measured on the 3D body: girths around its convex outline (as a tape lies), lengths along the skeleton. Hover a row to see where it is measured.</p>
-        <div className="space-y-1.5 border-t border-line pt-3">
-          <p className="text-xs text-bone-2">Build (kept while fitting)</p>
-          <Slider label="Body weight" unit="" min={-1} max={1} step={0.05} value={fixed.weight} onChange={(v) => setFixed({ ...fixed, weight: v })} />
-          <Slider label="Muscle" unit="" min={-1} max={1} step={0.05} value={fixed.muscle} onChange={(v) => setFixed({ ...fixed, muscle: v })} />
-          {sex === "female" && <Slider label="Cup size" unit="" min={-1} max={1} step={0.05} value={fixed.cup} onChange={(v) => setFixed({ ...fixed, cup: v })} />}
-          <div className="flex gap-1.5 pt-1" role="radiogroup" aria-label="Skin tone">{SKIN.map((c) => <button key={c} role="radio" aria-checked={skin === c} onClick={() => setSkin(c)} className={clsx("size-6 rounded-full border-2", skin === c ? "border-champagne" : "border-transparent")} style={{ background: c }} aria-label={`Skin tone ${c}`} />)}</div>
-        </div>
+
+        {tab === "look" && (
+          <div className="max-h-[62vh] space-y-3 overflow-y-auto pr-1 mv-scroll" data-testid="hm-tab-look">
+            <div>
+              <p className="mb-1 text-xs text-bone-2">Skin</p>
+              <Segmented<Tone> size="sm" value={tone} onChange={setTone} options={TONES.map((t) => ({ value: t.id, label: t.label }))} />
+              <div className="mt-1.5"><Slider label="Shade" unit="" min={-1} max={1} step={0.05} value={shade} onChange={setShade} /></div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-bone-2">Eye colour</p>
+              <div className="flex flex-wrap gap-1">{(parts?.eyes ?? []).map((e) => <button key={e} className="mv-chip !px-2 !py-0.5 !text-[0.62rem]" data-active={eyeColor === e} onClick={() => setEyeColor(e)} data-testid={`hm-eye-${e}`}>{e.replace("brownlight", "hazel").replace("bluegreen", "blue-green").replace("deepblue", "deep blue").replace("lightblue", "light blue")}</button>)}</div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-bone-2">Hair</p>
+              <div className="grid grid-cols-4 gap-1.5" data-testid="hm-hair">
+                <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !slots.hair ? "border-champagne" : "border-line")} onClick={() => setSlots({ ...slots, hair: undefined })} data-testid="hm-hair-none">None</button>
+                {list("hair").map((h) => <Thumb key={h.id} kind="hair" part={h} active={slots.hair === h.id} onClick={() => setSlots({ ...slots, hair: h.id })} />)}
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Hair colour">{HAIR_TINTS.map(([n, c]) => <button key={c} role="radio" aria-checked={hairTint === c} title={n} onClick={() => setHairTint(c)} className={clsx("size-6 rounded-full border-2", hairTint === c ? "border-champagne" : "border-line")} style={{ background: c }} aria-label={`Hair colour ${n}`} data-testid={`hm-hairtint-${n.toLowerCase().replace(" ", "-")}`} />)}</div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-bone-2">Eyebrows</p>
+              <div className="grid grid-cols-4 gap-1.5">{list("eyebrows").map((h) => <Thumb key={h.id} kind="eyebrows" part={h} active={slots.eyebrows === h.id} onClick={() => setSlots({ ...slots, eyebrows: h.id })} />)}</div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-bone-2">Eyelashes</p>
+              <div className="grid grid-cols-4 gap-1.5">{list("eyelashes").map((h) => <Thumb key={h.id} kind="eyelashes" part={h} active={slots.eyelashes === h.id} onClick={() => setSlots({ ...slots, eyelashes: h.id })} />)}</div>
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-bone-2">Base layer colour</p>
+              <div className="flex gap-1.5">{BASE_COLORS.map((c) => <button key={c} onClick={() => setBaseColor(c)} className={clsx("size-6 rounded-full border-2", baseColor === c ? "border-champagne" : "border-line")} style={{ background: c }} aria-label={`Base layer ${c}`} />)}</div>
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* view */}
-      <section className="mv-card relative h-[70vh] min-h-[520px] overflow-hidden p-0 xl:sticky xl:top-4 xl:h-[calc(100dvh-2rem)] xl:self-start" data-testid="human-canvas" data-ready={asset && positions ? "1" : "0"} data-garment={garment && garmentReady ? garment.id : "none"}>
-        {!asset && <div className="absolute inset-0 grid place-items-center"><Spinner /></div>}
-        {asset && positions && (
-          <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 105, 340], fov: 30, near: 1, far: 3000 }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ scene, gl }) => { sceneRef.current = scene; gl.toneMapping = THREE.NeutralToneMapping; }}>
-            <color attach="background" args={["#efece7"]} />
-            <hemisphereLight args={["#ffffff", "#b9b2a8", 0.6]} />
-            <directionalLight position={[120, 260, 220]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={220} shadow-camera-bottom={-20} />
-            <Environment resolution={256}>
-              <Lightformer form="rect" intensity={1.1} position={[0, 4, 7]} scale={[10, 6, 1]} />
-              <Lightformer form="rect" intensity={0.5} position={[-7, 2, 1]} rotation-y={Math.PI / 2} scale={[8, 6, 1]} />
-            </Environment>
-            <group name="human-scene">
-              <BodyMesh asset={asset} positions={positions} hidden={hidden} skin={skin} />
-              {garment && gfit && <GarmentMesh url={garment.glb} fit={gfit} positions={positions} tint={tint} onReady={onGarmentReady} />}
-            </group>
-            <ContactShadows position={[0, 0.05, 0]} opacity={0.4} scale={160} blur={2.2} far={60} />
-            <OrbitControls target={[0, 95, 0]} minDistance={60} maxDistance={700} enableDamping />
-          </Canvas>
+      {/* ---------- centre: the view ---------- */}
+      <section ref={(el) => { statsEl.current = el; }} className="mv-card relative h-[70vh] min-h-[520px] overflow-hidden p-0 xl:sticky xl:top-4 xl:h-[calc(100dvh-2rem)] xl:self-start" data-testid="human-canvas" data-ready={asset && rest ? "1" : "0"} data-garment={garment && worn(`garment/${garment.id}`) ? garment.id : outfitId && worn(`outfits/${outfitId}`) ? outfitId : "none"} data-hair={slots.hair && worn(`hair/${slots.hair}`) ? slots.hair : "none"} data-pose={pose} data-cloth={cloth && life && pose !== "apose" ? "on" : "off"} data-worn={ready.length}>
+        {(!asset || !rest) && <div className="absolute inset-0 grid place-items-center"><Spinner /></div>}
+        {asset && rest && (
+          <HumanScene asset={asset} rest={rest} scale={deferred.scale} crotchY={measured?.inseam ?? 0} items={items} pose={pose} life={life} cloth={cloth} turntable={turntable} view={view}
+            look={{ skinUrl: `/avatars/human/skins/${tone}-${sex}.webp`, maskUrl: `/avatars/human/base-${sex}.webp`, tone: shade, baseColor, hairTint, garmentTint: tint }}
+            sceneRef={sceneRef} glRef={glRef} statsEl={statsEl} onItemsReady={setReady} />
         )}
+        <div className="absolute left-2 top-2 flex gap-1">
+          {(["full", "upper", "face"] as ViewId[]).map((v) => <button key={v} className="mv-chip !bg-ink/70 !px-2 !py-0.5 !text-[0.62rem]" data-active={view === v} onClick={() => setView(v)} data-testid={`hm-view-${v}`}>{v === "full" ? "Full body" : v === "upper" ? "Upper body" : "Face"}</button>)}
+        </div>
+        <button className="mv-chip absolute right-2 top-2 !bg-ink/70 !px-2 !py-0.5 !text-[0.62rem]" onClick={snapshot} data-testid="hm-snapshot"><Camera className="mr-1 inline size-3" />Photo</button>
         <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-bone-2">Drag to rotate · scroll to zoom</p>
       </section>
 
-      {/* garments + export */}
+      {/* ---------- right: outfit, motion, export ---------- */}
       <section className="mv-card space-y-3 p-4">
-        <h2 className="font-medium text-bone">Wear a garment</h2>
-        <p className="text-[0.65rem] text-mute">Garments from the 3D collection, fitted to this body with their MakeHuman fitting data: they follow your height, girths and lengths.</p>
-        <div className="grid max-h-72 grid-cols-3 gap-1.5 overflow-y-auto mv-scroll" data-testid="hm-garments">
-          <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !garmentId ? "border-champagne" : "border-line")} onClick={() => setGarmentId("")}>None</button>
-          {shown.map((g) => (
-            <button key={g.id} title={g.name} onClick={() => setGarmentId(g.id)} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", g.id === garmentId ? "border-champagne" : "border-line")} data-testid={`hm-garment-${g.id}`}>
-              {g.thumbnail ? <img src={g.thumbnail} alt="" className="aspect-square w-full object-contain" loading="lazy" /> : <div className="aspect-square" />}
-              <span className="line-clamp-1 text-mute">{g.name}</span>
-            </button>
-          ))}
+        <h2 className="font-medium text-bone">Outfit</h2>
+        <div>
+          <p className="mb-1 text-xs text-bone-2">Tops, dresses and suits <span className="text-mute">(3D collection)</span></p>
+          <div className="grid max-h-44 grid-cols-4 gap-1.5 overflow-y-auto mv-scroll" data-testid="hm-garments">
+            <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !garmentId && !outfitId ? "border-champagne" : "border-line")} onClick={() => { setGarmentId(""); setOutfitId(""); }}>None</button>
+            {shownGarments.map((g) => (
+              <button key={g.id} title={g.name} onClick={() => { setGarmentId(g.id); setOutfitId(""); }} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", g.id === garmentId && !outfitId ? "border-champagne" : "border-line")} data-testid={`hm-garment-${g.id}`}>
+                {g.thumbnail ? <img src={g.thumbnail} alt="" className="aspect-square w-full object-contain" loading="lazy" /> : <div className="aspect-square" />}
+                <span className="line-clamp-1 text-mute">{g.name}</span>
+              </button>
+            ))}
+          </div>
+          {garment && !outfitId && <label className="mt-1.5 flex items-center gap-2 text-xs"><span className="text-mute">Colour</span><input type="color" value={tint} onChange={(e) => setTint(e.target.value)} aria-label="Garment colour" /><span className="line-clamp-1 text-[0.58rem] text-mute">{garment.attribution}</span></label>}
         </div>
-        {garment && (
-          <>
-            <label className="flex items-center gap-2 text-xs"><span className="text-mute">Colour</span><input type="color" value={tint} onChange={(e) => setTint(e.target.value)} aria-label="Garment colour" /></label>
-            <p className="text-[0.6rem] text-mute">{garment.attribution}</p>
-          </>
+        <div>
+          <p className="mb-1 text-xs text-bone-2">Complete outfits</p>
+          <div className="grid grid-cols-4 gap-1.5">{list("outfits").map((h) => <Thumb key={h.id} kind="outfits" part={h} active={outfitId === h.id} onClick={() => { setOutfitId(outfitId === h.id ? "" : h.id); }} />)}</div>
+        </div>
+        {!outfitId && (
+          <div>
+            <p className="mb-1 text-xs text-bone-2">Trousers</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !slots.bottoms ? "border-champagne" : "border-line")} onClick={() => setSlots({ ...slots, bottoms: undefined })}>None</button>
+              {list("bottoms").map((h) => <Thumb key={h.id} kind="bottoms" part={h} active={slots.bottoms === h.id} onClick={() => setSlots({ ...slots, bottoms: h.id })} />)}
+            </div>
+          </div>
         )}
-        <div className="border-t border-line pt-3">
-          <p className="mb-2 text-xs text-bone-2">Export the avatar{garment ? " wearing the garment" : ""}</p>
-          <Export3DPanel compact getRoot={() => sceneRef.current?.getObjectByName("human-scene")} name={`modverse-avatar${garment ? `-${garment.id}` : ""}`} attribution={`Body: MakeHuman base mesh hm08 (CC0).${garment ? ` Garment: ${garment.attribution}` : ""}`} licence={garment?.licence} />
+        <div>
+          <p className="mb-1 text-xs text-bone-2">Shoes</p>
+          <div className="grid max-h-28 grid-cols-4 gap-1.5 overflow-y-auto mv-scroll">
+            <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !slots.shoes ? "border-champagne" : "border-line")} onClick={() => setSlots({ ...slots, shoes: undefined })}>None</button>
+            {list("shoes").map((h) => <Thumb key={h.id} kind="shoes" part={h} active={slots.shoes === h.id} onClick={() => setSlots({ ...slots, shoes: h.id })} />)}
+          </div>
         </div>
-        <p className="text-[0.6rem] text-mute">Body: MakeHuman hm08 base mesh, targets, rig and weights (CC0). A visualisation of proportion: garments are fitted, not cloth-simulated, and made-to-order sizing still comes from the fit check.</p>
+
+        <div className="space-y-2 border-t border-line pt-3">
+          <h2 className="font-medium text-bone">Motion</h2>
+          <div className="flex flex-wrap gap-1">{POSES.map((x) => <button key={x.id} className="mv-chip !px-2 !py-0.5 !text-[0.65rem]" data-active={pose === x.id} onClick={() => setPose(x.id)} data-testid={`hm-pose-${x.id}`}>{x.label}</button>)}</div>
+          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={life} onChange={(e) => setLife(e.target.checked)} data-testid="hm-life" /> Breathing, blinking and movement</label>
+          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={cloth} onChange={(e) => setCloth(e.target.checked)} data-testid="hm-cloth" /> Cloth simulation on loose fabric</label>
+          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={turntable} onChange={(e) => setTurntable(e.target.checked)} data-testid="hm-turntable" /> Turntable</label>
+          <p className="text-[0.6rem] text-mute">Fabric that lies on the body follows it; hems, skirts and loose sleeves are simulated (gravity, inertia, leg and arm collisions). Measurements are always taken on the unposed body.</p>
+        </div>
+
+        <div className="border-t border-line pt-3">
+          <p className="mb-2 text-xs text-bone-2">Export the avatar as shown</p>
+          <Export3DPanel compact getRoot={() => sceneRef.current?.getObjectByName("human-scene")} name={`modverse-avatar${garment ? `-${garment.id}` : outfitId ? `-${outfitId}` : ""}`} attribution={`Body, skin, hair and accessories: MakeHuman assets (CC0).${garment && !outfitId ? ` Garment: ${garment.attribution}` : ""}`} licence={garment?.licence} />
+        </div>
+        <p className="text-[0.6rem] text-mute">Body, skins, eyes, hair, outfits, trousers and shoes: MakeHuman system assets and community packs, CC0. Made-to-order sizing still comes from the fit check.</p>
       </section>
     </div>
   );

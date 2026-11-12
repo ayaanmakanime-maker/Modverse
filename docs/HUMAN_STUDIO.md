@@ -60,10 +60,38 @@ Typical fit time is 0.1–3.5 s.
 * The form saves back to the account; the body schema gains inseam, thigh and calf, all optional.
 * **Export** gives the avatar wearing the garment as one scene in every Export 3D format (GLB, FBX, USDZ, STL…). The body credit (CC0) and the garment credit are written into the files.
 
+## Look: skin, face, hair (all CC0 MakeHuman data)
+Built by `scripts/human/build_parts.py <mpfb.zip> <packs dir> <repo>` from the MakeHuman system assets and the community packs hair01, pants01 and shoes01. **Only parts whose own file states CC0 are imported**: 11 hairstyles in the "CC0" hair pack still carry an AGPL or CC BY header and were skipped.
+
+| What | Options |
+|---|---|
+| Skin | three MakeHuman skin textures per sex (light, medium, deep) with a shade slider; a painted base layer (briefs, plus a top for women) in six colours so the avatar is never nude |
+| Face | ancestry mix (MakeHuman's three ethnic shapes), age, smile, 8 face shapes and 27 sliders in five groups (head, eyes, nose, mouth, jaw, cheeks and ears) |
+| Eyes | fitted eye meshes with 9 iris colours |
+| Hair | 21 hairstyles with 9 tints (brows follow the hair tint); 8 eyebrow and 4 eyelash styles |
+| Outfit | 84 fitted 3D collection garments, 12 complete outfits, 4 trousers, 16 shoes |
+
+Every part is fitted through its `.mhclo` binding, exactly like the garments, so hair, brows, lashes, eyes, trousers and shoes follow the face and body the customer builds.
+
+## Motion (`src/lib/human/pose.ts`)
+* Forward kinematics on the 52-bone rig and linear-blend skinning on the CPU with the CC0 weights; everything worn is re-fitted to the posed body every frame.
+* Poses: Relaxed (default), Weight on one leg, Walk (in place), A-pose (for measuring).
+* "Breathing, blinking and movement" adds breathing, small weight shifts, head drift and blinks (MakeHuman's eye-closure targets).
+* Feet are kept on the floor. Measurements are always taken on the unposed body.
+* Views: full body, upper body, face; turntable; photo (PNG).
+
+## Cloth simulation (`src/lib/human/garment-cloth.ts`)
+Runs on the worn top / dress / outfit while the avatar is animated:
+* A garment's particles are its welded vertices. Each has an **allowance**: how far it may leave its fitted position, measured from how far the fabric hangs from the skin (0 where it lies on the body, up to 14 cm on loose parts).
+* Fabric below the crotch (skirts) is **hanging**: it gets a wide allowance (up to 45 cm), because the fitted target tears apart there when the legs move. It may swing but cannot get longer than it was cut.
+* Per substep: gravity, damping, inertia from the moving body, inextensible edges (3 iterations × 3 substeps), collision with arm and leg capsules built from the posed skeleton (radii measured from the body), a backstop along the fitted surface normal so cloth cannot sink into the body, and the allowance clamp.
+* Measured on a real dress over a walk cycle (unit test): allowances respected, no NaNs, loose fabric moves up to ≈ 11 cm away from the fitted shape, and fewer edges are distorted than in the plain fitted shape (6–9 % vs 10.6 % stretched more than 25 %; under 1 % in standing poses). About 15–18 ms per frame for 6,600 particles in software rendering.
+* Limits: no self-collision, no cloth-to-cloth collision between layers, the torso is protected by the backstop rather than a true collider, fabric parameters are not measured per fabric, and trousers and shoes are not simulated. It is real-time dynamics for presentation, not a pattern-level drape (the offline Blender bake remains future work).
+
 ## Not done
-* No hair, eyebrows or detailed eyes: a neutral, bald mannequin head.
-* A-pose only: no posing or animation in the Human Studio yet. The rig and weights are loaded, so posing is the next step.
-* Only one garment at a time.
+* Only one top / dress at a time, with trousers and shoes; no layering of several tops.
 * Made-to-order (parametric) garments are not shown on this body yet. Their fit is still judged by the measurement fit check.
-* Garments are fitted, not cloth-simulated.
-* Ethnicity, age and face controls are not exposed.
+* The walk is procedural and in place; the clips of the supplied FBX characters are not retargeted.
+* Hair is not simulated. Hairstyles are fitted meshes and can clip into high collars.
+* No self-collision in the cloth; fabric parameters are estimates (see above).
+* Tested in desktop Chromium (software rendering in CI); not yet on phones or tablets.

@@ -16,6 +16,35 @@ export interface HumanMeta {
   format: string; units: "cm"; vertices: number; renderVertices: number;
   source: { name: string; licence: string; statement: string; copyright: string; url: string };
   layout: Record<string, LayoutEntry>; morphs: { id: string; sex: Sex | null; count: number }[]; bones: BoneDef[];
+  /** Face controls: −1 … 1, positive uses the first target of each pair, negative the second. */
+  faceControls: { id: string; label: string; group: string; pairs: [string, string][] }[];
+  headShapes: string[];
+}
+
+/** Everything about the face and build that is not a tape measurement. */
+export interface LookState {
+  /** Ancestry mix (MakeHuman's three ethnic shapes); any non-negative weights, normalised. */
+  ancestry: { african: number; asian: number; caucasian: number };
+  /** 0 = young adult … 1 = old. */
+  age: number;
+  headShape: string | null;
+  face: Record<string, number>;
+}
+export const DEFAULT_LOOK: LookState = { ancestry: { african: 1, asian: 1, caucasian: 1 }, age: 0, headShape: null, face: {} };
+
+/** Raw morph weights for a look (added to the body state's `morphs`). */
+export function lookMorphs(meta: HumanMeta, sex: Sex, look: LookState): Record<string, number> {
+  const out: Record<string, number> = {};
+  const sum = look.ancestry.african + look.ancestry.asian + look.ancestry.caucasian || 1;
+  for (const e of ["african", "asian", "caucasian"] as const) out[`${sex}.eth.${e}`] = look.ancestry[e] / sum;
+  if (look.age > 0) out[`${sex}.age+`] = Math.min(1, look.age);
+  if (look.headShape) out[`head-${look.headShape}`] = 1;
+  for (const c of meta.faceControls) {
+    const v = look.face[c.id];
+    if (!v) continue;
+    for (const [pos, neg] of c.pairs) out[v > 0 ? pos : neg] = Math.min(1, Math.abs(v));
+  }
+  return out;
 }
 
 export interface HumanAsset {
@@ -98,7 +127,7 @@ export const CONTROL_TARGETS: Record<ControlId, (sex: Sex) => [string, string][]
   legLength: () => [...M("upperleg-height"), ...M("lowerleg-height")],
 };
 
-export interface BodyState { sex: Sex; controls: Partial<Record<ControlId, number>>; /** final uniform scale */ scale: number }
+export interface BodyState { sex: Sex; controls: Partial<Record<ControlId, number>>; /** final uniform scale */ scale: number; /** extra raw morph weights (look, expression) */ morphs?: Record<string, number> }
 
 /** Base-mesh positions (cm) for a body state, feet on y = 0. */
 export function bodyPositions(a: HumanAsset, s: BodyState, out?: Float32Array): Float32Array {
@@ -112,6 +141,11 @@ export function bodyPositions(a: HumanAsset, s: BodyState, out?: Float32Array): 
       const w = Math.min(1, Math.abs(v));
       for (let k = 0; k < m.i.length; k++) { const o = m.i[k] * 3; p[o] += m.d[k * 3] * w; p[o + 1] += m.d[k * 3 + 1] * w; p[o + 2] += m.d[k * 3 + 2] * w; }
     }
+  }
+  if (s.morphs) for (const [id, w] of Object.entries(s.morphs)) {
+    const m = w ? a.morphs.get(id) : undefined;
+    if (!m) continue;
+    for (let k = 0; k < m.i.length; k++) { const o = m.i[k] * 3; p[o] += m.d[k * 3] * w; p[o + 1] += m.d[k * 3 + 1] * w; p[o + 2] += m.d[k * 3 + 2] * w; }
   }
   let minY = Infinity;
   for (let k = 0; k < a.bodyVerts.length; k++) minY = Math.min(minY, p[a.bodyVerts[k] * 3 + 1]);

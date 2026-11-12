@@ -74,7 +74,7 @@ def main(zip_path, root):
 
     def tpath(cat, stem):
         for p in sorted(names):
-            if p.startswith(f"data/targets/{cat}/") and (p.endswith(f"/{stem}.target.gz") or p.endswith(f"/{stem}.target")):
+            if p.startswith(f"data/targets/{cat}") and (p.endswith(f"/{stem}.target.gz") or p.endswith(f"/{stem}.target")):
                 return p
         raise SystemExit(f"missing target {cat}/{stem}")
 
@@ -203,6 +203,55 @@ def main(zip_path, root):
     for k, d in measure.items():
         add_morph(k, d)
 
+    # ancestry (MakeHuman's three ethnic shapes, relative to their equal mix), age, expressions and face controls
+    for g in ("male", "female"):
+        eth = {e: T("macrodetails", f"{e}-{g}-young") for e in ("african", "asian", "caucasian")}
+        mean = sum(eth.values()) / 3.0
+        for e, d in eth.items():
+            add_morph(f"{g}.eth.{e}", d - mean, g)
+        old = sum(T("macrodetails", f"{e}-{g}-old") for e in ("african", "asian", "caucasian")) / 3.0
+        add_morph(f"{g}.age+", old - mean, g)
+    for name in ("eye-left-closure", "eye-right-closure", "mouth-corner-puller", "mouth-elevation", "eyebrows-left-up", "eyebrows-right-up"):
+        add_morph(f"expr.{name}", T("expression", name))
+    face_controls = []
+    def face(cid, label, group, *pairs):
+        face_controls.append({"id": cid, "label": label, "group": group, "pairs": [list(p) for p in pairs]})
+        for pos, neg in pairs:
+            for t in (pos, neg):
+                if t and not any(m["id"] == t for m in morphs):
+                    add_morph(t, T("", t))
+    LR = lambda stem, a, b: ((f"l-{stem}-{a}", f"l-{stem}-{b}"), (f"r-{stem}-{a}", f"r-{stem}-{b}"))
+    for shape in ("oval", "round", "square", "rectangular", "triangular", "invertedtriangular", "diamond"):
+        add_morph(f"head-{shape}", T("head", f"head-{shape}"))
+    face("headWidth", "Head width", "Head", ("head-scale-horiz-incr", "head-scale-horiz-decr"))
+    face("headHeight", "Head height", "Head", ("head-scale-vert-incr", "head-scale-vert-decr"))
+    face("faceFat", "Face fullness", "Head", ("head-fat-incr", "head-fat-decr"))
+    face("forehead", "Forehead height", "Head", ("forehead-scale-vert-incr", "forehead-scale-vert-decr"))
+    face("eyeSize", "Eye size", "Eyes", *LR("eye-scale", "incr", "decr"))
+    face("eyeSpacing", "Eye spacing", "Eyes", *LR("eye-trans", "out", "in"))
+    face("eyeSlant", "Eye slant", "Eyes", *LR("eye-corner2", "up", "down"))
+    face("eyeFold", "Eyelid fold", "Eyes", *LR("eye-eyefold", "down", "up"))
+    face("browHeight", "Brow height", "Eyes", ("eyebrows-trans-up", "eyebrows-trans-down"))
+    face("browAngle", "Brow angle", "Eyes", ("eyebrows-angle-up", "eyebrows-angle-down"))
+    face("noseWidth", "Nose width", "Nose", ("nose-scale-horiz-incr", "nose-scale-horiz-decr"))
+    face("noseLength", "Nose length", "Nose", ("nose-scale-vert-incr", "nose-scale-vert-decr"))
+    face("noseProjection", "Nose projection", "Nose", ("nose-scale-depth-incr", "nose-scale-depth-decr"))
+    face("noseBridge", "Bridge", "Nose", ("nose-hump-incr", "nose-hump-decr"))
+    face("noseTip", "Tip", "Nose", ("nose-point-up", "nose-point-down"))
+    face("nostrils", "Nostril width", "Nose", ("nose-nostrils-width-incr", "nose-nostrils-width-decr"))
+    face("mouthWidth", "Mouth width", "Mouth", ("mouth-scale-horiz-incr", "mouth-scale-horiz-decr"))
+    face("upperLip", "Upper lip", "Mouth", ("mouth-upperlip-volume-incr", "mouth-upperlip-volume-decr"))
+    face("lowerLip", "Lower lip", "Mouth", ("mouth-lowerlip-volume-incr", "mouth-lowerlip-volume-decr"))
+    face("mouthCorners", "Mouth corners", "Mouth", ("mouth-angles-up", "mouth-angles-down"))
+    face("chinWidth", "Chin width", "Jaw", ("chin-width-incr", "chin-width-decr"))
+    face("chinHeight", "Chin height", "Jaw", ("chin-height-incr", "chin-height-decr"))
+    face("chinProminence", "Chin prominence", "Jaw", ("chin-prominent-incr", "chin-prominent-decr"))
+    face("jaw", "Jaw", "Jaw", ("chin-bones-incr", "chin-bones-decr"))
+    face("cheekbones", "Cheekbones", "Cheeks & ears", *LR("cheek-bones", "incr", "decr"))
+    face("cheekVolume", "Cheek volume", "Cheeks & ears", *LR("cheek-volume", "incr", "decr"))
+    face("earSize", "Ear size", "Cheeks & ears", *LR("ear-scale", "incr", "decr"))
+    face("earWing", "Ear angle", "Cheeks & ears", *LR("ear-wing", "incr", "decr"))
+
     out = os.path.join(root, "public/avatars/human")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "hm08.bin"), "wb") as fo:
@@ -211,7 +260,8 @@ def main(zip_path, root):
     meta = {
         "format": "modverse-human/1", "units": "cm", "up": "+y", "front": "+z", "vertices": n, "renderVertices": len(orig),
         "source": {"name": "MakeHuman base mesh hm08, targets, Mixamo-compatible rig and weights (bundled with MPFB 2)", "licence": "CC0-1.0", "statement": "base.obj: 'This asset was explicitly released as CC0 in september 2020'; weights.mixamo.json: license CC0", "copyright": "Data Collection AB, Joel Palmius, Jonas Hauquier (at the CC0 release)", "url": "https://static.makehumancommunity.org/mpfb.html"},
-        "layout": layout, "morphs": morphs, "bones": bones,
+        "layout": layout, "morphs": morphs, "bones": bones, "faceControls": face_controls,
+        "headShapes": ["oval", "round", "square", "rectangular", "triangular", "invertedtriangular", "diamond"],
     }
     with open(os.path.join(out, "hm08.json"), "w") as fo:
         json.dump(meta, fo, separators=(",", ":"))

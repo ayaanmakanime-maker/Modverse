@@ -16,17 +16,37 @@ test("Human Studio: the CC0 body is fitted to tape measurements, tape-checked, w
   for (const k of Object.keys(t)) {
     await expect.poll(async () => Math.abs(Number(await page.getByTestId(`hm-out-${k}`).getAttribute("data-delta"))), { timeout: 30_000, message: k }).toBeLessThanOrEqual(1);
   }
-  // a women's garment from the 3D collection, fitted to this body
-  await page.getByTestId("hm-garments").locator('[data-testid^="hm-garment-"]').first().click();
+  // dressed by default: a fitted 3D collection garment, hair, brows, lashes, eyes and shoes
   await expect(canvas).not.toHaveAttribute("data-garment", "none", { timeout: 120_000 });
-  // the avatar wearing the garment exports as one scene
-  const [d] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), page.getByTestId("export3d-glb").click()]);
+  await expect(canvas).not.toHaveAttribute("data-hair", "none", { timeout: 60_000 });
+  expect(Number(await canvas.getAttribute("data-worn"))).toBeGreaterThanOrEqual(5);
+  // face and look
+  await page.getByRole("tab", { name: "Face" }).click();
+  await page.getByTestId("hm-shape-round").click();
+  expect(await page.getByTestId("hm-tab-face").getByRole("slider").count()).toBeGreaterThanOrEqual(25);
+  await page.getByRole("tab", { name: "Skin & hair" }).click();
+  await page.getByTestId("hm-hair-long01").click();
+  await expect(canvas).toHaveAttribute("data-hair", "long01", { timeout: 60_000 });
+  await page.getByTestId("hm-hairtint-auburn").click();
+  await page.getByTestId("hm-eye-green").click();
+  // alive: the default pose animates; walking simulates the loose fabric
+  await expect(canvas).toHaveAttribute("data-pose", "relaxed");
+  await page.getByTestId("hm-pose-walk").click();
+  await expect(canvas).toHaveAttribute("data-cloth", "on");
+  await expect.poll(async () => Number(await canvas.getAttribute("data-cloth-particles")), { timeout: 60_000 }).toBeGreaterThan(500);
+  const f0 = Number(await canvas.getAttribute("data-frames"));
+  await expect.poll(async () => Number(await canvas.getAttribute("data-frames")), { timeout: 60_000 }).toBeGreaterThan(f0 + 15);
+  await page.getByTestId("hm-cloth").uncheck();
+  await expect(canvas).toHaveAttribute("data-cloth", "off");
+  // the avatar as shown exports as one scene: body, eyes, hair, brows, lashes, shoes and the garment
+  const [d] = await Promise.all([page.waitForEvent("download", { timeout: 90_000 }), page.getByTestId("export3d-glb").click()]);
   expect(d.suggestedFilename()).toMatch(/^modverse-avatar-.+\.glb$/);
   const chunks: Buffer[] = [];
   for await (const c of await d.createReadStream()) chunks.push(c as Buffer);
   const glb = Buffer.concat(chunks);
   const json = JSON.parse(glb.subarray(20, 20 + glb.readUInt32LE(12)).toString("utf8"));
-  expect(json.meshes.length).toBeGreaterThanOrEqual(2); // body (+ eyes) and the garment
+  expect(json.meshes.length).toBeGreaterThanOrEqual(5);
+  expect(json.images?.length ?? 0).toBeGreaterThanOrEqual(3);
   expect(errors).toEqual([]);
 });
 
