@@ -118,13 +118,14 @@ def build_part(src_dir, kind, pid, out_root, n_body, name=None, sex=None, tex_si
         for j in range(1, len(ids) - 1):
             tris.append((ids[0], ids[j], ids[j + 1]))
     refs = np.array([binds[i][0] for i in orig], np.uint16)
-    wts = np.clip(np.round(np.array([binds[i][1] for i in orig]) * 16384), -32767, 32767).astype(np.int16)
+    # float weights: long hair is bound far outside its reference triangles (weights well beyond ±2)
+    wts = np.array([binds[i][1] for i in orig], np.float32)
     offs = np.clip(np.round(np.array([binds[i][2] for i in orig]) * 1e4), -32767, 32767).astype(np.int16)
     out = os.path.join(out_root, "parts", kind, pid)
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "part.bin"), "wb") as fo:
         fo.write(np.array(tris, np.uint32).tobytes()); fo.write(np.array(uvs, np.float32).tobytes())
-        fo.write(refs.tobytes()); fo.write(wts.tobytes()); fo.write(offs.tobytes())
+        fo.write(wts.tobytes()); fo.write(refs.tobytes()); fo.write(offs.tobytes())
     color, tex, alpha, two_sided = [0.8, 0.8, 0.8], None, False, True
     if mat and os.path.exists(os.path.join(src_dir, mat)):
         for line in open(os.path.join(src_dir, mat), encoding="utf8", errors="replace"):
@@ -247,10 +248,23 @@ def main(zip_path, packs, root):
             skins.append({"id": f"{tone}-{sex}", "tone": tone, "sex": sex})
     eyes = []
     for f in sorted(os.listdir(os.path.join(sysd, "eyes/materials"))):
-        if f.endswith("_eye.png"):
+        if f.endswith("_eye.png") and f != "brown_eye.png":  # the stock "brown" iris is red
             eid = f[:-8]
             save_webp(os.path.join(sysd, "eyes/materials", f), os.path.join(out_root, "eyes", f"{eid}.webp"), 512, 88)
             eyes.append(eid)
+    # natural browns: the hazel iris with its saturated (iris) pixels darkened and warmed; the white is untouched
+    src = Image.open(os.path.join(sysd, "eyes/materials", "brownlight_eye.png")).convert("RGBA")
+    arr = np.asarray(src).astype(np.float32)
+    rgb = arr[..., :3]
+    sat = (rgb.max(axis=2) - rgb.min(axis=2)) / np.maximum(rgb.max(axis=2), 1.0)
+    w = np.clip((sat - 0.18) / 0.22, 0, 1)[..., None]
+    for eid, mul in (("brown", (0.62, 0.50, 0.40)), ("darkbrown", (0.36, 0.27, 0.21))):
+        out = arr.copy()
+        out[..., :3] = rgb * (1 - w) + rgb * np.array(mul, np.float32) * w
+        im = Image.fromarray(out.clip(0, 255).astype(np.uint8), "RGBA")
+        im.thumbnail((512, 512), Image.LANCZOS)
+        im.save(os.path.join(out_root, "eyes", f"{eid}.webp"), "WEBP", quality=88, method=6)
+        eyes.insert(0, eid)
     base_layer_masks(zip_path, out_root)
     with open(os.path.join(out_root, "parts.json"), "w") as fo:
         json.dump({"format": "modverse-human-parts/1", "source": "MakeHuman system assets and community asset packs hair01, pants01, shoes01 (CC0 items only)", "parts": index, "skins": skins, "eyes": eyes, "skipped": skipped}, fo, separators=(",", ":"))

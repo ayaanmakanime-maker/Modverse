@@ -209,6 +209,8 @@ def main(zip_path, root):
         mean = sum(eth.values()) / 3.0
         for e, d in eth.items():
             add_morph(f"{g}.eth.{e}", d - mean, g)
+        add_morph(f"{g}.proportions+", T("macrodetails", f"{g}-young-averagemuscle-averageweight-idealproportions"), g)
+        add_morph(f"{g}.proportions-", T("macrodetails", f"{g}-young-averagemuscle-averageweight-uncommonproportions"), g)
         old = sum(T("macrodetails", f"{e}-{g}-old") for e in ("african", "asian", "caucasian")) / 3.0
         add_morph(f"{g}.age+", old - mean, g)
     for name in ("eye-left-closure", "eye-right-closure", "mouth-corner-puller", "mouth-elevation", "eyebrows-left-up", "eyebrows-right-up"):

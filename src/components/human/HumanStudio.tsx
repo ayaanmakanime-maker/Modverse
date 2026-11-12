@@ -32,8 +32,15 @@ type Tab = "measure" | "face" | "look";
 type Slots = Partial<Record<PartKind, string>>;
 const DEFAULT_SLOTS: Record<Sex, Slots> = {
   male: { eyes: "low-poly", eyebrows: "eyebrow001", eyelashes: "eyelashes01", hair: "short02", bottoms: "toigo_wool_pants", shoes: "toigo_ankle_boots_male" },
-  female: { eyes: "low-poly", eyebrows: "eyebrow003", eyelashes: "eyelashes02", hair: "bob01", shoes: "toigo_ballet_flats" },
+  female: { eyes: "low-poly", eyebrows: "eyebrow001", eyelashes: "eyelashes02", hair: "long01", shoes: "toigo_ballet_flats" },
 };
+/** Starting points: MakeHuman's "ideal proportions" and a refined face per sex. Everything stays adjustable. */
+const DEFAULT_BUILD: Record<Sex, { weight: number; muscle: number; cup: number; proportions: number }> = { male: { weight: 0, muscle: 0.15, cup: 0, proportions: 0.45 }, female: { weight: -0.12, muscle: 0, cup: 0, proportions: 0.7 } };
+const DEFAULT_FACE: Record<Sex, LookState> = {
+  male: { ...DEFAULT_LOOK, face: { jaw: 0.15, cheekbones: 0.15 } },
+  female: { ...DEFAULT_LOOK, headShape: "oval", face: { jaw: -0.45, chinWidth: -0.35, faceFat: -0.3, noseWidth: -0.3, nostrils: -0.2, eyeSize: 0.3, cheekbones: 0.3, upperLip: 0.15, lowerLip: 0.1, browHeight: 0.2, headWidth: -0.15 } },
+};
+const DEFAULT_GARMENT: Record<Sex, string[]> = { male: ["elvs-male-shirt-untucked-bd1"], female: ["toigo-shift-dress", "elvs-simple-fashion-dress-1", "toigo-keyhole-neck-dress"] };
 
 function Thumb({ kind, part, active, onClick }: { kind: PartKind; part: PartInfo; active: boolean; onClick: () => void }) {
   return (
@@ -54,13 +61,13 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
   /* ---------------- body ---------------- */
   const [sex, setSexRaw] = useState<Sex>("male");
   const [inputs, setInputs] = useState<Partial<Record<MeasureId, string>>>({});
-  const [fixed, setFixed] = useState({ weight: 0, muscle: 0, cup: 0 });
+  const [fixed, setFixed] = useState(DEFAULT_BUILD.male);
   const [solved, setSolved] = useState<{ sex: Sex; controls: BodyState["controls"]; scale: number } | null>(null);
   const [fit, setFit] = useState<FitResult | null>(null);
   const [fitting, setFitting] = useState(false);
-  const [look, setLook] = useState<LookState>(DEFAULT_LOOK);
-  const [smile, setSmile] = useState(0.25);
-  const fixedControls = useMemo(() => ({ weight: fixed.weight || undefined, muscle: fixed.muscle || undefined, ...(sex === "female" ? { cup: fixed.cup || undefined } : {}) }) as Partial<Record<ControlId, number>>, [fixed, sex]);
+  const [look, setLook] = useState<LookState>(DEFAULT_FACE.male);
+  const [smile, setSmile] = useState(0.12);
+  const fixedControls = useMemo(() => ({ weight: fixed.weight || undefined, muscle: fixed.muscle || undefined, proportions: fixed.proportions || undefined, ...(sex === "female" ? { cup: fixed.cup || undefined } : {}) }) as Partial<Record<ControlId, number>>, [fixed, sex]);
   const state: BodyState = useMemo(() => {
     const base = solved && solved.sex === sex ? solved : { sex, controls: {}, scale: 1 };
     const morphs = asset ? { ...lookMorphs(asset.meta, sex, look), "expr.mouth-corner-puller": smile } : {};
@@ -83,10 +90,10 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
       done(await new Promise<FitResult>((resolve, reject) => {
         const on = (e: MessageEvent<{ id: number; ok: boolean; result?: FitResult; error?: string }>) => { if (e.data.id !== id) return; w.removeEventListener("message", on); if (e.data.ok) resolve(e.data.result!); else reject(new Error(e.data.error)); };
         w.addEventListener("message", on);
-        w.postMessage({ id, sex, targets, fixed: fixedControls });
+        w.postMessage({ id, sex, targets, fixed: fixedControls, morphs: state.morphs });
       }));
     } catch {
-      setTimeout(() => done(fitBody(asset, sex, targets, fixedControls)), 30);
+      setTimeout(() => done(fitBody(asset, sex, targets, fixedControls, [], state.morphs)), 30);
     }
   }
 
@@ -103,9 +110,9 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
   const [garmentId, setGarmentId] = useState("");
   const [outfitId, setOutfitId] = useState("");
   const [tint, setTint] = useState("#FFFFFF");
-  const defaultGarment = (v: Sex) => { const own = garments.filter((g) => (v === "female" ? g.audience === "women" : g.audience === "men")); return (own.find((g) => g.id === (v === "female" ? "aethelraed-flapper-dress" : "elvs-male-shirt-untucked-bd1")) ?? own[0])?.id ?? ""; };
+  const defaultGarment = (v: Sex) => { const own = garments.filter((g) => (v === "female" ? g.audience === "women" : g.audience === "men")); return (DEFAULT_GARMENT[v].map((id) => own.find((g) => g.id === id)).find(Boolean) ?? own[0])?.id ?? ""; };
   useEffect(() => { setGarmentId(defaultGarment("male")); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const setSex = (v: Sex) => { setSexRaw(v); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[v]); setGarmentId(defaultGarment(v)); setOutfitId(""); };
+  const setSex = (v: Sex) => { setSexRaw(v); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[v]); setGarmentId(defaultGarment(v)); setOutfitId(""); setFixed(DEFAULT_BUILD[v]); setLook(DEFAULT_FACE[v]); };
   const applyProfile = (id: string) => {
     const p = profiles.find((x) => x.id === id);
     if (!p) return;
@@ -234,6 +241,7 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
               <p className="text-xs text-bone-2">Build (kept while fitting)</p>
               <Slider label="Body weight" unit="" min={-1} max={1} step={0.05} value={fixed.weight} onChange={(v) => setFixed({ ...fixed, weight: v })} />
               <Slider label="Muscle" unit="" min={-1} max={1} step={0.05} value={fixed.muscle} onChange={(v) => setFixed({ ...fixed, muscle: v })} />
+              <Slider label="Proportions" unit="" min={-1} max={1} step={0.05} value={fixed.proportions} onChange={(v) => setFixed({ ...fixed, proportions: v })} />
               {sex === "female" && <Slider label="Cup size" unit="" min={-1} max={1} step={0.05} value={fixed.cup} onChange={(v) => setFixed({ ...fixed, cup: v })} />}
             </div>
           </div>
@@ -259,7 +267,7 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
                 {asset.meta.faceControls.filter((c) => c.group === g).map((c) => <Slider key={c.id} label={c.label} unit="" min={-1} max={1} step={0.05} value={look.face[c.id] ?? 0} onChange={(v) => setFace(c.id, v)} />)}
               </div>
             ))}
-            <Button size="sm" variant="ghost" onClick={() => setLook(DEFAULT_LOOK)} data-testid="hm-face-reset">Reset face</Button>
+            <Button size="sm" variant="ghost" onClick={() => setLook(DEFAULT_FACE[sex])} data-testid="hm-face-reset">Reset face</Button>
           </div>
         )}
 
@@ -272,7 +280,7 @@ export function HumanStudio({ garments }: { garments: HumanStudioGarment[] }) {
             </div>
             <div>
               <p className="mb-1 text-xs text-bone-2">Eye colour</p>
-              <div className="flex flex-wrap gap-1">{(parts?.eyes ?? []).map((e) => <button key={e} className="mv-chip !px-2 !py-0.5 !text-[0.62rem]" data-active={eyeColor === e} onClick={() => setEyeColor(e)} data-testid={`hm-eye-${e}`}>{e.replace("brownlight", "hazel").replace("bluegreen", "blue-green").replace("deepblue", "deep blue").replace("lightblue", "light blue")}</button>)}</div>
+              <div className="flex flex-wrap gap-1">{(parts?.eyes ?? []).map((e) => <button key={e} className="mv-chip !px-2 !py-0.5 !text-[0.62rem]" data-active={eyeColor === e} onClick={() => setEyeColor(e)} data-testid={`hm-eye-${e}`}>{e.replace("darkbrown", "dark brown").replace("brownlight", "hazel").replace("bluegreen", "blue-green").replace("deepblue", "deep blue").replace("lightblue", "light blue")}</button>)}</div>
             </div>
             <div>
               <p className="mb-1 text-xs text-bone-2">Hair</p>

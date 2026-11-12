@@ -6,9 +6,12 @@
  */
 import { joints, type HumanAsset } from "./model";
 
-export interface Skeleton { names: string[]; index: Map<string, number>; parent: Int16Array; head: Float32Array }
-/** Euler angles in degrees (applied X, then Y, then Z) per bone; `root` moves the whole body (cm). */
-export type Pose = { bones: Record<string, [number, number, number]>; root?: [number, number, number] };
+export interface Skeleton { names: string[]; index: Map<string, number>; parent: Int16Array; head: Float32Array; /** unit direction of each bone at rest (head → tail) */ dir: Float32Array }
+/**
+ * Per bone: Euler angles in degrees (applied X, then Y, then Z) and an optional fourth value, a twist in degrees about
+ * the bone's own length (applied first). `root` moves the whole body (cm).
+ */
+export type Pose = { bones: Record<string, number[]>; root?: [number, number, number] };
 
 export function buildSkeleton(a: HumanAsset, rest: Float32Array): Skeleton {
   const j = joints(a, rest);
@@ -16,11 +19,20 @@ export function buildSkeleton(a: HumanAsset, rest: Float32Array): Skeleton {
   const index = new Map(names.map((n, i) => [n, i]));
   const parent = new Int16Array(names.length);
   const head = new Float32Array(names.length * 3);
-  a.meta.bones.forEach((b, i) => { parent[i] = b.parent ? index.get(b.parent) ?? -1 : -1; head.set(j.get(b.name)!.head, i * 3); });
-  return { names, index, parent, head };
+  const dir = new Float32Array(names.length * 3);
+  a.meta.bones.forEach((b, i) => {
+    parent[i] = b.parent ? index.get(b.parent) ?? -1 : -1;
+    const jt = j.get(b.name)!;
+    head.set(jt.head, i * 3);
+    const d = [jt.tail[0] - jt.head[0], jt.tail[1] - jt.head[1], jt.tail[2] - jt.head[2]], l = Math.hypot(d[0], d[1], d[2]) || 1;
+    dir.set([d[0] / l, d[1] / l, d[2] / l], i * 3);
+  });
+  return { names, index, parent, head, dir };
 }
 
 const D = Math.PI / 180;
+/** Forearm twist that turns the palms from facing forward (A-pose) towards the thighs. */
+const TWIST = 48;
 function euler(out: Float64Array, o: number, x: number, y: number, z: number) {
   const cx = Math.cos(x * D), sx = Math.sin(x * D), cy = Math.cos(y * D), sy = Math.sin(y * D), cz = Math.cos(z * D), sz = Math.sin(z * D);
   // R = Rz · Ry · Rx (row-major)
@@ -38,6 +50,13 @@ export function skin(a: HumanAsset, sk: Skeleton, rest: Float32Array, pose: Pose
   for (let b = 0; b < n; b++) {
     const e = pose.bones[sk.names[b]];
     euler(L, 0, e?.[0] ?? 0, e?.[1] ?? 0, e?.[2] ?? 0);
+    if (e && e[3]) {
+      // L = Euler · Twist(axis = rest bone direction)
+      const ax = sk.dir[b * 3], ay = sk.dir[b * 3 + 1], az = sk.dir[b * 3 + 2], c = Math.cos(e[3] * D), s = Math.sin(e[3] * D), t = 1 - c;
+      const Tw = [t * ax * ax + c, t * ax * ay - s * az, t * ax * az + s * ay, t * ax * ay + s * az, t * ay * ay + c, t * ay * az - s * ax, t * ax * az - s * ay, t * ay * az + s * ax, t * az * az + c];
+      const E = Array.from(L);
+      for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) L[r * 3 + k] = E[r * 3] * Tw[k] + E[r * 3 + 1] * Tw[3 + k] + E[r * 3 + 2] * Tw[6 + k];
+    }
     const p = sk.parent[b];
     if (p < 0) {
       R.set(L, b * 9);
@@ -93,7 +112,7 @@ export function poseAt(id: PoseId, t: number, life = true): Pose {
   const b: Pose["bones"] = {};
   if (id === "apose") return { bones: b };
   const s = Math.sin, breath = life ? s(t * 1.7) : 0, sway = life ? s(t * 0.55) : 0, drift = life ? s(t * 0.31 + 1) : 0;
-  const arm = 36;
+  const arm = 37;
   if (id === "walk") {
     const ph = t * 4.6, A = 24, K = 34;
     b.Hips = [0, -5 * s(ph), 1.5 * s(ph)];
@@ -102,24 +121,28 @@ export function poseAt(id: PoseId, t: number, life = true): Pose {
     b.LeftUpLeg = [-A * s(ph) - 3, 0, 0]; b.RightUpLeg = [A * s(ph) - 3, 0, 0];
     b.LeftLeg = [K * Math.max(0, s(ph - 0.9)) + 4, 0, 0]; b.RightLeg = [K * Math.max(0, s(ph - 0.9 + Math.PI)) + 4, 0, 0];
     b.LeftFoot = [-8 * s(ph), 0, 0]; b.RightFoot = [8 * s(ph), 0, 0];
-    b.LeftArm = [16 * s(ph), 0, -arm - 4]; b.RightArm = [-16 * s(ph), 0, arm + 4];
-    b.LeftForeArm = [-14 - 8 * Math.max(0, -s(ph)), 0, 0]; b.RightForeArm = [-14 - 8 * Math.max(0, s(ph)), 0, 0];
+    b.LeftArm = [16 * s(ph), 0, -arm - 3]; b.RightArm = [-16 * s(ph), 0, arm + 3];
+    b.LeftForeArm = [-14 - 8 * Math.max(0, -s(ph)), 0, 3, TWIST]; b.RightForeArm = [-14 - 8 * Math.max(0, s(ph)), 0, -3, -TWIST];
+    b.LeftUpLeg[2] = -3; b.RightUpLeg[2] = 3;
     return { bones: b, root: [0, 0, 0] };
   }
   b.Spine1 = [-0.6 * breath, 1.2 * drift, 0];
   b.Spine2 = [-1.1 * breath, 0, 0];
   b.Neck = [0.6 * breath, 3 * drift, 0];
   b.Head = [0, 2 * drift, 0.8 * sway];
-  b.LeftArm = [2 * sway, 0, -arm - 0.8 * breath]; b.RightArm = [-2 * sway, 0, arm + 0.8 * breath];
-  b.LeftForeArm = [-10, 0, 0]; b.RightForeArm = [-10, 0, 0];
-  b.LeftHand = [0, 0, -4]; b.RightHand = [0, 0, 4];
+  // arms hang close to the body, palms turned towards the thighs, feet under the hips
+  b.LeftArm = [3 + 2 * sway, 0, -arm - 3 - 0.8 * breath]; b.RightArm = [3 - 2 * sway, 0, arm + 3 + 0.8 * breath];
+  b.LeftForeArm = [-10, 0, -3, TWIST]; b.RightForeArm = [-10, 0, 3, -TWIST];
+  b.LeftHand = [0, 0, -3, TWIST * 0.3]; b.RightHand = [0, 0, 3, -TWIST * 0.3];
+  b.LeftUpLeg = [0, 0, -3.2]; b.RightUpLeg = [0, 0, 3.2];
+  b.LeftFoot = [0, 0, 3]; b.RightFoot = [0, 0, -3];
   if (id === "contrapposto") {
     b.Hips = [0, 4, 4 + 0.6 * sway];
     b.Spine = [0, -2, -3]; b.Spine1 = [b.Spine1[0], -3 + 1.2 * drift, -3];
     b.Neck = [b.Neck[0], 4 + 3 * drift, 1.5];
     b.LeftUpLeg = [-9, 6, -5]; b.LeftLeg = [17, 0, 0]; b.LeftFoot = [-6, 8, 0];
-    b.RightUpLeg = [0, 0, -4];
-    b.LeftArm = [6, 0, -arm + 4]; b.RightArm = [-3, 0, arm + 2];
+    b.RightUpLeg = [0, 0, -1];
+    b.LeftArm = [8, 0, -arm - 1]; b.RightArm = [-2, 0, arm + 3];
   } else {
     b.Hips = [0, 0, 0.7 * sway];
     b.Spine = [0, 0, -0.5 * sway];

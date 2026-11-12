@@ -63,9 +63,9 @@ interface Worn { item: WornItem; mesh: THREE.Mesh; target: Float32Array; cloth: 
 function materialFor(it: WornItem, look: SceneLook): THREE.Material {
   const map = it.textureUrl ? texture(it.textureUrl) : null;
   const c = it.color ?? [1, 1, 1];
-  if (it.kind === "hair") return new THREE.MeshStandardMaterial({ map, color: look.hairTint, alphaTest: it.alpha ? 0.42 : 0, side: THREE.DoubleSide, roughness: 0.55 });
+  if (it.kind === "hair") return new THREE.MeshStandardMaterial({ map, color: look.hairTint, alphaTest: it.alpha ? 0.3 : 0, alphaToCoverage: !!it.alpha, side: THREE.DoubleSide, roughness: 0.48 });
   if (it.kind === "eyebrows" || it.kind === "eyelashes") return new THREE.MeshStandardMaterial({ map, color: it.kind === "eyebrows" ? look.hairTint : "#1a1412", transparent: true, alphaTest: 0.06, depthWrite: false, side: THREE.DoubleSide, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  if (it.kind === "eyes") return new THREE.MeshStandardMaterial({ map, roughness: 0.12, metalness: 0 });
+  if (it.kind === "eyes") return new THREE.MeshStandardMaterial({ map, color: "#e9e4df", roughness: 0.18, metalness: 0 });
   return new THREE.MeshStandardMaterial({ map, color: map ? "#ffffff" : new THREE.Color(c[0], c[1], c[2]), alphaTest: it.alpha ? 0.5 : 0, side: it.twoSided === false ? THREE.FrontSide : THREE.DoubleSide, roughness: 0.82, polygonOffset: true, polygonOffsetFactor: it.kind === "outfits" ? -1 : -0.5, polygonOffsetUnits: -1 });
 }
 
@@ -274,8 +274,9 @@ export function HumanScene(p: HumanSceneProps) {
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 105, 340], fov: 30, near: 1, far: 3000 }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ scene, gl }) => { p.sceneRef.current = scene; p.glRef.current = gl; gl.toneMapping = THREE.NeutralToneMapping; }}>
       <color attach="background" args={["#ebe7e1"]} />
-      <hemisphereLight args={["#ffffff", "#b9b2a8", 0.55]} />
-      <directionalLight position={[120, 260, 220]} intensity={1.7} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-130} shadow-camera-right={130} shadow-camera-top={230} shadow-camera-bottom={-20} shadow-bias={-0.0004} />
+      <hemisphereLight args={["#ffffff", "#cfc8be", 0.9]} />
+      <directionalLight position={[40, 120, 300]} intensity={0.55} />
+      <directionalLight position={[110, 240, 230]} intensity={1.15} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-130} shadow-camera-right={130} shadow-camera-top={230} shadow-camera-bottom={-20} shadow-bias={-0.0004} />
       <directionalLight position={[-160, 120, -140]} intensity={0.5} />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={1.1} position={[0, 4, 7]} scale={[10, 6, 1]} />

@@ -21,10 +21,10 @@ export function parsePart(info: PartInfo, meta: PartJson, buf: ArrayBuffer): Par
   let o = 0;
   const index = new Uint32Array(buf, o, t); o += t * 4;
   const uv = new Float32Array(buf, o, n * 2); o += n * 8;
+  const weights = new Float32Array(buf, o, n * 3); o += n * 12;
   const refs = new Uint16Array(buf, o, n * 3); o += n * 6;
-  const weights = new Int16Array(buf, o, n * 3); o += n * 6;
   const offsets = new Int16Array(buf, o, n * 3);
-  return { info, index, uv, color: meta.color, twoSided: meta.twoSided, textureUrl: meta.texture ? `${partBase(info.kind, info.id)}/diffuse.webp` : null, fit: { refs, weights, offsets, scales: meta.scales, hideBody: meta.hideBody, vertices: n } };
+  return { info, index, uv, color: meta.color, twoSided: meta.twoSided, textureUrl: meta.texture ? `${partBase(info.kind, info.id)}/diffuse.webp` : null, fit: { refs, weights, offsets, weightScale: 1, scales: meta.scales, hideBody: meta.hideBody, vertices: n } };
 }
 
 const cache = new Map<string, Promise<PartMesh>>();
