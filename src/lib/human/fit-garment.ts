@@ -6,7 +6,9 @@
  */
 export interface GarmentFit {
   refs: Uint16Array;
-  weights: Int16Array;
+  weights: Int16Array | Float32Array;
+  /** multiply stored weights by this (1 / 16384 for the quantised garment bindings, 1 for float part bindings) */
+  weightScale: number;
   offsets: Int16Array;
   scales: Partial<Record<"x" | "y" | "z", { a: number; b: number; den: number }>>;
   /** Base-mesh vertex ranges hidden under the garment. */
@@ -16,7 +18,7 @@ export interface GarmentFit {
 
 export function parseGarmentFit(meta: { vertices: number; scales: GarmentFit["scales"]; hideBody: [number, number][] }, buf: ArrayBuffer): GarmentFit {
   const n = meta.vertices * 3;
-  return { refs: new Uint16Array(buf, 0, n), weights: new Int16Array(buf, n * 2, n), offsets: new Int16Array(buf, n * 4, n), scales: meta.scales, hideBody: meta.hideBody, vertices: meta.vertices };
+  return { refs: new Uint16Array(buf, 0, n), weights: new Int16Array(buf, n * 2, n), offsets: new Int16Array(buf, n * 4, n), weightScale: 1 / 16384, scales: meta.scales, hideBody: meta.hideBody, vertices: meta.vertices };
 }
 
 const fits = new Map<string, Promise<GarmentFit>>();
@@ -41,10 +43,11 @@ export function fitGarment(fit: GarmentFit, body: Float32Array, out: Float32Arra
   };
   const sx = axis(0, "x") * 1e-3, sy = axis(1, "y") * 1e-3, sz = axis(2, "z") * 1e-3; // 1e-4 dm → cm (× 10 × 1e-4)
   const { refs, weights, offsets } = fit;
+  const ws = fit.weightScale;
   for (let v = 0; v < fit.vertices; v++) {
     const o = v * 3;
     const a = refs[o] * 3, b = refs[o + 1] * 3, c = refs[o + 2] * 3;
-    const wa = weights[o] / 16384, wb = weights[o + 1] / 16384, wc = weights[o + 2] / 16384;
+    const wa = weights[o] * ws, wb = weights[o + 1] * ws, wc = weights[o + 2] * ws;
     out[o] = body[a] * wa + body[b] * wb + body[c] * wc + offsets[o] * sx;
     out[o + 1] = body[a + 1] * wa + body[b + 1] * wb + body[c + 1] * wc + offsets[o + 1] * sy;
     out[o + 2] = body[a + 2] * wa + body[b + 2] * wb + body[c + 2] * wc + offsets[o + 2] * sz;

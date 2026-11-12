@@ -91,7 +91,7 @@ export function fitControls(f: (x: number[]) => number[], t: number[], x0: numbe
 }
 
 /** Fits the body of `sex` to the given measurements (cm). `fixed` controls (weight, muscle, cup…) stay as they are. */
-export function fitBody(a: HumanAsset, sex: Sex, targets: Partial<Record<MeasureId, number>>, fixed: Partial<Record<ControlId, number>> = {}, extra: ControlId[] = []): FitResult {
+export function fitBody(a: HumanAsset, sex: Sex, targets: Partial<Record<MeasureId, number>>, fixed: Partial<Record<ControlId, number>> = {}, extra: ControlId[] = [], morphs?: Record<string, number>): FitResult {
   const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
   // height is reached by uniform scale; every other measurement by its MakeHuman measurement target, solved at that
   // scale (the height macro would also inflate all girths)
@@ -99,7 +99,7 @@ export function fitBody(a: HumanAsset, sex: Sex, targets: Partial<Record<Measure
   const ids = active.map((m) => m.id);
   const ctrls = [...new Set([...active.map((m) => m.control), ...extra])];
   const buf = new Float32Array(a.base[sex].length);
-  const stateFor = (x: number[], scale = 1): BodyState => ({ sex, scale, controls: { ...fixed, ...Object.fromEntries(ctrls.map((c, k) => [c, x[k]])) } });
+  const stateFor = (x: number[], scale = 1): BodyState => ({ sex, scale, morphs, controls: { ...fixed, ...Object.fromEntries(ctrls.map((c, k) => [c, x[k]])) } });
   const measureAt = (x: number[]) => measureBody(a, bodyPositions(a, stateFor(x), buf));
   let x = ctrls.map((c) => fixed[c] ?? 0), evaluations = 0;
   const scaleFor = (xx: number[]) => (targets.height ? Math.max(0.8, Math.min(1.25, targets.height / measureAt(xx).height)) : 1);
@@ -148,7 +148,7 @@ export function fitBody(a: HumanAsset, sex: Sex, targets: Partial<Record<Measure
   const result: FitResult = { state, measured, delta, limited: ctrls.filter((c, k) => Math.abs(x[k]) > 0.995), evaluations, ms: Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - t0) };
   // a measurement out of reach of its own target: let overall body weight help (unless the customer set it)
   if (!extra.length && fixed.weight === undefined && result.limited.length && Object.values(delta).some((d) => Math.abs(d!) > 1)) {
-    const retry = fitBody(a, sex, targets, fixed, ["weight"]);
+    const retry = fitBody(a, sex, targets, fixed, ["weight"], morphs);
     const worst = (r: FitResult) => Math.max(...Object.values(r.delta).map((d) => Math.abs(d!)));
     if (worst(retry) < worst(result)) return { ...retry, evaluations: retry.evaluations + result.evaluations, ms: retry.ms + result.ms };
   }

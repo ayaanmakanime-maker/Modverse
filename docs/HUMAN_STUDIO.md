@@ -73,9 +73,12 @@ Built by `scripts/human/build_parts.py <mpfb.zip> <packs dir> <repo>` from the M
 
 Every part is fitted through its `.mhclo` binding, exactly like the garments, so hair, brows, lashes, eyes, trousers and shoes follow the face and body the customer builds.
 
+### Starting points
+Each sex opens on a refined default instead of the raw average mesh: MakeHuman's "ideal proportions" target (a Proportions slider, 0.7 for the woman and 0.45 for the man), a face preset (for the woman: oval shape, narrower jaw, chin and nose, larger eyes, higher cheekbones), long hair and a fitted shift dress for the woman, a shirt and trousers for the man. Irises: the stock "brown" texture is red, so brown and dark brown are derived from the hazel iris. Hair uses alpha-to-coverage for soft edges; part bindings keep float weights (long hair is bound far outside its reference triangles). Lighting is a soft key with front fill.
+
 ## Motion (`src/lib/human/pose.ts`)
 * Forward kinematics on the 52-bone rig and linear-blend skinning on the CPU with the CC0 weights; everything worn is re-fitted to the posed body every frame.
-* Poses: Relaxed (default), Weight on one leg, Walk (in place), A-pose (for measuring).
+* Poses: Relaxed (default: arms at the sides with the palms turned to the thighs by a twist about each forearm's own axis, feet under the hips), Weight on one leg, Walk (in place), A-pose (for measuring).
 * "Breathing, blinking and movement" adds breathing, small weight shifts, head drift and blinks (MakeHuman's eye-closure targets).
 * Feet are kept on the floor. Measurements are always taken on the unposed body.
 * Views: full body, upper body, face; turntable; photo (PNG).

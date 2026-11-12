@@ -112,7 +112,7 @@ export function loadHumanAsset(): Promise<HumanAsset> {
 
 /** A body control in MakeHuman's −1 … 1 modifier range; positive values use the "incr" target, negative the "decr". */
 export type ControlId =
-  | "height" | "weight" | "muscle" | "cup"
+  | "height" | "weight" | "muscle" | "cup" | "proportions"
   | "bust" | "underbust" | "waist" | "hips" | "neck" | "neckHeight" | "shoulder" | "frontChest" | "napeToWaist" | "waistToHip"
   | "upperarm" | "armLength" | "wrist" | "thigh" | "knee" | "calf" | "ankle" | "legLength";
 
@@ -120,6 +120,7 @@ const M = (name: string): [string, string][] => [[`measure-${name}-incr`, `measu
 export const CONTROL_TARGETS: Record<ControlId, (sex: Sex) => [string, string][]> = {
   height: (s) => [[`${s}.height+`, `${s}.height-`]], weight: (s) => [[`${s}.weight+`, `${s}.weight-`]], muscle: (s) => [[`${s}.muscle+`, `${s}.muscle-`]],
   cup: (s) => (s === "female" ? [["female.cup+", "female.cup-"]] : []),
+  proportions: (s) => [[`${s}.proportions+`, `${s}.proportions-`]],
   bust: () => M("bust-circ"), underbust: () => M("underbust-circ"), waist: () => M("waist-circ"), hips: () => M("hips-circ"), neck: () => M("neck-circ"),
   neckHeight: () => M("neck-height"), shoulder: () => M("shoulder-dist"), frontChest: () => M("frontchest-dist"), napeToWaist: () => M("napetowaist-dist"),
   waistToHip: () => M("waisttohip-dist"), upperarm: () => M("upperarm-circ"), armLength: () => [...M("upperarm-length"), ...M("lowerarm-length")],

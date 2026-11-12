@@ -25,8 +25,8 @@ test("Human Studio: the CC0 body is fitted to tape measurements, tape-checked, w
   await page.getByTestId("hm-shape-round").click();
   expect(await page.getByTestId("hm-tab-face").getByRole("slider").count()).toBeGreaterThanOrEqual(25);
   await page.getByRole("tab", { name: "Skin & hair" }).click();
-  await page.getByTestId("hm-hair-long01").click();
-  await expect(canvas).toHaveAttribute("data-hair", "long01", { timeout: 60_000 });
+  await page.getByTestId("hm-hair-ponytail01").click();
+  await expect(canvas).toHaveAttribute("data-hair", "ponytail01", { timeout: 60_000 });
   await page.getByTestId("hm-hairtint-auburn").click();
   await page.getByTestId("hm-eye-green").click();
   // alive: the default pose animates; walking simulates the loose fabric
