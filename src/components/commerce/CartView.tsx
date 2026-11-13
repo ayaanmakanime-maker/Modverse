@@ -10,7 +10,7 @@ import { useSession } from "@/components/session";
 import { Badge, Button, EmptyState, Select, toast } from "@/components/ui";
 import { MtoThumb } from "./MtoLine";
 
-interface Line { id: string; kind?: "design" | "library"; library?: { garment: { id: string } } | null; projectId: string | null; name: string; version: number; size: string; quantity: number; sizes: string[]; unitPrice: number; unitGst: number; lineTotal: number; summary: string; validationStatus: string; config: DesignConfig | null; priceLines?: PriceLine[]; priceChanged?: boolean }
+interface Line { id: string; kind?: "design" | "library"; library?: { garment: { id: string; audience?: string } } | null; projectId: string | null; name: string; version: number; size: string; quantity: number; sizes: string[]; unitPrice: number; unitGst: number; lineTotal: number; summary: string; validationStatus: string; config: DesignConfig | null; priceLines?: PriceLine[]; priceChanged?: boolean }
 interface Cart { lines: Line[]; subtotal: number; discount?: number; discountCode?: string | null; discountError?: string | null; gst: number; shipping: number; total: number; illustrative?: boolean; shippingRule?: { flatRate: number; freeAbove: number } }
 
 export function CartView({ initial }: { initial: Cart }) {
@@ -34,7 +34,7 @@ export function CartView({ initial }: { initial: Cart }) {
         {cart.lines.map((l) => (
           <div key={l.id} className="mv-card flex gap-4 p-3">
             {l.kind === "library" && l.library
-              ? <Link href={`/collection/${l.library.garment.id}`} className="w-24"><MtoThumb snapshot={l.library} className="h-24 w-24" /></Link>
+              ? <Link href={`/shop/${l.library.garment.audience === "women" ? "women" : "men"}/${l.library.garment.id}`} className="w-24"><MtoThumb snapshot={l.library} className="h-24 w-24" /></Link>
               : <Link href={`/design/${l.projectId}`} className="flex w-24 shrink-0 items-center justify-center rounded-lg bg-surface-2">{l.config && <DesignFlat config={l.config} view="front" className="h-24 w-full" />}</Link>}
             <div className="min-w-0 flex-1 space-y-1" data-testid={l.kind === "library" ? "cart-line-mto" : "cart-line"}>
               <p className="font-medium">{l.name} {l.kind === "library" ? <Badge>made to order</Badge> : <span className="text-xs text-mute">v{l.version}</span>}</p>

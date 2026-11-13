@@ -85,6 +85,13 @@
       "when": 1794572428549,
       "tag": "0011_v27_muse_generations",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794575195891,
+      "tag": "0012_v28_wishlist_garments",
+      "breakpoints": true
     }
   ]
 }

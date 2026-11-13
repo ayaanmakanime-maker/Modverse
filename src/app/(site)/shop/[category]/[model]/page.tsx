@@ -12,18 +12,26 @@ import { getDb } from "@/lib/db/client";
 import { products } from "@/lib/db/schema";
 import { AUDIENCES, FIT_LABELS, type Audience } from "@/lib/garment/types";
 import { ProductActions } from "./ProductActions";
+import { visibleGarments } from "@/lib/garment-library";
+import { CollectionProduct } from "@/components/shop/CollectionProduct";
+import { mtoProfileFor } from "@/lib/garment/made-to-order";
 import { ProductPreview3D } from "./ProductPreview3D";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ model: string }> }) {
   const { model } = await params;
-  return { title: MODEL_BY_ID.get(model)?.name ?? "Garment" };
+  return { title: MODEL_BY_ID.get(model)?.name ?? (await visibleGarments()).find((g) => g.id === model)?.name ?? "Garment" };
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ category: string; model: string }> }) {
   const { category, model: modelId } = await params;
   const model = MODEL_BY_ID.get(modelId);
+  if (!model && (AUDIENCES as readonly string[]).includes(category)) {
+    // a made-to-order collection garment (unisex pieces are in both ranges)
+    const g = (await visibleGarments()).find((x) => x.id === modelId);
+    if (g && mtoProfileFor(g.category) && (g.audience === category || g.audience === "unisex")) return <CollectionProduct g={g} range={category as "men" | "women"} />;
+  }
   if (!model || !(AUDIENCES as readonly string[]).includes(category) || !model.audiences.includes(category as Audience)) notFound();
   const db = await getDb();
   const [product] = await db.select().from(products).where(and(eq(products.categoryId, category), eq(products.garmentModelId, modelId)));

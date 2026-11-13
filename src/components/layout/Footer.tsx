@@ -18,7 +18,7 @@ export function Footer() {
         <div>
           <p className="mv-eyebrow mb-4">Create</p>
           <ul className="space-y-2 text-sm text-bone-2">
-            <li><Link href="/design/new?mode=studio">Design Studio</Link></li><li><Link href="/design/new?mode=atelier">Atelier</Link></li><li><Link href="/design/new?mode=pro">Atelier Pro</Link></li><li><Link href="/collection">3D garment collection</Link></li><li><Link href="/library">Creative Library</Link></li><li><Link href="/try-on">AI photo try-on</Link></li>
+            <li><Link href="/design/new?mode=studio">Design Studio</Link></li><li><Link href="/design/new?mode=atelier">Atelier</Link></li><li><Link href="/design/new?mode=pro">Atelier Pro</Link></li><li><Link href="/library">Creative Library</Link></li><li><Link href="/try-on">AI photo try-on</Link></li>
           </ul>
         </div>
         <div>

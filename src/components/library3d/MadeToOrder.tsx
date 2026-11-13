@@ -90,7 +90,7 @@ export function MadeToOrder({ garment, glb, heightCm, rules, hasFit }: { garment
   const chip = "mv-chip !px-2.5 !py-1 !text-[0.7rem]";
   return (
     <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px]" data-testid="mto" data-valid={problems.length ? "no" : "yes"} data-price={price.unitPrice}>
-      <div className="lg:sticky lg:top-4 lg:self-start">
+      <div className="lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:self-start lg:overflow-y-auto mv-scroll">
         <Studio url={glb} name={garment.name} heightCm={heightCm} attribution={garment.attribution} licence={garment.licence} order={{ tint: colour.hex, decals }} />
       </div>
       <div className="space-y-4 text-sm">
@@ -207,7 +207,7 @@ export function MadeToOrder({ garment, glb, heightCm, rules, hasFit }: { garment
             <Select value={qty} onChange={(e) => setQty(Number(e.target.value))} className="!w-20 !py-2 !text-xs" aria-label="Quantity">{Array.from({ length: 10 }).map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</Select>
             {user
               ? <Button className="flex-1" onClick={addToCart} loading={adding} disabled={problems.length > 0 || uploading} data-testid="mto-add">Add to cart · {formatINR((price.unitPrice + price.gst) * qty)}</Button>
-              : <Link className="mv-btn mv-btn-primary flex-1 justify-center" href={`/login?next=${encodeURIComponent(`/collection/${garment.id}`)}`} data-testid="mto-signin">Sign in to order</Link>}
+              : <Link className="mv-btn mv-btn-primary flex-1 justify-center" href={`/login?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/shop")}`} data-testid="mto-signin">Sign in to order</Link>}
           </div>
           <p className="text-[0.62rem] text-mute">Every order is checked by the ModVerse studio before production. <Badge>{garment.licence}</Badge> 3D model by its creator; the garment is cut from ModVerse&apos;s graded pattern for this style.</p>
         </section>

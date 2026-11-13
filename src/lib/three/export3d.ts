@@ -213,10 +213,15 @@ export async function export3D(root: THREE.Object3D, format: Export3DFormat, met
 }
 
 /** Saves a Blob as a download. */
+/** Save a file. The link is attached to the page while clicked (detached links are dropped after a burst of downloads in Chromium). */
 export function downloadBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
 }

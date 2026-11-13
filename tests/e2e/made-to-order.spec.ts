@@ -18,7 +18,7 @@ test("made to order: shop → customise within manufacturing limits → cart →
   for (const t of ["shirts", "tailoring", "trousers", "sweatwear"]) await expect(page.getByTestId(`shop-type-${t}`)).toBeVisible();
   await page.getByTestId("shop-type-shirts").click();
   await expect(page.getByTestId("shop-garment-card").first()).toBeVisible();
-  await page.goto("/collection/elvs-male-shirt-untucked-bd1");
+  await page.goto("/shop/men/elvs-male-shirt-untucked-bd1");
   const mto = page.getByTestId("mto");
   await expect(mto).toBeVisible();
   await expect(page.getByTestId("library-studio")).toHaveAttribute("data-loaded", "yes", { timeout: 60_000 });
@@ -107,13 +107,13 @@ test("made to order: shop → customise within manufacturing limits → cart →
 
 test("made to order: knitted pieces are graded sizes only; bottoms size by waist and hip", async ({ page }) => {
   await register(page, "MTO Rules");
-  await page.goto("/shop/women?type=skirts#collection");
+  await page.goto("/shop/women?cat=skirts#shop");
   await expect(page.getByTestId("shop-garment-card").first()).toBeVisible();
   await page.getByTestId("shop-garment-card").first().click();
   await expect(page.getByTestId("mto")).toBeVisible();
   await expect(page.getByTestId("mto-mtm")).toBeVisible(); // skirts can be made to measure
   await expect(page.getByTestId("mto-artwork")).toHaveCount(0); // no artwork placements on skirts
-  await page.goto("/collection/toigo-basic-tucked-t-shirt");
+  await page.goto("/shop/men/toigo-basic-tucked-t-shirt");
   await expect(page.getByText("Knitted garments are made in graded sizes only.")).toBeVisible();
   await expect(page.getByTestId("mto-artwork")).toBeVisible();
 });

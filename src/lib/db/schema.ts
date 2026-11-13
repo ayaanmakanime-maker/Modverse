@@ -482,6 +482,17 @@ export const wishlistItems = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.productId] })],
 );
 
+/** Wishlist entries for made-to-order collection garments (the design-your-own products use wishlist_items). */
+export const wishlistGarments = pgTable(
+  "wishlist_garments",
+  {
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    garmentId: text("garment_id").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.garmentId] })],
+);
+
 export const carts = pgTable("carts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),

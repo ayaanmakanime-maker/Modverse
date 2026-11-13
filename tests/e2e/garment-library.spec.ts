@@ -3,7 +3,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { ADMIN, login, openEditor, register } from "./helpers";
 
-const index = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/garment-library/index.json"), "utf8")) as { garments: { id: string; path: string; glb: string; licence: string }[] };
+const index = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/garment-library/index.json"), "utf8")) as { garments: { id: string; path: string; glb: string; licence: string; audience: string }[] };
 
 test("3D collection lists only downloaded, licensed garment files; a real model loads, is customised to order and exports", async ({ page }) => {
   test.setTimeout(180_000);
@@ -17,13 +17,18 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   }
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/collection");
-  await expect(page.getByTestId("collection-count")).toContainText(`${index.garments.length} garments`);
-  await page.getByTestId("collection-for-men").click();
-  await expect(page.getByTestId("collection-card").first()).toBeVisible();
-  await page.getByTestId("collection-search").fill("polo");
-  await page.getByTestId("collection-search").press("Enter");
-  await page.getByTestId("collection-card").first().click();
+  // the old 3D collection pages now lead to the Men / Women ranges
+  await page.goto("/collection?for=women");
+  await expect(page).toHaveURL(/\/shop\/women/);
+  await page.goto("/collection/toigo-shift-dress");
+  await expect(page).toHaveURL(/\/shop\/women\/toigo-shift-dress$/);
+  // every made-to-order garment is listed in its range (unisex in both)
+  const inMen = index.garments.filter((g) => g.audience !== "women").length;
+  await page.goto("/shop/men");
+  await expect(page.getByTestId("catalogue-count")).toContainText(`· ${inMen} made-to-order styles`);
+  await page.getByTestId("catalogue-q").fill("polo");
+  await page.getByTestId("catalogue-apply").click();
+  await page.getByTestId("shop-garment-card").first().click();
   const studio = page.getByTestId("library-studio");
   await expect(studio).toHaveAttribute("data-loaded", "yes", { timeout: 120_000 });
   await expect(page.getByTestId("garment-attribution")).toContainText("MakeHuman");
@@ -66,6 +71,9 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   expect((await grab("export3d-stl")).buf.length).toBeGreaterThan(10_000);
   const tmf = await grab("export3d-3mf");
   expect(has(tmf.buf, "3D/3dmodel.model")).toBe(true);
+  // headless Chromium throttles a long burst of downloads from one page: continue on a fresh load
+  await page.reload();
+  await expect(studio).toHaveAttribute("data-loaded", "yes", { timeout: 120_000 });
   expect((await grab("export3d-obj-print")).name).toMatch(/-obj-mm\.zip$/);
   const dxf = (await grab("export3d-dxf")).buf.toString("utf8");
   expect(dxf).toContain("AC1009");
