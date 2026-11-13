@@ -1,0 +1,99 @@
+{
+  "id": "elvs-male-trouser-short-2",
+  "name": "Male Trouser Short 2",
+  "originalName": "elvs_male_trouser_short_2",
+  "audience": "men",
+  "category": "trousers",
+  "collection": "Shorts",
+  "description": "male trouser short 2 by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "pants03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants03/pants03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "8753f0cd79a9987a6f490ec5621a4a392df90647ca504fa2c1a500f9c3c2f26a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male trouser short 2\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-male-trouser-short-2.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_male_trouser_short_2.mhclo",
+      "original/mens_trouser_short_nc_elvcrf.mhmat",
+      "original/mens_trouser_short_nc_elvcrf.obj",
+      "original/shorttex1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_male_trouser_short_2.mhclo",
+        "sha256": "0f0b4739c62dfa85fbce44ee1581c725fd6357b35d9e3295bf27f78b466e44aa",
+        "bytes": 467928
+      },
+      {
+        "name": "mens_trouser_short_nc_elvcrf.obj",
+        "sha256": "ddb003da4e889aa6c3a728b2c743571ce7d451723820cb2356d4249d51054170",
+        "bytes": 662105
+      },
+      {
+        "name": "mens_trouser_short_nc_elvcrf.mhmat",
+        "sha256": "6b9585c6ef569561b1ac42f87161e48573e0da915164e1c46c2c51bde1d7abee",
+        "bytes": 847
+      },
+      {
+        "name": "shorttex1.png",
+        "sha256": "e5d201c3964186515eb0d646bde285a9ebecfc63eeb587b7db4ad884804ed045",
+        "bytes": 174153
+      }
+    ],
+    "glbBytes": 606040
+  },
+  "geometry": {
+    "vertices": 12824,
+    "triangles": 13392,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 44.4,
+      "height": 44,
+      "depth": 27
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.0551,
+      0.2102,
+      0.242
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "shorts",
+    "menswear",
+    "fashion",
+    "traditional",
+    "trouser"
+  ],
+  "integrationStatus": "integrated"
+}

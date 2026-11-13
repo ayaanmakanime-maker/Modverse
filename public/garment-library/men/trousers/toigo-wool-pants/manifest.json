@@ -1,0 +1,96 @@
+{
+  "id": "toigo-wool-pants",
+  "name": "Wool Pants",
+  "originalName": "toigo_wool_pants",
+  "audience": "men",
+  "category": "trousers",
+  "collection": "Trousers",
+  "description": "wool pants by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "pants01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants01/pants01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "e4e0ec60db34f279be291a83cfd7b342a7c5cf09bb7676682a5f39f4f6ac4ad9"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"wool pants\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-wool-pants.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/Pants_wool.png",
+      "original/pants_wool.mhmat",
+      "original/pants_wool.obj",
+      "original/toigo_wool_pants.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "Pants_wool.png",
+        "sha256": "a820b0dc4f9f881956a068f26889ca677b696dbdccfdbf2a168e7b327b390ab6",
+        "bytes": 1355120
+      },
+      {
+        "name": "toigo_wool_pants.mhclo",
+        "sha256": "ac1a57a817976d80ece8a88698873d54de7f252d01ba3dca5e361693621fcf22",
+        "bytes": 93219
+      },
+      {
+        "name": "pants_wool.obj",
+        "sha256": "e02cd1e417ca3365e4dafc033f415c5186739df535d98810075cface0ce59c96",
+        "bytes": 108902
+      },
+      {
+        "name": "pants_wool.mhmat",
+        "sha256": "fedf31e98ea92b57c8f45e10ec167d420f5eb11b9410feb075c321c3798fdb53",
+        "bytes": 473
+      }
+    ],
+    "glbBytes": 126460
+  },
+  "geometry": {
+    "vertices": 1593,
+    "triangles": 2674,
+    "hasUv": true,
+    "uvCoverage": 0.92,
+    "boundsCm": {
+      "width": 48.5,
+      "height": 100.3,
+      "depth": 26.2
+    },
+    "degenerateTriangles": 5
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "pants",
+    "male"
+  ],
+  "integrationStatus": "integrated"
+}

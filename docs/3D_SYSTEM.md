@@ -42,29 +42,10 @@ Key (shadow-casting), soft fill, two **rim lights** from behind, top spot and he
 ## Quality benchmarks
 `/lab/3d?model=…&color=…&view=…&quality=low|balanced|high` (not linked from the storefront). Benchmarks and screenshots are in `docs/QUALITY_AND_PROVIDER_EVALUATION.md` (`docs/images/benchmarks/`): classic formal shirt, oversized T-shirt, regular-fit T-shirt (+ linen shirt for fabric contrast).
 
-## Avatars — Atlas (Men) and Aura (Women)
-ModVerse has two avatars, one per range. Each has **two renderers** and uses the better one that is available:
+## Bodies under garments
+The Atlas / Aura avatars (supplied FBX characters and their procedural fallback) were **retired**: the 3D garment viewer shows the garment on its own, and fitting on a body happens in **Human Studio** (`docs/HUMAN_STUDIO.md`), a mannequin shaped to the customer's measurements with a per-size fit map. Stored avatar profiles stay in the database (and in the account export / deletion) but are no longer shown.
 
-### 1. The supplied rigged characters (`src/lib/three/fbx-avatar.ts`, `src/components/three/GarmentViewer.tsx`)
-`public/avatars/man.fbx` → **Atlas** (Men's range) and `public/avatars/woman.fbx` → **Aura** (Women's range): Mixamo / Ready-Player-Me style characters with a 55-bone skeleton, a real face (34 ARKit / viseme morph targets, eyes, teeth, tongue, brows, lashes), hair, textured skin, jeans and shoes, and Idle / Walk / Run clips. The files are committed in `public/avatars/` (the owner confirmed they may be redistributed; see the README there). They are loaded in the browser with `FBXLoader`, prepared once per page and cached:
-* **Preparation.** The delivered mesh is one `SkinnedMesh` with ten materials and *no body under the baked clothes* (the skin mesh is only head, neck and hands, plus forearms on the woman). The baked top is separated from the trousers by welded-component analysis (woman: two pieces) or a plane just above the waistband (man: shirt welded to the trousers), and removed. The removed top becomes a **skin fill** — shrunk 0.9 cm along its normals, collar removed, double-sided, textured with real skin texels sampled at the wrists and neck — so arms and torso exist under any designed garment. Phong materials become physically based (skin sheen, clear-coated eyes, blended hair/brows/lashes); textures are down-scaled; only 9 face morphs are kept.
-* **Wearing the designed garment.** The parametric garment (all 32 models) is skinned to the character's skeleton: (1) the arms are posed along the garment's sleeve axis (aimed at the centre of the sleeve opening) — the *garment pose*; (2) the character is scaled to the requested height and pinned to the garment at the shoulder line; (3) every garment vertex is **pushed out of the body** wherever it would intersect it, using the posed body surface with smoothed normals, a 0.6 cm clearance, and spatial smoothing across all pieces so seams stay closed (trims — collar, cuffs, placket, pockets — follow the cloth under them); (4) each vertex receives **skin weights copied from its nearest body vertices** (inverse-distance blend of three, smoothed over neighbours so weights do not jump between thighs under a hem); buttons and buttonholes ride on the nearest bone. Pose, walk and run then move the garment with the body.
-* **Body.** Height scales the character uniformly; chest, waist and hip are matched to the size chart / sliders with a smooth radial morph of the rest-pose geometry (thighs about their own axes). Shoulder width, arm length and inseam feed the fit check only (labelled in the panel). Skin tone tints the skin materials and the fill (the model's own tone is kept for the default tone).
-* **Motion and face** (Fit tab): *Garment pose* (static), *Idle*, *Walk*, *Run* (clips played in place), neutral or smiling face, periodic blinking while animated. The viewer renders continuously only while a clip plays.
-* **Export.** GLB export of a worn garment bakes the current pose to static meshes (skinning evaluated on the CPU, buttons baked in place); the character itself is not exported.
-
-**Honesty.** The garment is **not a cloth simulation**: it is skinned like a second layer of the body, so it moves rigidly with the bones — no swing, wrinkles or secondary motion, and extreme arm swings can open the armhole or flare the hem. The body under the garment is an approximation (a shrunk copy of the character's own shirt). The characters are visual context: **fit is judged by the measurement fit check**, not by the picture. Without a camera scan the avatar is not "you"; the scanner never invents measurements.
-
-### 2. Procedural fallback (`src/lib/three/flagship-avatar.ts`)
-When the FBX files are absent (or fail to load) the viewer uses the built-in procedural Atlas / Aura: rigged bodies generated from measurements (height, chest, waist, hip, shoulder, arm length, neck, bicep, wrist, inseam) with one skeleton, hair, black cargo trousers and white sneakers; poses (garment pose, relaxed, T-pose) are bone rotations. Stylised head, no facial likeness. Stored avatar profiles map onto the models (masculine → Atlas, feminine → Aura; older "child" values read as Atlas).
-
-### Cost
-First avatar load ≈ 2–3 s (FBX parse, main thread) and ≈ 1 s to bind a garment in this repository's GPU-less container (development build); see `docs/PERFORMANCE.md`. The viewer records `performance` marks (`mv-avatar-load-*`, `mv-garment-bind`, `mv-bind-*`) for profiling.
-
-### Using it
-`/lab/3d?model=tee-regular&audience=women&avatar=1&motion=walk&expr=smile&size=L&skin=8D5A3B` (QA view). The viewer root exposes `data-avatar` (`character` | `procedural` | `loading` | `none`), `data-garment` (`skinned` | `static`) and `data-motion` for tests.
-
-## Fabric Lab materials
+## Fabric materials
 Each cloth can override its weave's look and drape (`look`, `drape`, `yarnScale`, `mottle` in `src/lib/garment/fabrics.ts`), so the nine flagship profiles (cotton, heavyweight cotton, stretch jersey, linen, denim, poplin, Oxford, polyester, twill) differ in roughness, sheen, relief, yarn size, colour mottling, stiffness, fold wavelength, creasing and **trim thickness** (collar, cuffs, placket and pockets scale with the cloth's thickness) — not just colour. Labelled as a simulated appearance.
 
 ## Flagship garment construction

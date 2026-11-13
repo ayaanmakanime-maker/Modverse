@@ -33,20 +33,14 @@ test("guided body scan: consent, camera guidance, honest review, correction and 
   await expect(page.getByTestId("measurements")).toContainText("Camera scan");
 });
 
-test("Fit tab: Atlas avatar studio (Aura for the Women's range) and scan-to-fit", async ({ page }) => {
+test("Fit tab: Human Studio entry and scan-to-fit", async ({ page }) => {
   test.setTimeout(120_000);
   await register(page, "Avatar Fit");
   await openEditor(page, "tee-classic-crew", "men", "pro");
   await page.getByTestId("tab-fit").click();
-  const studio = page.getByTestId("avatar-studio");
-  await expect(studio).toBeVisible();
-  await expect(page.getByTestId("avatar-atlas")).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByTestId("avatar-aura")).toBeDisabled(); // Aura belongs to the Women's range
-  await page.getByTestId("avatar-toggle").check();
-  await expect(page.getByTestId("avatar-toggle")).toBeChecked();
-  // Body sliders feed the fit check.
-  await page.getByTestId("avatar-sliders").getByRole("slider").nth(1).fill("118");
-  await expect(page.getByTestId("fit-panel")).toContainText(/Fit analysis/i);
+  // the old Atlas / Aura avatars are gone: the Fit tab points to the Human Studio mannequin
+  await expect(page.getByTestId("avatar-studio")).toHaveCount(0);
+  await expect(page.getByTestId("open-human-studio")).toHaveAttribute("href", "/design/human-studio");
   // Scan flow from the Fit tab (manual entry path) applies reviewed values.
   await page.getByTestId("fit-scan").click();
   await page.getByTestId("scan-consent-check").check();

@@ -1,0 +1,99 @@
+{
+  "id": "cortu-jeans-shorts",
+  "name": "Jeans Shorts",
+  "originalName": "cortu_jeans_shorts",
+  "audience": "unisex",
+  "category": "trousers",
+  "collection": "Shorts",
+  "description": "jeans shorts by Cortu (MakeHuman community asset).",
+  "source": {
+    "pack": "pants01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants01/pants01_cc0.zip",
+    "creator": "Cortu",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "e4e0ec60db34f279be291a83cfd7b342a7c5cf09bb7676682a5f39f4f6ac4ad9"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"jeans shorts\" by Cortu, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "cortu-jeans-shorts.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/cortu_jeans_shorts.mhclo",
+      "original/jean_shorts.mhmat",
+      "original/jean_shorts.obj",
+      "original/jean_shorts_diff.png",
+      "original/jean_shorts_norm.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "jean_shorts_norm.png",
+        "sha256": "3fb964ed5ad1313a074650ce7957085a6fcde1d8339c86f21e2874c345356c13",
+        "bytes": 5529014
+      },
+      {
+        "name": "jean_shorts.mhmat",
+        "sha256": "91234aad335549161f166b4c9fae8322d6896469efcbf8c64d84ffd56747675c",
+        "bytes": 803
+      },
+      {
+        "name": "cortu_jeans_shorts.mhclo",
+        "sha256": "f26d763703d6730789df5b9818e4871665928d502b4f68762c8aa96fd3779fab",
+        "bytes": 19794
+      },
+      {
+        "name": "jean_shorts.obj",
+        "sha256": "b541561dbe3eef586b643a1e38e15c5bbabce0f46ed7d1f75326b9cfcfd467a1",
+        "bytes": 20424
+      },
+      {
+        "name": "jean_shorts_diff.png",
+        "sha256": "36c3c78d65b2b044975bce458fdd93d203e5aaf8a48b890370c02ae8321051c7",
+        "bytes": 2134572
+      }
+    ],
+    "glbBytes": 237460
+  },
+  "geometry": {
+    "vertices": 342,
+    "triangles": 500,
+    "hasUv": true,
+    "uvCoverage": 0.47,
+    "boundsCm": {
+      "width": 37.6,
+      "height": 21.7,
+      "depth": 23.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

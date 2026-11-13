@@ -1,0 +1,103 @@
+{
+  "id": "punkduck-retro-polka-dot-skirt",
+  "name": "Retro Polka Dot Skirt",
+  "originalName": "punkduck_retro_polka_dot_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "retro polka dot skirt by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"retro polka dot skirt\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-retro-polka-dot-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/polkadotskirt.mhmat",
+      "original/polkadotskirt.obj",
+      "original/polkadotskirt.png",
+      "original/polkadotskirt_normals.png",
+      "original/punkduck_retro_polka_dot_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "polkadotskirt.png",
+        "sha256": "daa15b4978008746943c8fc997abe531f8731d81b2b2a22f4638b534519d320c",
+        "bytes": 358459
+      },
+      {
+        "name": "polkadotskirt.obj",
+        "sha256": "42261d2772aa900e7a4913ed3d5e6457dbdb9b1f09d3020fd300ab055c86cd6f",
+        "bytes": 74006
+      },
+      {
+        "name": "polkadotskirt_normals.png",
+        "sha256": "674a9c89bc7f64678f0ba52e97f9ad4c31cbe9d37c3674f8f9a2204fb88c9ca3",
+        "bytes": 2480258
+      },
+      {
+        "name": "punkduck_retro_polka_dot_skirt.mhclo",
+        "sha256": "641a5b4dd17f5510c5857a2a5afaad5d85129b28495fcc3ad0a7994e40c59720",
+        "bytes": 66055
+      },
+      {
+        "name": "polkadotskirt.mhmat",
+        "sha256": "f60ae68cf9b081230752d24e1ea1d0631e5c8c987b3237384cacab51f260ee8c",
+        "bytes": 876
+      }
+    ],
+    "glbBytes": 147372
+  },
+  "geometry": {
+    "vertices": 1127,
+    "triangles": 1848,
+    "hasUv": true,
+    "uvCoverage": 0.91,
+    "boundsCm": {
+      "width": 57.1,
+      "height": 61.2,
+      "depth": 41.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "skirt",
+    "vintage"
+  ],
+  "integrationStatus": "integrated"
+}

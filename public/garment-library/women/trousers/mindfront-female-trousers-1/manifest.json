@@ -1,0 +1,110 @@
+{
+  "id": "mindfront-female-trousers-1",
+  "name": "Female Trousers",
+  "originalName": "mindfront_female_trousers_1",
+  "audience": "women",
+  "category": "trousers",
+  "collection": "Jeans",
+  "description": "female trousers by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"female trousers\" by Mindfront, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-female-trousers-1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/F_Trousers_01.png",
+      "original/F_Trousers_01_NRM.png",
+      "original/F_Trousers_01_SPEC.png",
+      "original/f_trousers_01.mhmat",
+      "original/f_trousers_01.obj",
+      "original/mindfront_female_trousers_1.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "F_Trousers_01_NRM.png",
+        "sha256": "fee9e8ad6e8203ac32d7a8f2442c78f0d76112c0cc1650092b4aedba4bba6440",
+        "bytes": 17027010
+      },
+      {
+        "name": "F_Trousers_01_SPEC.png",
+        "sha256": "0442625bdeb5fb163281f93894dfb465caae87eb0c18901c4e85ef0b2bd75196",
+        "bytes": 6284049
+      },
+      {
+        "name": "f_trousers_01.mhmat",
+        "sha256": "7d7764cffa77e6d6d4f7aa347e727fd649519c3caba6c2732ce1e9b50dccf244",
+        "bytes": 565
+      },
+      {
+        "name": "F_Trousers_01.png",
+        "sha256": "0a50571826e2aa15533b3e93a3606a17ccb7bd3ea3bdd65400d7579d76d55322",
+        "bytes": 24945098
+      },
+      {
+        "name": "mindfront_female_trousers_1.mhclo",
+        "sha256": "3c1de679e09e207f67f8fb0a76b6bca3cf71ad9d7f4f5f00e119ff9b6f38f740",
+        "bytes": 125745
+      },
+      {
+        "name": "f_trousers_01.obj",
+        "sha256": "643cedbfab782d7bb34a453812610cc1c9a853c36df4a4b179bbf93a46455ca3",
+        "bytes": 144222
+      }
+    ],
+    "glbBytes": 336356
+  },
+  "geometry": {
+    "vertices": 2139,
+    "triangles": 3392,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 43.7,
+      "height": 86.9,
+      "depth": 25.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "trousers",
+    "jeans",
+    "pants"
+  ],
+  "integrationStatus": "integrated"
+}

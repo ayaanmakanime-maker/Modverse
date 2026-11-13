@@ -216,6 +216,10 @@ function classify(id: string, tags: string[], desc: string): { audience: Garment
   let category = "tops", collection = "Tops";
   if (has("dress", "gown", "qipoa", "baby_doll", "kimono")) { category = "dresses"; collection = has("kimono") ? "Kimonos" : "Dresses"; }
   else if (has("pantsuit", "jumpsuit")) { category = "jumpsuits"; collection = "Jumpsuits"; }
+  else if (has("hooded", "hoodie", "sweat_jacket", "tracksuit")) { category = "sweatwear"; collection = "Hoodies & sweatwear"; }
+  else if (/suit|jacket|blazer/.test(id)) { category = "tailoring"; collection = "Suits & blazers"; } // a suit's tags also name its trousers
+  else if (has("skirt")) { category = "skirts"; collection = "Skirts"; }
+  else if (has("pants", "trouser", "jeans", "chinos", "slacks", "shorts", "capri", "culottes", "leggings")) { category = "trousers"; collection = has("shorts") ? "Shorts" : has("jeans") ? "Jeans" : "Trousers"; }
   else if (has("suit", "dinner_jacket", "blazer")) { category = "tailoring"; collection = "Suits & blazers"; }
   else if (has("hooded", "hoodie", "sweat_jacket", "tracksuit")) { category = "sweatwear"; collection = "Hoodies & sweatwear"; }
   else if (has("cardigan")) { category = "knitwear"; collection = "Cardigans"; }
@@ -225,7 +229,7 @@ function classify(id: string, tags: string[], desc: string): { audience: Garment
   else if (has("tank", "camisole", "halter", "tube_top")) { category = "tops"; collection = "Tanks & camisoles"; }
   else if (has("blouse", "tunic", "boho")) { category = "blouses"; collection = "Blouses & tunics"; }
   else if (has("shirt")) { category = "shirts"; collection = "Shirts"; }
-  const female = has("female", "ladies", "lara", "woman", "women", "heroine") || ["dresses", "jumpsuits"].includes(category) || has("camisole", "bodice", "halter", "tube_top", "blouse", "crop_top", "disco_top", "off-shoulder", "retro_top", "keyhole");
+  const female = has("female", "ladies", "lara", "woman", "women", "heroine") || ["dresses", "jumpsuits", "skirts"].includes(category) || has("camisole", "bodice", "halter", "tube_top", "blouse", "crop_top", "disco_top", "off-shoulder", "retro_top", "keyhole");
   const male = /(^|[_\s])male/.test(t) || has(" men", "_m_suit", "dinner_jacket", "bowtie");
   return { audience: male && !female ? "men" : female && !male ? "women" : male && female ? (id.includes("_male") ? "men" : "women") : "unisex", category, collection };
 }
@@ -297,8 +301,14 @@ async function main() {
         const norm = normal && inDir(normal) ? await encodeTexture(inDir(normal)!, 1024, true) : undefined;
         const alpha = !!color?.alpha || /transparent\s+True/i.test(mhmat) && !!color?.alpha;
         const glb = writeGlb(displayName, mesh, { baseColor: color ? [1, 1, 1] : colour, doubleSided: true, alpha }, { color, normal: norm });
+        // keep the first download date of an unchanged archive (re-runs do not rewrite every manifest)
+        let downloadedAt = new Date().toISOString().slice(0, 10);
+        try { const prev = JSON.parse(fs.readFileSync(path.join(dest, "manifest.json"), "utf8")); if (prev.source?.archiveSha256 === archiveSha && prev.source?.downloadedAt) downloadedAt = prev.source.downloadedAt; } catch { /* first run */ }
+        // Human Studio fitting data (scripts/human/build_human.py) survives the rebuild of an unchanged garment
+        const keepFit = ["fit.json", "fit.bin"].map((f) => [f, fs.existsSync(path.join(dest, f)) ? fs.readFileSync(path.join(dest, f)) : null] as const);
         fs.rmSync(dest, { recursive: true, force: true });
         fs.mkdirSync(path.join(dest, "original"), { recursive: true });
+        for (const [f, data] of keepFit) if (data) fs.writeFileSync(path.join(dest, f), data);
         fs.writeFileSync(path.join(dest, `${slug}.glb`), glb);
         const originals: string[] = [], originalTextures: GarmentManifest["files"]["originalChecksums"] = [];
         for (const [f, data] of files) {
@@ -314,7 +324,7 @@ async function main() {
         const manifest: GarmentManifest = {
           id: slug, name: displayName.replace(/\b\w/g, (c) => c.toUpperCase()), originalName: dir, ...place,
           description: desc || `${displayName} by ${row.author} (MakeHuman community asset).`,
-          source: { pack: pack.id, pageUrl: pack.page, downloadUrl: zipUrl, creator: row.author, downloadedAt: new Date().toISOString().slice(0, 10), archiveSha256: archiveSha },
+          source: { pack: pack.id, pageUrl: pack.page, downloadUrl: zipUrl, creator: row.author, downloadedAt, archiveSha256: archiveSha },
           licence: { id: licence, commercialUse: true, attributionRequired: by, attribution: by ? `"${displayName}" by ${row.author}, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.` : `"${displayName}" by ${row.author}, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).`, redistribution: true },
           files: { glb: `${slug}.glb`, thumbnail, original: originals.sort(), originalChecksums: originalTextures, glbBytes: glb.length },
           geometry: { vertices: mesh.positions.length / 3, triangles: tris, hasUv: true, uvCoverage: +uvCoverage(mesh.uvs).toFixed(2), boundsCm: { width: +(b.max[0] - b.min[0]).toFixed(1), height: +(b.max[1] - b.min[1]).toFixed(1), depth: +(b.max[2] - b.min[2]).toFixed(1) }, degenerateTriangles: mesh.degenerate },

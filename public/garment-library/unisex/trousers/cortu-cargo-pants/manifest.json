@@ -1,0 +1,99 @@
+{
+  "id": "cortu-cargo-pants",
+  "name": "Cargo Pants",
+  "originalName": "cortu_cargo_pants",
+  "audience": "unisex",
+  "category": "trousers",
+  "collection": "Trousers",
+  "description": "cargo pants by Cortu (MakeHuman community asset).",
+  "source": {
+    "pack": "pants01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants01/pants01_cc0.zip",
+    "creator": "Cortu",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "e4e0ec60db34f279be291a83cfd7b342a7c5cf09bb7676682a5f39f4f6ac4ad9"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"cargo pants\" by Cortu, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "cortu-cargo-pants.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/cargo_pants.mhmat",
+      "original/cargo_pants.obj",
+      "original/cargo_pants_diff.png",
+      "original/cargo_pants_norm.png",
+      "original/cortu_cargo_pants.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "cargo_pants_diff.png",
+        "sha256": "b091229d558aed8ad41f31235265e98164a2f709158f4113d0ce0e072f680197",
+        "bytes": 2570421
+      },
+      {
+        "name": "cargo_pants.obj",
+        "sha256": "705467843e1136ca9bc91736efe9601a9cd7243abdeaa9752d69ea53f0974089",
+        "bytes": 15154
+      },
+      {
+        "name": "cargo_pants_norm.png",
+        "sha256": "0851011ad2fd36f6ad2bd1bdd6202bad32fb555b7d6cdb6b474811ba5a5fe7a6",
+        "bytes": 4344852
+      },
+      {
+        "name": "cargo_pants.mhmat",
+        "sha256": "f0718c17a792c56d947525d0fb49ad3b7f9bb33b27acb8353dd94827096f497e",
+        "bytes": 803
+      },
+      {
+        "name": "cortu_cargo_pants.mhclo",
+        "sha256": "5bc0c7282a5a2694d55b6df2ed5642a382d89d0b77bd98703dac7e110e51fada",
+        "bytes": 14553
+      }
+    ],
+    "glbBytes": 183540
+  },
+  "geometry": {
+    "vertices": 255,
+    "triangles": 392,
+    "hasUv": true,
+    "uvCoverage": 0.57,
+    "boundsCm": {
+      "width": 48.3,
+      "height": 86.8,
+      "depth": 25.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

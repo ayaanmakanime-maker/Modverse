@@ -1,0 +1,99 @@
+{
+  "id": "elvs-male-trouser-with-chain",
+  "name": "Male Trouser With Chain",
+  "originalName": "elvs_male_trouser_with_chain",
+  "audience": "men",
+  "category": "trousers",
+  "collection": "Trousers",
+  "description": "male trouser with chain by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male trouser with chain\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-male-trouser-with-chain.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_male_trouser_with_chain.mhclo",
+      "original/mens_trouser_f_elv_chr.mhmat",
+      "original/mens_trouser_f_elv_chr.obj",
+      "original/trousertex3.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "mens_trouser_f_elv_chr.obj",
+        "sha256": "b3ab3bea10f967564e3fa5e4975abfd5d9f8782dc920d59f7530cf4405b3a499",
+        "bytes": 709046
+      },
+      {
+        "name": "mens_trouser_f_elv_chr.mhmat",
+        "sha256": "ded7fcf4644dddc10d3c5019a8b56890889b422f22d1a4b1edef5a411e2fd955",
+        "bytes": 815
+      },
+      {
+        "name": "trousertex3.png",
+        "sha256": "27d38060e8ff3f0e35c4d1b462c77065f36257cb05d21f0eb6bbdabf83bd1b92",
+        "bytes": 97117
+      },
+      {
+        "name": "elvs_male_trouser_with_chain.mhclo",
+        "sha256": "013e4d633a0a1656a376c418f109e0fa0cde360692142019359d023dc4289fe8",
+        "bytes": 504917
+      }
+    ],
+    "glbBytes": 620560
+  },
+  "geometry": {
+    "vertices": 13434,
+    "triangles": 14484,
+    "hasUv": true,
+    "uvCoverage": 0.98,
+    "boundsCm": {
+      "width": 53.5,
+      "height": 104,
+      "depth": 27.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.0551,
+      0.2102,
+      0.242
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "pant",
+    "menswear",
+    "fashion",
+    "traditional",
+    "trouser"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -130,28 +130,13 @@ test("Atelier Pro: AI object selection runs on the device", async ({ page }) => 
   }
 });
 
-test("Fabric Lab, garment regions, safe areas and production preview", async ({ page }) => {
+test("Garment regions, safe areas and production preview", async ({ page }) => {
   test.setTimeout(120_000);
   await register(page, "Fabric Lab");
   await openEditor(page, "tee-classic-crew", "men", "pro");
 
-  // Fabric Lab: search, profiles, close-ups, compare three, recommendations, live apply.
-  await page.getByTestId("tab-fabriclab").click();
-  const lab = page.getByTestId("fabric-lab");
-  await expect(lab).toBeVisible();
-  await page.getByTestId("fabric-search").fill("heavyweight");
-  await expect(page.locator('[data-testid^="swatch-"]')).toHaveCount(1);
-  await page.getByTestId("fabric-search").fill("");
-  await page.getByTestId("profile-heavyweight-cotton").click();
-  await expect(page.getByTestId("fabric-detail")).toContainText("Heavyweight Cotton Jersey");
-  await expect(page.getByTestId("fabric-detail")).toContainText("Thickness");
-  for (const id of ["combed-cotton-jersey", "heavyweight-cotton-jersey", "cotton-elastane-jersey"]) await page.getByTestId(`compare-${id}`).check();
-  await expect(page.getByTestId("fabric-compare")).toBeVisible();
-  await expect(page.getByTestId("fabric-compare").locator("canvas")).toHaveCount(3);
-  await page.getByTestId("fabric-use").selectOption("sport & active");
-  await expect(page.getByTestId("fabric-recommend")).toContainText("Performance Poly Interlock");
-  await page.getByTestId("fabric-apply").click();
-  await expect(page.getByTestId("fabric-apply")).toHaveText("On the garment");
+  // The separate Fabric Lab section is gone: colour and fabric are chosen in the Colour tab.
+  await expect(page.getByTestId("tab-fabriclab")).toHaveCount(0);
 
   // Artwork + print boundaries / production-safe area.
   await page.getByTestId("tab-library").click();
@@ -175,6 +160,5 @@ test("Fabric Lab, garment regions, safe areas and production preview", async ({ 
 
   const id = await saveDesign(page);
   const { version } = await (await page.request.get(`/api/designs/${id}`)).json();
-  expect(version.config.fabric.id).toBe("heavyweight-cotton-jersey");
   expect(version.config.layers.map((l: { zone: string }) => l.zone).sort()).toEqual(["back", "front", "sleeveLeft", "sleeveRight"]);
 });

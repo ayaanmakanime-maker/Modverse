@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Eye, EyeOff, Lock, Unlock, ChevronUp, ChevronDown, ChevronRight, Star, Upload, Wand2, Type, Group as GroupIcon, Ungroup, Save, Trash2, Copy, ClipboardPaste, GripVertical, Folder as FolderIcon, CornerLeftDown } from "lucide-react";
@@ -12,6 +13,7 @@ import { copySelection, hasClipboard, insertLibraryItem, insertTypography, inser
 import { searchTypography, TYPOGRAPHY_CATEGORIES, TYPOGRAPHY_PRESETS, type TypographyCategory } from "@/lib/typography/presets";
 import { useCustomFonts } from "@/lib/typography/custom-fonts";
 import { CustomFontUpload } from "./properties";
+import { uploadArtwork } from "@/lib/client/upload";
 import { CategoryBrowser, filterQuery, GraphicsSearchBox, isDarkArt, STYLE_OPTIONS } from "@/components/library/GraphicsFinder";
 import { CATEGORY_BY_ID, CATEGORY_GROUPS, GRAPHIC_CATEGORIES } from "@/lib/library/taxonomy";
 import { COLLECTIONS } from "@/lib/library/collections";
@@ -339,7 +341,7 @@ export function TextPanel() {
 type UploadRow = UploadItem;
 
 /** Not signed in: offer a one-click guest account right here (keeps the open design), or sign in. */
-function UploadSignIn() {
+export function UploadSignIn() {
   const { setUser } = useSession();
   const [guest, setGuest] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -377,11 +379,9 @@ export function UploadPanel() {
   async function onFile(f: File) {
     setBusy(true);
     try {
-      const form = new FormData();
-      form.append("file", f);
-      const r = await api<{ upload: UploadRow }>("/api/uploads", { form });
-      setUploads((u) => [r.upload, ...u]);
-      place(r.upload);
+      const upload = await uploadArtwork<UploadRow>(f);
+      setUploads((u) => [upload, ...u]);
+      place(upload);
       toast("Artwork uploaded and placed");
     } catch (e) {
       toast(errorMessage(e), "bad");
@@ -426,6 +426,7 @@ export function UploadPanel() {
       </div>
       <div className="space-y-2 border-t border-line pt-4">
         <p className="mv-eyebrow !text-[0.6rem]">AI artwork generation</p>
+        <Link href="/design/muse" className="mv-chip inline-flex !text-[0.68rem]" data-testid="open-muse-studio"><Wand2 className="size-3" /> The Muse image studio — four models, gallery, image-to-image</Link>
         {gen?.available ? (
           <>
             <textarea className="mv-input min-h-14" placeholder="Describe the artwork — e.g. a minimal line-art peacock" value={prompt} onChange={(e) => setPrompt(e.target.value)} />

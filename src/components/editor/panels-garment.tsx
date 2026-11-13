@@ -1,6 +1,7 @@
 "use client";
 import { BodyScanner } from "@/components/tryon/BodyScanner";
-import { AvatarStudio, type AvatarState } from "./avatar-panel";
+/** Body values entered or scanned in the Fit tab (used by the fit check). */
+export interface AvatarState { body?: Record<string, number> }
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { useEditor } from "@/lib/editor/store";
@@ -363,13 +364,15 @@ export function FitPanel({ avatar, setAvatar, pro }: { avatar: AvatarState; setA
           <FitAnalysisView config={config} body={body} provenance={provenance} verified={verified} />
         </Group>
       )}
-      {/* 3D avatars are an Atelier Pro feature */}
+      {/* The fitting mannequin (Human Studio) is an Atelier Pro feature */}
       {pro ? (
-        <Group title="Avatar — Atlas · Aura">
-          <AvatarStudio config={config} avatar={avatar} setAvatar={setAvatar} />
-        </Group>
+        <a href="/design/human-studio" target="_blank" rel="noopener" className="block rounded-xl border border-champagne bg-surface-2 p-4 transition hover:bg-surface-3" data-testid="open-human-studio">
+          <span className="mv-eyebrow !text-[0.6rem]">Atelier Pro</span>
+          <span className="mt-1 block font-medium text-bone">Human Studio →</span>
+          <span className="mt-1 block text-[0.7rem] text-bone-2">A 3D fitting mannequin shaped to your own measurements. Try garments on it, see them move, and check the fit before you order.</span>
+        </a>
       ) : (
-        <p className="rounded-lg border border-line p-3 text-[0.68rem] text-mute" data-testid="avatar-pro-only">3D avatars with your body measurements are part of <b className="text-bone-2">Atelier Pro</b>. Switch the mode at the top to use them.</p>
+        <p className="rounded-lg border border-line p-3 text-[0.68rem] text-mute" data-testid="avatar-pro-only">The 3D fitting mannequin (Human Studio) is part of <b className="text-bone-2">Atelier Pro</b>. Switch the mode at the top to use it.</p>
       )}
     </div>
   );

@@ -1,0 +1,109 @@
+{
+  "id": "mindfront-male-trousers-2",
+  "name": "Male Trousers 2",
+  "originalName": "mindfront_male_trousers_2",
+  "audience": "men",
+  "category": "trousers",
+  "collection": "Trousers",
+  "description": "male trousers 2 by Mindfront (MakeHuman community asset).",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "Mindfront",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male trousers 2\" by Mindfront, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mindfront-male-trousers-2.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/M_Trousers_02.png",
+      "original/M_Trousers_02_NRM.png",
+      "original/M_Trousers_02_SPEC.png",
+      "original/m_trousers_02.mhmat",
+      "original/m_trousers_02.obj",
+      "original/mindfront_male_trousers_2.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "M_Trousers_02_SPEC.png",
+        "sha256": "4251384a5586975f58358e2d92d1aae60721a20e0dd3cc8fe92c07ba21011caa",
+        "bytes": 1521336
+      },
+      {
+        "name": "m_trousers_02.obj",
+        "sha256": "43bd510dd3c4d2e2a505d2665e4a2ca1fb5031737e55d9e3bf88912d9bb387dd",
+        "bytes": 614555
+      },
+      {
+        "name": "M_Trousers_02.png",
+        "sha256": "924ef541a8e3169e33c380c5b0d5b5594fb7700314e92579a1bcaf94e71e258e",
+        "bytes": 897126
+      },
+      {
+        "name": "mindfront_male_trousers_2.mhclo",
+        "sha256": "fa4a1b702b33b4052bceb8a07172dc7b2d8bec5f5b27e60333cab58e0b238b33",
+        "bytes": 502082
+      },
+      {
+        "name": "m_trousers_02.mhmat",
+        "sha256": "9454601e3f264becefc094026d22a39f0ab29b2e75793314e124f92126368184",
+        "bytes": 615
+      },
+      {
+        "name": "M_Trousers_02_NRM.png",
+        "sha256": "403608f9a52fb6572ec111066f8f97f6a638c094cfa93a7cfbfaf2167806aa75",
+        "bytes": 3644365
+      }
+    ],
+    "glbBytes": 592672
+  },
+  "geometry": {
+    "vertices": 7902,
+    "triangles": 14584,
+    "hasUv": true,
+    "uvCoverage": 0.75,
+    "boundsCm": {
+      "width": 51,
+      "height": 103.6,
+      "depth": 24.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "male",
+    "trousers",
+    "pants"
+  ],
+  "integrationStatus": "integrated"
+}

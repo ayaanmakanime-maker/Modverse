@@ -495,8 +495,12 @@ export const cartItems = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     cartId: uuid("cart_id").notNull().references(() => carts.id, { onDelete: "cascade" }),
-    projectId: uuid("project_id").notNull().references(() => designProjects.id, { onDelete: "cascade" }),
+    /** "design": a customer design (project + version); "library": a made-to-order 3D collection garment. */
+    kind: text("kind", { enum: ["design", "library"] }).notNull().default("design"),
+    projectId: uuid("project_id").references(() => designProjects.id, { onDelete: "cascade" }),
     version: integer("version").notNull(),
+    /** Library lines: { garment: MtoGarmentRef, options: MtoOptions } (validated on every read). */
+    library: jsonb("library"),
     size: text("size").notNull(),
     quantity: integer("quantity").notNull(),
     unitPrice: integer("unit_price").notNull(),
@@ -542,6 +546,8 @@ export const orderItems = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    /** "design" (designSnapshot is a DesignConfig) or "library" (designSnapshot is { garment, options }). */
+    kind: text("kind", { enum: ["design", "library"] }).notNull().default("design"),
     projectId: uuid("project_id").references(() => designProjects.id, { onDelete: "set null" }),
     version: integer("version").notNull(),
     designName: text("design_name").notNull(),
@@ -834,6 +840,37 @@ export const discountCodes = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("discount_codes_code_uq").on(t.code)],
+);
+
+/**
+ * The Muse image studio: one row per generation request on the ComfyUI GPU server. Outputs are stored as the
+ * owner's private uploads (kind "generated"); only the owner can read, list, cancel or delete a generation.
+ */
+export const imageGenerations = pgTable(
+  "image_generations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    modelId: text("model_id").notNull(),
+    mode: text("mode", { enum: ["txt2img", "img2img", "edit"] }).notNull(),
+    prompt: text("prompt").notNull(),
+    negativePrompt: text("negative_prompt").notNull().default(""),
+    /** Resolved parameters: aspect, width, height, count, steps, cfg, seed, strength. */
+    params: jsonb("params").notNull(),
+    referenceUploadId: uuid("reference_upload_id").references(() => uploadedAssets.id, { onDelete: "set null" }),
+    status: text("status", { enum: ["queued", "running", "finalizing", "succeeded", "failed", "cancelled"] }).notNull().default("queued"),
+    promptId: text("prompt_id"),
+    error: text("error"),
+    /** Upload ids of the generated images, in output order. */
+    outputs: jsonb("outputs").notNull().default([]),
+    /** Lineage for "regenerate" (same seed) and "variation" (new seed). */
+    parentId: uuid("parent_id"),
+    saved: boolean("saved").notNull().default(false),
+    createdAt: createdAt(),
+    startedAt: ts("started_at"),
+    finishedAt: ts("finished_at"),
+  },
+  (t) => [index("image_generations_user_idx").on(t.userId, t.createdAt), index("image_generations_status_idx").on(t.status)],
 );
 
 export const platformSettings = pgTable("platform_settings", {

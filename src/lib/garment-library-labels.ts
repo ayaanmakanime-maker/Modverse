@@ -1,0 +1,2 @@
+/** Collection category labels (shared by server pages and client components). */
+export const COLLECTION_LABELS: Record<string, string> = { tshirts: "T-shirts & polos", shirts: "Shirts", tops: "Tops & tanks", blouses: "Blouses & tunics", knitwear: "Knitwear", sweatwear: "Hoodies & sweatwear", tailoring: "Suits & blazers", dresses: "Dresses & kimonos", jumpsuits: "Jumpsuits", trousers: "Trousers, jeans & shorts", skirts: "Skirts" };

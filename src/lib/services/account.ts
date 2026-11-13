@@ -244,7 +244,9 @@ export async function submitFitFeedback(user: SessionUser, input: z.infer<typeof
   const [row] = await db.select({ item: s.orderItems, order: s.orders }).from(s.orderItems).innerJoin(s.orders, eq(s.orders.id, s.orderItems.orderId)).where(eq(s.orderItems.id, input.orderItemId));
   if (!row || row.order.userId !== user.id) throw notFound("Order item");
   if (!["shipped", "delivered"].includes(row.order.status)) throw badRequest("Fit can be verified once the garment has been delivered");
-  const snap = row.item.designSnapshot as { modelId: string; fit: string };
+  // made-to-order collection garments record the collection id and the chosen fit
+  const lib = row.item.kind === "library" ? (row.item.designSnapshot as { garment: { id: string }; options: { fit: string } }) : null;
+  const snap = lib ? { modelId: `collection:${lib.garment.id}`, fit: lib.options.fit } : (row.item.designSnapshot as { modelId: string; fit: string });
   const values = { userId: user.id, orderItemId: input.orderItemId, modelId: snap.modelId, size: row.item.size, fit: snap.fit, overall: input.overall, areas: input.areas, notes: input.notes ?? null };
   const [saved] = await db.insert(s.fitFeedback).values(values).onConflictDoUpdate({ target: s.fitFeedback.orderItemId, set: { overall: values.overall, areas: values.areas, notes: values.notes } }).returning();
   return saved;

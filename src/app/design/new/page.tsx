@@ -7,17 +7,18 @@ import { GarmentFlat } from "@/components/garment/GarmentFlat";
 import { Logo } from "@/components/brand/Logo";
 import { EditorClient } from "../EditorClient";
 import { presetLayer, TYPOGRAPHY_BY_ID } from "@/lib/typography/presets";
-import { availableZones, createGraphicLayer } from "@/lib/garment/design";
+import { availableZones, createGraphicLayer, createImageLayer } from "@/lib/garment/design";
+import { getCurrentUser } from "@/lib/auth/session";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { creativeAssets } from "@/lib/db/schema";
+import { creativeAssets, uploadedAssets } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
 const MODES = ["studio", "atelier", "pro"] as const;
 type Mode = (typeof MODES)[number];
 
-export default async function NewDesign({ searchParams }: { searchParams: Promise<{ model?: string; audience?: string; mode?: string; draft?: string; typography?: string; asset?: string }> }) {
+export default async function NewDesign({ searchParams }: { searchParams: Promise<{ model?: string; audience?: string; mode?: string; draft?: string; typography?: string; asset?: string; artwork?: string }> }) {
   const sp = await searchParams;
   const mode: Mode = MODES.includes(sp.mode as Mode) ? (sp.mode as Mode) : "studio";
   const audience: Audience = AUDIENCES.includes(sp.audience as Audience) ? (sp.audience as Audience) : "men";
@@ -26,7 +27,10 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
   const asset = sp.asset && /^[A-Za-z0-9_.-]{3,128}$/.test(sp.asset)
     ? (await (await getDb()).select().from(creativeAssets).where(and(eq(creativeAssets.id, sp.asset), eq(creativeAssets.active, true), eq(creativeAssets.approval, "approved"), inArray(creativeAssets.kind, ["graphic", "element"]))))[0]
     : undefined;
-  const typoQ = (sp.typography && TYPOGRAPHY_BY_ID.has(sp.typography) ? `&typography=${sp.typography}` : "") + (asset?.url ? `&asset=${encodeURIComponent(asset.id)}` : "");
+  // Sent from The Muse (or another of the customer's own images): only the signed-in owner's upload is placed.
+  const user = sp.artwork && /^[0-9a-f-]{36}$/i.test(sp.artwork) ? await getCurrentUser() : null;
+  const artwork = user ? (await (await getDb()).select().from(uploadedAssets).where(and(eq(uploadedAssets.id, sp.artwork!), eq(uploadedAssets.userId, user.id), inArray(uploadedAssets.kind, ["image", "generated", "svg"]))))[0] : undefined;
+  const typoQ = (sp.typography && TYPOGRAPHY_BY_ID.has(sp.typography) ? `&typography=${sp.typography}` : "") + (asset?.url ? `&asset=${encodeURIComponent(asset.id)}` : "") + (artwork ? `&artwork=${artwork.id}` : "");
 
   if (model || sp.draft) {
     const m = model ?? MODEL_BY_ID.get("tee-classic-crew")!;
@@ -40,6 +44,11 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
       else config.layers.push(presetLayer(config, typo, "center-chest"));
     }
     if (asset?.url && !sp.draft) config.layers.push(createGraphicLayer(config, { id: asset.id, name: asset.name, url: asset.url, width: asset.width, height: asset.height }, "center-chest"));
+    if (artwork && !sp.draft) {
+      const src = artwork.kind === "generated" ? "generated" : "upload";
+      const ref = { id: artwork.id, name: artwork.originalName ?? "Artwork", url: `/api/uploads/${artwork.id}` };
+      config.layers.push(artwork.mime === "image/svg+xml" ? createGraphicLayer(config, { ...ref, width: artwork.width ?? 100, height: artwork.height ?? 100 }, "center-chest", src) : createImageLayer(config, { ...ref, pixelWidth: artwork.width ?? 1000, pixelHeight: artwork.height ?? 1000 }, "center-chest", src));
+    }
     return <EditorClient initial={{ projectId: null, name: `${m.name} design`, mode, version: 0, config, savedAt: null, loadDraft: !!sp.draft }} />;
   }
 
@@ -53,6 +62,7 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
         <h1 className="mv-display text-4xl">What are we making?</h1>
         <p className="mt-2 text-bone-2">Pick a category and garment. You can switch model, fit and construction any time in the editor.</p>
         {sp.typography && TYPOGRAPHY_BY_ID.has(sp.typography) && <p className="mt-2 text-sm text-champagne">Your typography style &ldquo;{TYPOGRAPHY_BY_ID.get(sp.typography)!.name}&rdquo; will be placed on the garment you choose.</p>}
+        {artwork && <p className="mt-2 text-sm text-champagne" data-testid="carry-artwork">Your image &ldquo;{artwork.originalName ?? "artwork"}&rdquo; will be placed on the chest of the garment you choose — then move, scale and rotate it in the editor.</p>}
         {asset && <p className="mt-2 text-sm text-champagne" data-testid="carry-asset">&ldquo;{asset.name}&rdquo; will be placed on the chest of the garment you choose.</p>}
         <div className="mt-6 flex flex-wrap gap-2">
           {AUDIENCES.map((a) => <Link key={a} href={`/design/new?audience=${a}&mode=${mode}${typoQ}`} data-active={audience === a} className="mv-chip">{AUDIENCE_LABELS[a]}</Link>)}

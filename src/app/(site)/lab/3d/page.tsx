@@ -18,10 +18,6 @@ export default async function Lab({ searchParams }: { searchParams: Promise<Reco
   if (sp.fabric && FABRIC_BY_ID.get(sp.fabric)?.garmentTypes.includes(config.garmentType)) config.fabric.id = sp.fabric;
   if (sp.color && /^[0-9a-f]{6}$/i.test(sp.color)) config.fabric.color = `#${sp.color.toUpperCase()}`;
   const quality = (["low", "balanced", "high"] as const).find((q) => q === sp.quality);
-  // QA knobs for the supplied FBX characters: motion, expression, size and skin tone.
-  const motion = (["rest", "idle", "walk", "run"] as const).find((q) => q === sp.motion);
-  const expression = (["neutral", "smile"] as const).find((q) => q === sp.expr);
-  const skin = sp.skin && /^[0-9a-f]{6}$/i.test(sp.skin) ? `#${sp.skin.toUpperCase()}` : undefined;
   if (sp.size && sizesFor(audience).includes(sp.size)) config.size = sp.size as never;
-  return <Lab3D config={config} view={(sp.view as never) ?? "front"} avatar={sp.avatar === "1"} quality={quality} motion={motion} expression={expression} skinTone={skin} />;
+  return <Lab3D config={config} view={(sp.view as never) ?? "front"} quality={quality} />;
 }

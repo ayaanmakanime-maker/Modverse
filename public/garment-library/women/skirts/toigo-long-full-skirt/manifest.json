@@ -1,0 +1,93 @@
+{
+  "id": "toigo-long-full-skirt",
+  "name": "Long Full Skirt",
+  "originalName": "toigo_long_full_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "long full skirt by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts01/skirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "293fa0c15e28e8dcea8dfff20cae31aa4b0d1268a6e6ba0a53a92ebb0f36c882"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"long full skirt\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-long-full-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/skirtFullLong.png",
+      "original/skirt_full_long.mhmat",
+      "original/skirt_full_long.obj",
+      "original/toigo_long_full_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "skirtFullLong.png",
+        "sha256": "a4475e2bf9a3906a2e6c39df90f3c8aefadfc5e2b16a76a3445390a7f48296db",
+        "bytes": 9925039
+      },
+      {
+        "name": "skirt_full_long.mhmat",
+        "sha256": "98ad203aa9fcb4a7d160101caedb183594f35b4c7389ef12ba5681fd51061720",
+        "bytes": 502
+      },
+      {
+        "name": "skirt_full_long.obj",
+        "sha256": "876bbae3c54414fdb93d38b581629fdc80ffe58dd4504731d47ed0c668a08561",
+        "bytes": 240854
+      },
+      {
+        "name": "toigo_long_full_skirt.mhclo",
+        "sha256": "29ee266a19f81b4d5159782ed652b5df5574d0ace240112d1fea63b643a28dd4",
+        "bytes": 202963
+      }
+    ],
+    "glbBytes": 497032
+  },
+  "geometry": {
+    "vertices": 3136,
+    "triangles": 5848,
+    "hasUv": true,
+    "uvCoverage": 0.8,
+    "boundsCm": {
+      "width": 68.9,
+      "height": 86.6,
+      "depth": 53.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

@@ -1,19 +1,16 @@
 "use client";
 import { BodyScanner } from "@/components/tryon/BodyScanner";
-import dynamic from "next/dynamic";
 import { ThemePicker } from "@/components/theme";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Trash2, Pencil } from "lucide-react";
 import { api, errorMessage } from "@/lib/client/api";
 import { useSession } from "@/components/session";
-import { Badge, Button, ColorPicker, EmptyState, Field, Input, Modal, Notice, Segmented, Select, Spinner, toast } from "@/components/ui";
+import { Badge, Button, EmptyState, Field, Input, Modal, Notice, Segmented, Spinner, toast } from "@/components/ui";
 import { recommendSize } from "@/lib/garment/sizing";
 import { createDesign } from "@/lib/garment/design";
-import { SKIN_TONES } from "@/lib/three/avatar";
 import { passwordStrength } from "@/lib/auth/password-policy";
 
-const GarmentViewer = dynamic(() => import("@/components/three/GarmentViewer").then((m) => m.GarmentViewer), { ssr: false });
 
 function useList<T>(url: string, key: string) {
   const [items, setItems] = useState<T[] | null>(null);
@@ -54,7 +51,7 @@ export function MeasurementsManager() {
     <div className="space-y-4" data-testid="measurements">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-bone-2">Measure with your camera (front, side, back — on this device):</span>
-        {(["men", "women"] as const).map((a) => <Button key={a} size="sm" variant="ghost" onClick={() => setScan(a)} data-testid={`scan-open-${a}`}>Scan · {a === "men" ? "Atlas fit" : "Aura fit"}</Button>)}
+        {(["men", "women"] as const).map((a) => <Button key={a} size="sm" variant="ghost" onClick={() => setScan(a)} data-testid={`scan-open-${a}`}>Scan · {a === "men" ? "Men" : "Women"}</Button>)}
       </div>
       {scan && <BodyScanner audience={scan} signedIn onClose={() => { setScan(null); reload(); }} />}
       <div className="flex items-center justify-between"><h1 className="mv-display text-3xl">Measurements</h1><Button size="sm" onClick={() => setEdit({ audience: "men", measurements: {}, fitPreference: "true" })} data-testid="add-measurements">Add profile</Button></div>
@@ -81,44 +78,6 @@ export function MeasurementsManager() {
             </div>
             <Segmented label="Fit preference" value={edit.fitPreference ?? "true"} onChange={(v) => setEdit({ ...edit, fitPreference: v })} options={[{ value: "closer", label: "Closer" }, { value: "true", label: "True to fit" }, { value: "looser", label: "Looser" }]} />
             <Button onClick={save} loading={busy} disabled={!edit.name || !edit.measurements?.chest} data-testid="mp-save">Save</Button>
-          </div>
-        )}
-      </Modal>
-    </div>
-  );
-}
-
-interface Avatar { id: string; name: string; measurementProfileId: string | null; appearance: { skinTone: string; build: "slim" | "average" | "athletic" | "broad" | "curvy"; height: number; hair: "short" | "medium" | "long" | "bun" | "none"; pose: "a-pose" | "relaxed"; bodyType: "masculine" | "feminine" } }
-
-export function AvatarsManager() {
-  const { items, reload } = useList<Avatar>("/api/account/avatars", "avatars");
-  const { items: profiles } = useList<Profile>("/api/account/measurements", "profiles");
-  const [edit, setEdit] = useState<Partial<Avatar> | null>(null);
-  const profile = profiles?.find((p) => p.id === edit?.measurementProfileId);
-  const preview = createDesign("tee-regular", edit?.appearance?.bodyType === "feminine" ? "women" : "men");
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between"><h1 className="mv-display text-3xl">Avatars</h1><Button size="sm" onClick={() => setEdit({ appearance: { skinTone: SKIN_TONES[3], build: "average", height: 172, hair: "short", pose: "a-pose", bodyType: "masculine" } })}>New avatar</Button></div>
-      <Notice tone="info">Your avatar uses the ModVerse flagship models — Atlas or Aura — reshaped from your measurement profile. It is a rigged, parametric 3D body for previewing garments, not an exact scan of your body.</Notice>
-      {!items ? <Spinner /> : items.length === 0 ? <EmptyState title="No avatars yet" /> : items.map((a) => (
-        <div key={a.id} className="mv-card flex items-center justify-between p-4">
-          <span className="flex items-center gap-3"><span className="size-8 rounded-full" style={{ background: a.appearance.skinTone }} /><span><span className="block">{a.name}</span><span className="text-xs text-mute">{a.appearance.bodyType} · {a.appearance.build} · {a.appearance.height} cm</span></span></span>
-          <span className="flex gap-1"><button className="mv-chip" onClick={() => setEdit(a)}><Pencil className="size-3" /></button><button className="mv-chip text-bad" onClick={async () => { await api(`/api/account/avatars/${a.id}`, { method: "DELETE" }); reload(); }}><Trash2 className="size-3" /></button></span>
-        </div>
-      ))}
-      <Modal open={!!edit} onClose={() => setEdit(null)} title="Avatar" wide>
-        {edit?.appearance && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-3">
-              <Field label="Name">{(id) => <Input id={id} value={edit.name ?? ""} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />}</Field>
-              <Field label="Measurement profile">{(id) => <Select id={id} value={edit.measurementProfileId ?? ""} onChange={(e) => setEdit({ ...edit, measurementProfileId: e.target.value || null })}><option value="">Use size chart</option>{(profiles ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select>}</Field>
-              <Segmented label="Body type" value={edit.appearance.bodyType} onChange={(v) => setEdit({ ...edit, appearance: { ...edit.appearance!, bodyType: v } })} options={[{ value: "masculine", label: "Atlas (male)" }, { value: "feminine", label: "Aura (female)" }]} />
-              <Segmented label="Build" value={edit.appearance.build} onChange={(v) => setEdit({ ...edit, appearance: { ...edit.appearance!, build: v } })} options={(["slim", "average", "athletic", "broad", "curvy"] as const).map((b) => ({ value: b, label: b }))} />
-              <ColorPicker label="Skin tone" swatches={SKIN_TONES} value={edit.appearance.skinTone} onChange={(c) => setEdit({ ...edit, appearance: { ...edit.appearance!, skinTone: c } })} />
-              <Segmented label="Hair" value={edit.appearance.hair} onChange={(v) => setEdit({ ...edit, appearance: { ...edit.appearance!, hair: v } })} options={(["short", "medium", "long", "bun", "none"] as const).map((b) => ({ value: b, label: b }))} />
-              <Button onClick={async () => { try { await api(edit.id ? `/api/account/avatars/${edit.id}` : "/api/account/avatars", { method: edit.id ? "PATCH" : "POST", body: { name: edit.name, measurementProfileId: edit.measurementProfileId ?? null, appearance: { ...edit.appearance, height: profile?.measurements.height ?? edit.appearance!.height } } }); setEdit(null); reload(); toast("Avatar saved"); } catch (e) { toast(errorMessage(e), "bad"); } }} disabled={!edit.name}>Save avatar</Button>
-            </div>
-            <div className="mv-card aspect-square overflow-hidden"><GarmentViewer config={preview} view="front" showAvatar avatar={{ body: profile?.measurements, appearance: { skinTone: edit.appearance.skinTone, build: edit.appearance.build, bodyType: edit.appearance.bodyType, hair: edit.appearance.hair } }} compact /></div>
           </div>
         )}
       </Modal>

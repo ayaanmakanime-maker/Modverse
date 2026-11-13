@@ -1,0 +1,1 @@
+{"format":"modverse-mhclo-fit/1","basemesh":"hm08","vertices":255,"scales":{"x":{"a":5399,"b":11998,"den":1.398},"z":{"a":962,"b":5320,"den":1.8441},"y":{"a":791,"b":881,"den":2.2028}},"layout":"uint16 refs[3n], int16 weights[3n] (/16384), int16 offsets[3n] (1e-4 dm, scaled per axis by the body)","offsetUnit":"dm","hideBody":[],"positionMatchMisses":0}

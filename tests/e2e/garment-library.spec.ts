@@ -5,7 +5,7 @@ import { ADMIN, login, openEditor, register } from "./helpers";
 
 const index = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/garment-library/index.json"), "utf8")) as { garments: { id: string; path: string; glb: string; licence: string }[] };
 
-test("3D collection lists only downloaded, licensed garment files; a real model loads and is customised", async ({ page }) => {
+test("3D collection lists only downloaded, licensed garment files; a real model loads, is customised to order and exports", async ({ page }) => {
   test.setTimeout(180_000);
   // every catalogue entry points at a real GLB with an accepted licence
   expect(index.garments.length).toBeGreaterThan(50);
@@ -27,11 +27,9 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   const studio = page.getByTestId("library-studio");
   await expect(studio).toHaveAttribute("data-loaded", "yes", { timeout: 120_000 });
   await expect(page.getByTestId("garment-attribution")).toContainText("MakeHuman");
-  await page.getByTestId("tint-B3261E").click();
-  await page.getByTestId("side-back").click();
-  await page.getByTestId("decal-text").fill("MODVERSE");
-  await page.getByTestId("decal-add-text").click();
-  await expect(studio).toHaveAttribute("data-decals", "1");
+  // made to order: the stocked colour card drives the preview (the creator's texture is off)
+  await page.getByTestId("mto-colour-maroon").click();
+  await expect(page.getByTestId("mto")).toHaveAttribute("data-valid", "yes");
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("library-export").click()]);
   expect(download.suggestedFilename()).toMatch(/preview\.png$/);
   // 3D downloads of the customised garment in every format of the Export Studio
@@ -44,16 +42,16 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   const has = (b: Buffer, s: string) => b.includes(Buffer.from(s));
   const glb = await grab("export3d-glb");
   expect(glb.buf.subarray(0, 4).toString("latin1")).toBe("glTF");
-  expect(glb.buf.length).toBeGreaterThan(50_000);
+  expect(glb.buf.length).toBeGreaterThan(20_000);
   const gltf = JSON.parse((await grab("export3d-gltf")).buf.toString("utf8"));
   expect(gltf.asset.version).toBe("2.0");
   expect(gltf.meshes.length).toBeGreaterThan(0);
   const obj = await grab("export3d-obj");
   expect(obj.name).toMatch(/-obj\.zip$/);
-  for (const n of [".obj", ".mtl", "textures/", "README.txt"]) expect(has(obj.buf, n), n).toBe(true);
+  for (const n of [".obj", ".mtl", "README.txt"]) expect(has(obj.buf, n), n).toBe(true);
   const fbx = await grab("export3d-fbx");
   expect(fbx.buf.subarray(0, 18).toString("latin1")).toBe("Kaydara FBX Binary");
-  expect(fbx.buf.length).toBeGreaterThan(50_000); // geometry + embedded texture
+  expect(fbx.buf.length).toBeGreaterThan(20_000);
   expect((await grab("export3d-ply")).buf.subarray(0, 3).toString("latin1")).toBe("ply");
   const usd = await grab("export3d-usd");
   expect(has(usd.buf, ".usda")).toBe(true);
@@ -74,7 +72,7 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   expect(dxf.match(/\n3DFACE\n/g)?.length ?? 0).toBeGreaterThan(1000);
   const zip = (await grab("export-zip")).buf;
   expect(zip.subarray(0, 2).toString("latin1")).toBe("PK");
-  for (const name of ["garment.glb", "project.json", "ATTRIBUTION.txt", "artwork/01-MODVERSE.png"]) expect(zip.includes(Buffer.from(name))).toBe(true);
+  for (const name of ["garment.glb", "project.json", "ATTRIBUTION.txt"]) expect(zip.includes(Buffer.from(name))).toBe(true);
   expect(errors).toEqual([]);
 });
 

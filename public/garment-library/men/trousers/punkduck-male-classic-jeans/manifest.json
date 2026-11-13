@@ -1,0 +1,103 @@
+{
+  "id": "punkduck-male-classic-jeans",
+  "name": "Male Classic Jeans",
+  "originalName": "punkduck_male_classic_jeans",
+  "audience": "men",
+  "category": "trousers",
+  "collection": "Jeans",
+  "description": "male classic jeans by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"male classic jeans\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-male-classic-jeans.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/male-classic-jeans-norm.png",
+      "original/male-classic-jeans.mhmat",
+      "original/male-classic-jeans.obj",
+      "original/male-classic-jeans.png",
+      "original/punkduck_male_classic_jeans.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "male-classic-jeans.png",
+        "sha256": "0cf8731e05cb26c0976276b9f320acff246a26a46a4c4f263c35d111835fa5c4",
+        "bytes": 7537090
+      },
+      {
+        "name": "punkduck_male_classic_jeans.mhclo",
+        "sha256": "8e375d1fc5eae9a52f2677eb02474b116d2ce6918c8e45142d254391c6b46944",
+        "bytes": 177711
+      },
+      {
+        "name": "male-classic-jeans.obj",
+        "sha256": "847cd28a532f12a560c5cbdd7069b1fea49ee9565f372e9965f8fd3653595fbf",
+        "bytes": 199711
+      },
+      {
+        "name": "male-classic-jeans.mhmat",
+        "sha256": "bfd98ff38b170843406a78f09823eb2c5a39efc6f94e192cf7c5ce67500f5723",
+        "bytes": 907
+      },
+      {
+        "name": "male-classic-jeans-norm.png",
+        "sha256": "a136eed45c50399aa2d1864d0f9dd9c626e112ed89e6256fa309298e1ca6a190",
+        "bytes": 6701453
+      }
+    ],
+    "glbBytes": 555520
+  },
+  "geometry": {
+    "vertices": 2794,
+    "triangles": 4590,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 52.5,
+      "height": 101.3,
+      "depth": 26.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "jeans",
+    "pants",
+    "male"
+  ],
+  "integrationStatus": "integrated"
+}
