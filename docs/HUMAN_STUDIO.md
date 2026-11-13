@@ -85,13 +85,15 @@ The recommended size is the smallest size whose chart body is no more than 2 cm 
 * Feet are kept on the floor. Measurements are always taken on the unposed body.
 * Views: full body, upper body, face; turntable; photo (PNG).
 
-## Cloth simulation (`src/lib/human/garment-cloth.ts`)
-Runs on the worn top / dress / outfit while the avatar is animated:
-* A garment's particles are its welded vertices. Each has an **allowance**: how far it may leave its fitted position, measured from how far the fabric hangs from the skin (0 where it lies on the body, up to 14 cm on loose parts).
-* Fabric below the crotch (skirts) is **hanging**: it gets a wide allowance (up to 45 cm), because the fitted target tears apart there when the legs move. It may swing but cannot get longer than it was cut.
-* Per substep: gravity, damping, inertia from the moving body, inextensible edges (3 iterations × 3 substeps), collision with arm and leg capsules built from the posed skeleton (radii measured from the body), a backstop along the fitted surface normal so cloth cannot sink into the body, and the allowance clamp.
-* Measured on a real dress over a walk cycle (unit test): allowances respected, no NaNs, loose fabric moves up to ≈ 11 cm away from the fitted shape, and fewer edges are distorted than in the plain fitted shape (6–9 % vs 10.6 % stretched more than 25 %; under 1 % in standing poses). About 15–18 ms per frame for 6,600 particles in software rendering.
-* Limits: no self-collision, no cloth-to-cloth collision between layers, the torso is protected by the backstop rather than a true collider, fabric parameters are not measured per fabric, and trousers and shoes are not simulated. It is real-time dynamics for presentation, not a pattern-level drape (the offline Blender bake remains future work).
+## Cloth engine (`src/lib/human/garment-cloth.ts`)
+XPBD — extended position-based dynamics (Macklin, Müller & Chentanez 2016) with the "small steps" scheme (Macklin et al. 2019): 8 substeps per frame (4 on phones), one constraint iteration each.
+* **Particles:** the garment's render vertices welded at UV seams. Fabric that lies on the body follows its fitted (.mhclo) shape kinematically, interpolated through the frame; fabric that hangs or stands away (looseness measured from the garment's distance to the unposed body) is simulated.
+* **Constraints:** stretch on every mesh edge and bending across every pair of adjacent triangles, each with a compliance; a tether to the fitted position (maximum distance that grows with looseness; skirts below the crotch get a wide allowance but cannot lengthen); a backstop along the fitted surface normal.
+* **Collision:** the posed body surface (skin vertices with smooth normals in a dense spatial grid, rebuilt every frame) with contact thickness and friction; limb capsules as a second line of defence. After each step, and for everything worn that is not simulated (shoes, trousers, outfits), every vertex is pushed outside the skin, so no body proportion makes the body poke through a garment.
+* **Fabric families:** jersey (stretchy, soft folds), woven, suiting and denim (stiff, heavily damped), chiffon (light, limp) — chosen from the garment's category and name.
+* **Cost** (this repository's CPU, one dress of 6,900 particles, walking): ≈ 8 ms per frame at 4 substeps, ≈ 11 ms at 8, collider rebuild ≈ 1 ms.
+* **Not simulated:** self-collision of the fabric, wind, layering between two simulated garments.
+* **Tests:** `tests/unit/xpbd-cloth.test.ts` (a hanging panel swings on after a move and settles without stretching; the collider pushes points out along the skin normal; a walking dress moves, stays within its tethers and stretch limits, ends with no vertex inside the body, and denim moves less than chiffon).
 
 ## Not done
 * Only one top / dress at a time, with trousers and shoes; no layering of several tops.

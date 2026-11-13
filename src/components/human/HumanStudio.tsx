@@ -47,6 +47,8 @@ function Thumb({ kind, part, active, onClick }: { kind: PartKind; part: PartInfo
   );
 }
 
+/** Cloth-engine fabric family of a collection garment (from its category and name). */
+const fabricFamily = (g: { category: string; name: string }) => g.category === "tailoring" ? "suiting" as const : /jean|denim/i.test(g.name) ? "denim" as const : ["tshirts", "tops", "knitwear", "sweatwear"].includes(g.category) ? "jersey" as const : g.category === "blouses" ? "chiffon" as const : "woven" as const;
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const signed = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
 
@@ -213,7 +215,7 @@ export function HumanStudio({ garments, initialGarment }: { garments: HumanStudi
       if (!m) continue;
       out.push({ key: `${k}/${id}`, kind: k, fit: m.fit, index: m.index, uv: m.uv, textureUrl: m.textureUrl, color: m.color, alpha: m.info.alpha, twoSided: m.twoSided });
     }
-    if (garment && gfit?.id === garment.id && !outfitId) out.push({ key: `garment/${garment.id}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null });
+    if (garment && gfit?.id === garment.id && !outfitId) out.push({ key: `garment/${garment.id}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null, fabric: fabricFamily(garment) });
     return out;
   }, [wanted, loaded, garment, gfit, outfitId, fitMap, colors]);
   const [ready, setReady] = useState<string[]>([]);

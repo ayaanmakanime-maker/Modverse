@@ -12,7 +12,10 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { HumanAsset } from "@/lib/human/model";
 import { buildSkeleton, poseAt, skin, type PoseId } from "@/lib/human/pose";
 import { fitGarment, type GarmentFit } from "@/lib/human/fit-garment";
-import { CLOTH_DEFAULTS, GarmentCloth, limbCapsules, limbRadii } from "@/lib/human/garment-cloth";
+import { BodyCollider, bodyTriangles, CLOTH_DEFAULTS, FABRIC_CLOTH, GarmentCloth, limbCapsules, limbRadii } from "@/lib/human/garment-cloth";
+
+/** Phones and low-core devices: fewer substeps keep the frame rate (XPBD stays stable with fewer, it just stiffens). */
+const LIGHT = typeof navigator !== "undefined" && ((navigator.hardwareConcurrency ?? 8) <= 4 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
 
 export interface WornItem {
   key: string;
@@ -23,6 +26,8 @@ export interface WornItem {
   textureUrl?: string | null; color?: [number, number, number]; alpha?: boolean; twoSided?: boolean;
   /** per-vertex colours (fit map); replaces the garment's texture while set */
   colors?: Float32Array | null;
+  /** fabric family for the cloth engine */
+  fabric?: keyof typeof FABRIC_CLOTH;
 }
 export type MannequinStyle = "wire" | "solid";
 export interface SceneLook { style: MannequinStyle; garmentTint: string }
@@ -181,6 +186,8 @@ function Rig(p: HumanSceneProps) {
   }, [asset, body, itemKeys, invalidate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sk = useMemo(() => buildSkeleton(asset, rest), [asset, rest]);
+  // the posed body as a collision surface for every garment (rebuilt each frame something is worn)
+  const collider = useMemo(() => new BodyCollider(bodyTriangles(asset.bodyIndex, asset.orig), asset.isBody), [asset]);
   const radii = useMemo(() => limbRadii(sk.names, sk.head, rest, asset.joints, asset.isBody), [asset, sk, rest]);
   const posedBuf = useMemo(() => new Float32Array(rest.length), [rest]);
   useEffect(() => { dirty.current = true; invalidate(); }, [rest, p.pose, p.life, p.cloth, invalidate]);
@@ -213,7 +220,8 @@ function Rig(p: HumanSceneProps) {
     body.g.attributes.position.needsUpdate = true; body.g.attributes.normal.needsUpdate = true;
     // everything worn
     const caps = cur.cloth ? limbCapsules(sk.names, posed.heads, radii) : [];
-    let particles = 0;
+    if (worn.current.size) collider.update(P);
+    let particles = 0, pushed = 0;
     for (const w of worn.current.values()) {
       const attr = w.mesh.geometry.attributes.position as THREE.BufferAttribute;
       const out = attr.array as Float32Array;
@@ -221,15 +229,17 @@ function Rig(p: HumanSceneProps) {
       if (sim) {
         if (!w.cloth || w.clothFor !== rest) {
           const index = w.mesh.geometry.index!.array as ArrayLike<number>;
-          w.cloth = new GarmentCloth(fitGarment(w.item.fit, rest), index, rest, asset.isBody, CLOTH_DEFAULTS, cur.crotchY);
+          w.cloth = new GarmentCloth(fitGarment(w.item.fit, rest), index, rest, asset.isBody, { ...CLOTH_DEFAULTS, ...(w.item.fabric ? FABRIC_CLOTH[w.item.fabric] : {}), substeps: LIGHT ? 4 : 8 }, cur.crotchY);
           w.clothFor = rest;
         }
         fitGarment(w.item.fit, P, w.target, rest);
-        w.cloth.step(w.target, dt, caps, out);
+        w.cloth.step(w.target, dt, caps, out, collider);
         particles += w.cloth.particles;
       } else {
         fitGarment(w.item.fit, P, out as unknown as Float32Array<ArrayBuffer>, rest);
         if (w.cloth) { w.cloth = null; w.clothFor = null; }
+        // whatever the body's proportions, the skin never pokes through what is worn
+        pushed += collider.pushOut(out, w.item.kind === "shoes" ? 0.1 : 0.25);
       }
       attr.needsUpdate = true;
       w.mesh.geometry.computeVertexNormals();
@@ -240,6 +250,7 @@ function Rig(p: HumanSceneProps) {
     if (el && (frames.current % 10 === 0 || !animated)) {
       el.dataset.frames = String(frames.current);
       el.dataset.clothParticles = String(particles);
+      el.dataset.pushed = String(pushed);
       el.dataset.ms = (performance.now() - t0).toFixed(1);
     }
     if (!animated) state.invalidate();
