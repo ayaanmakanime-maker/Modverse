@@ -1,6 +1,6 @@
 # Human Studio (Atelier Pro)
 
-`/design/human-studio`, linked from the Atelier Pro Fit tab. A 3D body shaped to the customer's tape measurements, checked against them on the model, and dressed in 3D collection garments fitted to that body.
+`/design/human-studio`, linked from the Atelier Pro Fit tab. A fitting mannequin (men and women) shaped to the customer's tape measurements, checked against them on the model, trying on 3D collection garments by size with a fit map.
 
 ## The body
 * **Source:** MakeHuman base mesh *hm08* with its targets, the Mixamo-compatible rig (52 bones) and its skin weights, as bundled with MPFB 2. All **CC0** (the statement is in `base.obj`; the weights file is marked CC0). Only data is used. No MakeHuman or MPFB code (AGPL / GPL) is copied.
@@ -14,7 +14,7 @@
   * bones are placed from the morphed mesh (joint cubes / vertex means), so they follow the body;
   * feet stand on y = 0.
 
-## Measurements: what the avatar column means
+## Measurements: what the mannequin column means
 Measured on the 3D body like a tape (`measureBody`):
 
 | Measurement | How it is measured |
@@ -58,23 +58,25 @@ Typical fit time is 0.1–3.5 s.
 ## Saving and export
 * Saved measurement profiles (tape or reviewed body scan) fill the form in one step.
 * The form saves back to the account; the body schema gains inseam, thigh and calf, all optional.
-* **Export** gives the avatar wearing the garment as one scene in every Export 3D format (GLB, FBX, USDZ, STL…). The body credit (CC0) and the garment credit are written into the files.
+* **Export** gives the mannequin wearing the garment as one scene in every Export 3D format (GLB, FBX, USDZ, STL…). The body credit (CC0) and the garment credit are written into the files.
 
-## Look: skin, face, hair (all CC0 MakeHuman data)
-Built by `scripts/human/build_parts.py <mpfb.zip> <packs dir> <repo>` from the MakeHuman system assets and the community packs hair01, pants01 and shoes01. **Only parts whose own file states CC0 are imported**: 11 hairstyles in the "CC0" hair pack still carry an AGPL or CC BY header and were skipped.
+## The fitting mannequin
+Human Studio is a **fitting tool, not a character creator**. The body is shown as a mannequin (wireframe over a translucent shell, or a matte dress-form finish), with a neutral head and closed lids; there are no skin, face, eye or hair controls. Men and women each start on MakeHuman's "ideal proportions" (Proportions 0.45 for men, 0.7 for women; women also start with Bust shape 0.3 so the bust reads under fitted garments). Body weight, muscle, proportions and bust shape stay adjustable and are kept while shaping to measurements.
 
-| What | Options |
-|---|---|
-| Skin | three MakeHuman skin textures per sex (light, medium, deep) with a shade slider; a painted base layer (briefs, plus a top for women) in six colours so the avatar is never nude |
-| Face | ancestry mix (MakeHuman's three ethnic shapes), age, smile, 8 face shapes and 27 sliders in five groups (head, eyes, nose, mouth, jaw, cheeks and ears) |
-| Eyes | fitted eye meshes with 9 iris colours |
-| Hair | 21 hairstyles with 9 tints (brows follow the hair tint); 8 eyebrow and 4 eyelash styles |
-| Outfit | 84 fitted 3D collection garments, 12 complete outfits, 4 trousers, 16 shoes |
+Styling parts stay available for context (12 complete outfits, 4 trousers, 16 shoes, all CC0 MakeHuman parts fitted through their `.mhclo`), under a collapsed "Styling" section. They have no size and no fit map.
 
-Every part is fitted through its `.mhclo` binding, exactly like the garments, so hair, brows, lashes, eyes, trousers and shoes follow the face and body the customer builds.
+## Size and fit map (`src/lib/human/fit-map.ts`)
+A garment is cut for a size, not for the customer. For the chosen size:
+1. The **size-chart body** (`SIZE_CHARTS` in `src/lib/garment/sizing.ts`: chest/bust, waist, hip, shoulder, neck, upper arm) is solved onto the mannequin **at the customer's height**, so the map reads girth fit, not length.
+2. The garment is fitted to that size body through its `.mhclo` binding.
+3. For every garment vertex, the **clearance** is the distance from the customer's skin (the same binding triangle on their body) to where that size's garment sits, along the body's surface normal (vertices bound to helper geometry use the garment's own offset direction). Clearance is smoothed over the garment mesh (4 neighbour passes).
+4. Bands: **tight** (< 0 cm, the garment would pull), **snug** (0–0.75), **comfortable** (0.75–3), **loose** (> 3). The garment is coloured by band; the panel shows the share of each band.
 
-### Starting points
-Each sex opens on a refined default instead of the raw average mesh: MakeHuman's "ideal proportions" target (a Proportions slider, 0.7 for the woman and 0.45 for the man), a face preset (for the woman: oval shape, narrower jaw, chin and nose, larger eyes, higher cheekbones), long hair and a fitted shift dress for the woman, a shirt and trousers for the man. Irises: the stock "brown" texture is red, so brown and dark brown are derived from the hazel iris. Hair uses alpha-to-coverage for soft edges; part bindings keep float weights (long hair is bound far outside its reference triangles). Lighting is a soft key with front fill.
+The recommended size is the smallest size whose chart body is no more than 2 cm smaller than the customer anywhere (chest, waist, hip): the 3D pattern carries its own ease. The table shows chart, customer and room for each girth. Size charts are representative Indian-market values; a manufacturer's graded chart replaces them for production.
+
+**Checks (unit test on the real assets):** a men's shirt in a size cut for a smaller body is tight on > 15 % of its vertices; a size cut for a larger body on < 5 %; the garment on the body it was fitted to is never tight. **e2e:** for a 92/72/100 cm woman the recommended size is M; two sizes down (XS) the tight share rises.
+
+`/design/human-studio?garment=<id>` opens with that garment (and the matching mannequin).
 
 ## Motion (`src/lib/human/pose.ts`)
 * Forward kinematics on the 52-bone rig and linear-blend skinning on the CPU with the CC0 weights; everything worn is re-fitted to the posed body every frame.

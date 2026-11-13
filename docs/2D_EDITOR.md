@@ -16,7 +16,7 @@
 * **State:** `useEditor` (Zustand). `commit()` creates an undo step; `checkpoint()` + `transient()` make a drag one undo step. All changes re-validate against the Zod schema and compatibility rules.
 
 ## Panels (by mode)
-Start (Studio guided steps + presets) · Garment · Construction · Proportions · Colour & fabric · **Fabric Lab** (Atelier Pro) · Panels · Library · Text · Upload & AI · Layers · AI Muse · Fit & avatar · Check & order · History & versions · Tech pack.
+Start (Studio guided steps + presets) · Garment · Construction · Proportions · Colour & fabric · Panels · Library · Text · Upload & AI · Layers · AI Muse · Fit (Atelier Pro: Human Studio) · Check & order · History & versions · Tech pack.
 
 ## Atelier Pro editing suite (design schema v3)
 Everything below is **non-destructive**: settings are stored on the layer in the shared `DesignConfig` and rendered by the same composer (`src/lib/render/compose.ts` → `src/lib/render/layer-fx-svg.ts`), so the 2D canvas, the 3D textures and the print files show the same result. Each gesture is one undo step. Code: `src/lib/garment/layer-fx.ts` (schema), `src/components/editor/pro-tools.tsx` (tools), `pro-panels.tsx` (panels), `src/lib/editor/selection.ts`, `raster-select.ts`.

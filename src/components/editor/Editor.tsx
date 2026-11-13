@@ -24,7 +24,7 @@ import { ConstructionPanel, FabricPanel, FitPanel, GarmentPanel, MeasurementsPan
 import { LayersPanel, LibraryPanel, StartPanel, TextPanel, UploadPanel } from "./panels-artwork";
 import { MusePanel, TechPackPanel, ValidationPanel, VersionsPanel, useLiveValidation } from "./panels-pro";
 import { HistoryPanel, ProductionToggles } from "./pro-panels";
-import type { AvatarState } from "./avatar-panel";
+import type { AvatarState } from "./panels-garment";
 import { FabricLabPanel } from "./fabric-lab";
 import type { GarmentViewerHandle, LightingPreset, ViewPreset } from "@/components/three/GarmentViewer";
 import { isSoftwareRenderer } from "@/lib/three/capabilities";
@@ -87,7 +87,7 @@ export function Editor({ initial }: { initial: EditorInitial }) {
   const [patternTarget, setPatternTarget] = useState<PanelId | null>(null);
   const [view3d, setView3d] = useState<ViewPreset>("three-quarter");
   const [lighting, setLighting] = useState<LightingPreset>("studio");
-  const [avatar, setAvatar] = useState<AvatarState>({ on: false });
+  const [avatar, setAvatar] = useState<AvatarState>({});
   const [saving, setSaving] = useState(false);
   const [mobilePanel, setMobilePanel] = useState(true);
   const viewer = useRef<GarmentViewerHandle | null>(null);
@@ -335,7 +335,7 @@ function EditorLayout(p: {
       case "layers": return <LayersPanel />;
       case "fabriclab": return <FabricLabPanel />;
       case "muse": return <MusePanel />;
-      case "fit": return <FitPanel pro={p.mode === "pro"} avatar={p.avatar} setAvatar={(a) => { p.setAvatar(a); if (a.on && !p.avatar.on && p.view === "2d") p.setView("split"); }} />;
+      case "fit": return <FitPanel pro={p.mode === "pro"} avatar={p.avatar} setAvatar={p.setAvatar} />;
       case "versions": return <div className="space-y-5"><HistoryPanel /><VersionsPanel onSaveVersion={async (note) => void (await p.save({ asNewVersion: true, note }))} /></div>;
       case "techpack": return <TechPackPanel capture3d={() => p.viewer.current?.capture() ?? null} exportGlb={() => p.viewer.current?.exportGlb() ?? Promise.resolve(null)} />;
       case "check": return (

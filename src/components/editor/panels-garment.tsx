@@ -1,6 +1,7 @@
 "use client";
 import { BodyScanner } from "@/components/tryon/BodyScanner";
-import type { AvatarState } from "./avatar-panel";
+/** Body values entered or scanned in the Fit tab (used by the fit check). */
+export interface AvatarState { body?: Record<string, number> }
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { useEditor } from "@/lib/editor/store";

@@ -18,7 +18,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 
 * The database is **embedded PostgreSQL (PGlite)** stored in `.data/` — no install required. Set `DATABASE_URL` to use any PostgreSQL server instead (verified on PostgreSQL 16).
 * On first start, an admin, a staff and a demo customer account are created with **random passwords written to `.data/ADMIN_CREDENTIALS.txt`** (git-ignored). Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` to choose your own.
-* **Characters:** put the supplied rigged models at `public/avatars/man.fbx` (Atlas, Men) and `public/avatars/woman.fbx` (Aura, Women) to wear designs on real characters with poses, walk/run and a face. They are committed with the repo (owner-confirmed) and optional — without them the built-in procedural avatars are used. See `public/avatars/README.md`.
+* **Human Studio** (Atelier Pro, `/design/human-studio`): a fitting mannequin for men and women shaped to tape measurements, trying 3D collection garments on by size with a fit map. See `docs/HUMAN_STUDIO.md`.
 * `npm run models:fetch` downloads the MediaPipe pose/segmentation models for the trial room; without them it falls back to the public MediaPipe CDN.
 * Copy `.env.example` to `.env.local` only if you need to override defaults. **Never commit `.env*` or `.data/`.**
 
@@ -33,7 +33,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 | Typography | 34 OFL fonts (incl. Devanagari, Tamil, Bengali), curved/circular/vertical text, outline, shadow, background, skew; identical in 2D, 3D and print. |
 | Creative Library | The supplied v0.1 library (1,000 assets, 20 collections) **plus the ModVerse Studio Library** — ~970 original assets in 24 collections (festive & desi, mandala/rangoli, wildlife, pets, playful characters, sports, music, gaming, food, travel, wellness, botanical, surf, retro, celestial, streetwear, celebration, campus, eco, abstract, line art, stickers, badges, seamless patterns). Every graphic is recolourable (≤5 colours) and one-tap palette-swappable; place on any 2D/3D surface. |
 | AI Muse | Local deterministic text-to-design + conversational editing that applies validated operations; optional Ollama/OpenAI. AI artwork generation through ComfyUI, **Meta Muse Image** or OpenAI — all inactive until an admin adds a key, passes the connection test and enables it (Meta's generation endpoint additionally needs billing set up on the Meta team). |
-| 3D | React Three Fiber parametric garments (lofted sleeves, collars, plackets, buttons, pockets, cuffs), fabric relief, worn by **rigged characters** — Atlas (Men) and Aura (Woman) from the supplied FBX files with Idle / Walk / Run, a real face and body-matched sizing, or the built-in procedural avatars when the files are absent. |
+| 3D | React Three Fiber parametric garments (lofted sleeves, collars, plackets, buttons, pockets, cuffs), fabric relief, fitted on the **Human Studio mannequin** (CC0 MakeHuman body shaped to measurements, size fit map, cloth simulation). |
 | Trial room | MediaPipe on-device pose tracking — Level A (2D), B (3D on landmarks), C (experimental occlusion). |
 | Manufacturing | Validation engine with fixes, tech pack PDF/JSON, BOM, measurement sheet, print-ready SVG / 300 DPI PNG, CAD exchange JSON. |
 | Commerce | Cart, checkout, order snapshots, simulated payments (labelled) or Razorpay test mode with signature verification, order tracking. |
