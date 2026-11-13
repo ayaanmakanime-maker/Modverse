@@ -77,10 +77,10 @@ test("photo try-on: photo stays local, nothing loads from Puter before consent, 
   await expect(page.getByTestId("tryon-consent")).toContainText("safety filter");
 });
 
-test("photo try-on: 3D collection garments are rendered as the reference; unsupported files are rejected", async ({ page }) => {
+test("photo try-on: made-to-order styles are rendered as the reference; unsupported files are rejected", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto("/try-on");
-  await page.getByRole("radio", { name: "3D collection" }).click();
+  await page.getByRole("radio", { name: "Made-to-order styles" }).click();
   await page.getByTestId("tryon-lib-search").fill("shirt");
   const first = page.getByTestId("tryon-lib-grid").locator("button").first();
   await first.click();

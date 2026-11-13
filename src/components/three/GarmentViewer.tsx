@@ -575,7 +575,7 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
   const mode = controlsMode ?? (compact ? "none" : "full");
   if (webgl === false)
     return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-mute">3D preview needs WebGL, which isn&apos;t available in this browser. The 2D editor and all other features still work.</div>;
-  const btn = "rounded-full px-2.5 py-1 text-[0.66rem] text-bone-2 transition hover:bg-surface-3 hover:text-bone";
+  const btn = "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[0.66rem] text-bone-2 transition hover:bg-surface-3 hover:text-bone";
   return (
     <div ref={wrapRef} className="relative h-full w-full" data-testid="garment-viewer">
       <Canvas
@@ -606,7 +606,7 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
           intensity={L.key}
           color={L.color}
           castShadow
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={quality === "low" ? [1024, 1024] : [2048, 2048]}
           shadow-bias={-0.0004}
           shadow-normalBias={0.8}
           shadow-radius={4}
@@ -640,15 +640,16 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
         {showStats && <Stats onSample={setStats} />}
       </Canvas>
       {mode !== "none" && (
-        <div className="pointer-events-none absolute inset-x-2 top-2 flex flex-wrap items-start justify-end gap-1.5">
+        <div className="pointer-events-none absolute inset-x-2 bottom-2 flex flex-wrap items-end justify-end gap-1.5 sm:bottom-auto sm:top-2 sm:items-start">
           {mode === "full" && (
-            <div className="pointer-events-auto flex flex-wrap gap-0.5 rounded-full border border-line bg-ink/75 p-0.5 backdrop-blur" role="group" aria-label="3D views">
+            <div className="pointer-events-auto flex max-w-full flex-nowrap gap-0.5 overflow-x-auto rounded-full border border-line bg-ink/75 p-0.5 backdrop-blur [scrollbar-width:none] sm:flex-wrap" role="group" aria-label="3D views">
               {(["front", "back", "left", "three-quarter"] as ViewPreset[]).map((v) => (
                 <button key={v} className={btn} onClick={() => go(viewGoal(v))} data-testid={`view3d-${v}`}>{v === "left" ? "Side" : v === "three-quarter" ? "¾" : v[0].toUpperCase() + v.slice(1)}</button>
               ))}
             </div>
           )}
-          <div className="pointer-events-auto flex flex-wrap gap-0.5 rounded-full border border-line bg-ink/75 p-0.5 backdrop-blur" role="group" aria-label="Detail inspection">
+          {/* one scrollable row on phones, so the buttons never cover the garment */}
+          <div className="pointer-events-auto flex max-w-full flex-nowrap gap-0.5 overflow-x-auto rounded-full border border-line bg-ink/75 p-0.5 backdrop-blur [scrollbar-width:none] sm:flex-wrap" role="group" aria-label="Detail inspection">
             {(Object.keys(DETAIL_VIEW) as DetailPreset[]).filter((d) => d !== "cuff" || hasCuffDetail(config)).map((d) => (
               <button key={d} className={btn} onClick={() => detail(d)} data-testid={`detail-${d}`}>{DETAIL_VIEW[d].label}</button>
             ))}
@@ -659,7 +660,7 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
         </div>
       )}
       {showStats && stats && (
-        <p className="pointer-events-none absolute bottom-2 right-2 rounded bg-ink/80 px-2 py-1 font-mono text-[0.62rem] text-mute" data-testid="viewer-stats">{stats.fps} fps · {stats.calls} meshes · {(stats.triangles / 1000).toFixed(0)}k tris · {quality}</p>
+        <p className="pointer-events-none absolute right-2 top-2 rounded sm:bottom-2 sm:top-auto bg-ink/80 px-2 py-1 font-mono text-[0.62rem] text-mute" data-testid="viewer-stats">{stats.fps} fps · {stats.calls} meshes · {(stats.triangles / 1000).toFixed(0)}k tris · {quality}</p>
       )}
     </div>
   );

@@ -279,11 +279,11 @@ export function HumanScene(p: HumanSceneProps) {
   const height = useMemo(() => { let m = 0; for (let k = 0; k < p.asset.bodyVerts.length; k++) m = Math.max(m, p.rest[p.asset.bodyVerts[k] * 3 + 1]); return m; }, [p.asset, p.rest]);
   const st = STYLE[p.look.style];
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 105, 340], fov: 30, near: 1, far: 3000 }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ scene, gl }) => { p.sceneRef.current = scene; p.glRef.current = gl; gl.toneMapping = THREE.NeutralToneMapping; }}>
+    <Canvas shadows dpr={[1, LIGHT ? 1.5 : 2]} camera={{ position: [0, 105, 340], fov: 30, near: 1, far: 3000 }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ scene, gl }) => { p.sceneRef.current = scene; p.glRef.current = gl; gl.toneMapping = THREE.NeutralToneMapping; }}>
       <color attach="background" args={[st.bg]} />
       <hemisphereLight args={[st.hemi[0], st.hemi[1], st.hemi[2]]} />
       <directionalLight position={[40, 120, 300]} intensity={0.55} />
-      <directionalLight position={[110, 240, 230]} intensity={1.15} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-130} shadow-camera-right={130} shadow-camera-top={230} shadow-camera-bottom={-20} shadow-bias={-0.0004} />
+      <directionalLight position={[110, 240, 230]} intensity={1.15} castShadow shadow-mapSize={LIGHT ? [1024, 1024] : [2048, 2048]} shadow-camera-left={-130} shadow-camera-right={130} shadow-camera-top={230} shadow-camera-bottom={-20} shadow-bias={-0.0004} />
       <directionalLight position={[-160, 120, -140]} intensity={0.5} />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={1.1} position={[0, 4, 7]} scale={[10, 6, 1]} />

@@ -271,7 +271,7 @@ export function PhotoTryOn({ saved, library }: PhotoTryOnProps) {
             value={source}
             onChange={setSource}
             size="sm"
-            options={[{ value: "saved", label: "My designs", disabled: !saved.length, title: saved.length ? undefined : "Sign in and save a design first" }, { value: "catalogue", label: "Made to order" }, { value: "collection", label: "3D collection", disabled: !library.length }]}
+            options={[{ value: "saved", label: "My designs", disabled: !saved.length, title: saved.length ? undefined : "Sign in and save a design first" }, { value: "catalogue", label: "Design-your-own models" }, { value: "collection", label: "Made-to-order styles", disabled: !library.length }]}
           />
           {source === "saved" && (
             <Select value={savedId} onChange={(e) => setSavedId(e.target.value)} data-testid="tryon-saved">{saved.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>
@@ -289,7 +289,7 @@ export function PhotoTryOn({ saved, library }: PhotoTryOnProps) {
           )}
           {source === "collection" && (
             <div className="space-y-2">
-              <input className="mv-input w-full" placeholder="Search the 3D collection" value={libQuery} onChange={(e) => setLibQuery(e.target.value)} data-testid="tryon-lib-search" />
+              <input className="mv-input w-full" placeholder="Search the shop's made-to-order styles" value={libQuery} onChange={(e) => setLibQuery(e.target.value)} data-testid="tryon-lib-search" />
               <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5" data-testid="tryon-lib-grid">
                 {libShown.map((g) => (
                   <button key={g.id} type="button" onClick={() => setLibId(g.id)} title={g.name} className={`rounded-lg border p-1 text-left text-[0.6rem] ${g.id === libId ? "border-champagne" : "border-line"}`} data-testid={`tryon-lib-${g.id}`}>

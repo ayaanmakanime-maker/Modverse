@@ -1,10 +1,12 @@
-# Made to order: the 3D collection in the Men and Women ranges
+# Made to order: every collection style in the Men and Women ranges
 
 The downloaded 3D collection (`public/garment-library`, 120 garments) is sold made to order. Each piece is a **fixed style** — the creator's 3D model is the visual reference — cut by the workshop from a graded pattern of that style. Customers can only choose what a made-to-order shirt / tailoring workshop actually changes on a single piece; everything else is rejected on the client and again on the server.
 
 ## Where it appears
-* `/shop/men`, `/shop/women`: "Made to order · 3D collection" with type filters (T-shirts & polos, shirts, tops, blouses, hoodies, knitwear, suits & blazers, dresses, jumpsuits, trousers / jeans / shorts, skirts). Unisex pieces appear in both ranges. The measured design-your-own tees and shirts follow below.
-* `/collection/<id>`: 3D preview (fabric colour and artwork shown on the model; the creator's printed texture is switched off because the garment is made in a solid stocked colour), the customisation panel, live itemised price, **Add to cart**, and **Find my size on the mannequin** (Human Studio with that garment).
+* `/shop/men`, `/shop/women`: one catalogue. Made-to-order styles and the design-your-own models share the grid ("Made to order" / "Design your own" badges), the type chips (`?cat=` T-shirts & polos, shirts, tops, blouses, hoodies, knitwear, suits & blazers, dresses, jumpsuits, trousers / jeans / shorts, skirts), search, price filters and sort. Unisex pieces appear in both ranges. Site search and the wishlist include them.
+* `/shop/<range>/<id>`: the product page: 3D preview (fabric colour, artwork and alterations shown on the model; the creator's printed texture is switched off because the garment is made in a solid stocked colour), the customisation panel, live itemised price, **Add to cart** and **Buy now** (a bottom bar on phones), wishlist, and **Try it on the mannequin**, which opens Human Studio with the chosen size, fabric, colour and fit (`?garment=&size=&fabric=&colour=&fit=`). The page reads the same parameters back, so Human Studio's "Order in size …" and saved fittings land on the same choices.
+* `/collection` and `/collection/<id>` permanently redirect to the shop (old links keep working).
+* The cart has **Try on** on every line (made-to-order lines with their options, own designs by id and size).
 
 ## What can be chosen (`src/lib/garment/made-to-order.ts`)
 | Option | Rule |

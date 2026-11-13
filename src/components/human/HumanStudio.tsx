@@ -386,7 +386,7 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const orderHref = garment ? `/shop/${range(garment)}/${garment.id}?${new URLSearchParams({ size: activeSize, ...(colour ? { fabric: fabric!.id, colour: colour.id } : {}), ...(mtoFit ? { fit: mtoFit } : {}) })}` : design ? `/design/${design.id}` : "";
   const canvasGarment = garment && worn(`garment/${garment.id}`) ? garment.id : design && wearable && worn(wearable.key) ? `design:${design.id}` : outfitId && worn(`outfits/${outfitId}`) ? outfitId : "none";
   return (
-    <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[340px_minmax(0,1fr)_330px]" data-testid="human-studio">
+    <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5 sm:mt-6 xl:grid-cols-[340px_minmax(0,1fr)_330px]" data-testid="human-studio">
       {textures}
       {/* ---------- left: your body ---------- */}
       <section className="mv-card order-2 space-y-3 p-4 xl:order-none" data-testid="hm-tab-measure">
