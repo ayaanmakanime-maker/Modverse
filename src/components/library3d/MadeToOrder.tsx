@@ -35,6 +35,22 @@ export function MadeToOrder({ garment, glb, heightCm, rules, hasFit }: { garment
   const [profiles, setProfiles] = useState<{ id: string; name: string; audience: string }[]>([]);
   useEffect(() => { if (user && profile.madeToMeasure) api<{ profiles: typeof profiles }>("/api/account/measurements").then((r) => setProfiles(r.profiles)).catch(() => undefined); }, [user, profile.madeToMeasure]);
 
+  // a size, fabric, colour or fit chosen elsewhere (Human Studio's "Order this", a saved fitting) comes in the link
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const next: Partial<MtoOptions> = {};
+    const f = q.get("fabric") && profile.fabrics.includes(q.get("fabric")!) ? getMtoFabric(q.get("fabric")!) : null;
+    if (f) next.fabricId = f.id;
+    const fab = f ?? getMtoFabric(o.fabricId)!;
+    const c = q.get("colour");
+    if (c && fab.colours.some((x) => x.id === c)) next.colourId = c; else if (f) next.colourId = f.colours[0].id;
+    const sz = q.get("size");
+    if (sz && SIZE_CHARTS[garment.audience === "women" ? "women" : "men"].some((r) => r.size === sz)) next.size = sz;
+    const fit = q.get("fit") as MtoOptions["fit"] | null;
+    if (fit && profile.fits.includes(fit)) next.fit = fit;
+    if (Object.keys(next).length) setO((x) => ({ ...x, ...next }));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const fabric = getMtoFabric(o.fabricId)!;
   const colour = fabric.colours.find((c) => c.id === o.colourId) ?? fabric.colours[0];
   const set = (p: Partial<MtoOptions>) => setO((x) => ({ ...x, ...p }));
@@ -101,7 +117,7 @@ export function MadeToOrder({ garment, glb, heightCm, rules, hasFit }: { garment
         </section>
 
         <section className="mv-card space-y-2 p-4">
-          <div className="flex items-center justify-between"><h3 className="text-xs uppercase tracking-widest text-mute">Size and fit</h3>{hasFit && <Link href={`/design/human-studio?garment=${garment.id}`} className="inline-flex items-center gap-1 text-xs underline" data-testid="mto-human-studio"><Ruler className="size-3" />Find my size on the mannequin</Link>}</div>
+          <div className="flex items-center justify-between"><h3 className="text-xs uppercase tracking-widest text-mute">Size and fit</h3>{hasFit && <Link href={`/design/human-studio?${new URLSearchParams({ garment: garment.id, size: o.size, fabric: o.fabricId, colour: o.colourId, fit: o.fit })}`} className="inline-flex items-center gap-1 text-xs underline" data-testid="mto-human-studio"><Ruler className="size-3" />Try it on the mannequin</Link>}</div>
           <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Size">
             {chart.map((r) => <button key={r.size} role="radio" aria-checked={!o.measurementProfileId && o.size === r.size} className={chip} data-active={!o.measurementProfileId && o.size === r.size} onClick={() => set({ size: r.size, measurementProfileId: null })} data-testid={`mto-size-${r.size}`}>{r.size}</button>)}
           </div>

@@ -10,8 +10,13 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Human Studio · Atelier Pro" };
 
 /** Atelier Pro: a fitting mannequin (CC0 MakeHuman body) shaped to your measurements, trying on 3D collection garments by size. */
-export default async function HumanStudioPage({ searchParams }: { searchParams: Promise<{ garment?: string }> }) {
-  const { garment } = await searchParams;
+export default async function HumanStudioPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const q = await searchParams;
+  const pick = (k: string, re: RegExp) => (q[k] && re.test(q[k]!) ? q[k] : undefined);
+  const initial = {
+    garment: pick("garment", /^[a-z0-9-]{1,80}$/), size: pick("size", /^[A-Z0-9]{1,5}$/), fabric: pick("fabric", /^[a-z0-9-]{1,40}$/), colour: pick("colour", /^[a-z0-9-]{1,40}$/),
+    fit: pick("fit", /^[a-z]{1,12}$/), fitting: pick("fitting", /^[0-9a-f-]{36}$/), design: pick("design", /^[0-9a-f-]{36}$/),
+  };
   const garments = (await visibleGarments())
     .filter((g) => existsSync(path.join(process.cwd(), "public/garment-library", g.path, "fit.json")))
     .map((g) => ({ id: g.id, name: g.name, audience: g.audience, category: g.category, collection: g.collection, base: `/garment-library/${g.path}`, glb: `/garment-library/${g.path}/${g.glb}`, thumbnail: g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null, attribution: g.attribution, licence: g.licence }));
@@ -23,8 +28,8 @@ export default async function HumanStudioPage({ searchParams }: { searchParams: 
       </header>
       <div className="mx-auto max-w-[1500px] px-4 py-6 md:px-6">
         <h1 className="mv-display text-4xl">Human Studio</h1>
-        <p className="mt-2 max-w-3xl text-sm text-bone-2">A fitting mannequin for men and women. Enter your tape measurements (or use a saved profile) and the mannequin is shaped to your proportions, then tape-checked on the model. Pick a garment and a size: the fit map shows where that size would be tight, snug, comfortable or loose on your body.</p>
-        <HumanStudioLoader garments={garments} initialGarment={garment} />
+        <p className="mt-2 max-w-3xl text-sm text-bone-2">A fitting mannequin for men and women. Set your height, weight and tape measurements in centimetres and the mannequin takes your proportions, tape-checked on the model. Try on any garment from the shop or one of your own designs in a size: the fit map shows where it would be tight, snug, comfortable or loose on you.</p>
+        <HumanStudioLoader garments={garments} initial={initial} />
       </div>
     </div>
   );

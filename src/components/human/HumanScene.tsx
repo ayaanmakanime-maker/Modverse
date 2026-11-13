@@ -19,7 +19,7 @@ const LIGHT = typeof navigator !== "undefined" && ((navigator.hardwareConcurrenc
 
 export interface WornItem {
   key: string;
-  kind: "garment" | "eyes" | "eyebrows" | "eyelashes" | "hair" | "bottoms" | "shoes" | "outfits";
+  kind: "garment" | "design" | "eyes" | "eyebrows" | "eyelashes" | "hair" | "bottoms" | "shoes" | "outfits";
   fit: GarmentFit;
   /** parts carry their own mesh; garments load it from the GLB */
   index?: Uint32Array; uv?: Float32Array; glbUrl?: string;
@@ -28,6 +28,8 @@ export interface WornItem {
   colors?: Float32Array | null;
   /** fabric family for the cloth engine */
   fabric?: keyof typeof FABRIC_CLOTH;
+  /** a design from the editor: its merged panels (one geometry group per material) */
+  object?: { geometry: THREE.BufferGeometry; materials: THREE.Material[] };
 }
 export type MannequinStyle = "wire" | "solid";
 export interface SceneLook { style: MannequinStyle; garmentTint: string }
@@ -121,20 +123,22 @@ function Rig(p: HumanSceneProps) {
   useEffect(() => {
     const gr = group.current!, map = worn.current;
     let live = true;
-    for (const [k, w] of map) if (!p.items.some((i) => i.key === k)) { gr.remove(w.mesh); w.mesh.geometry.dispose(); (w.mesh.material as THREE.Material).dispose(); map.delete(k); }
+    for (const [k, w] of map) if (!p.items.some((i) => i.key === k)) { gr.remove(w.mesh); w.mesh.geometry.dispose(); ([] as THREE.Material[]).concat(w.mesh.material).forEach((m) => m.dispose()); map.delete(k); }
     const report = () => { if (live) { p.onItemsReady([...map.keys()]); setReadyTick((t) => t + 1); } dirty.current = true; invalidate(); };
     for (const it of p.items) {
       if (map.has(it.key)) continue;
-      const add = (geo: THREE.BufferGeometry, mat: THREE.Material) => {
+      const add = (geo: THREE.BufferGeometry, mat: THREE.Material | THREE.Material[]) => {
         if (!live || map.has(it.key)) return;
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.name = it.kind === "garment" ? "garment" : `${it.kind}-${it.key}`; mesh.castShadow = true; mesh.frustumCulled = false;
+        mesh.name = it.kind === "garment" || it.kind === "design" ? "garment" : `${it.kind}-${it.key}`; mesh.castShadow = true; mesh.frustumCulled = false;
         mesh.renderOrder = 5;
         gr.add(mesh);
         map.set(it.key, { item: it, mesh, target: new Float32Array(it.fit.vertices * 3), cloth: null, clothFor: null });
         report();
       };
-      if (it.kind === "garment" && it.glbUrl) {
+      if (it.object) {
+        if (it.object.geometry.attributes.position.count === it.fit.vertices) add(it.object.geometry.clone(), it.object.materials.map((m) => m.clone()));
+      } else if (it.kind === "garment" && it.glbUrl) {
         garmentMesh(it.glbUrl).then((src) => {
           const geo = src.geometry.clone();
           if (geo.attributes.position.count !== it.fit.vertices) return;
@@ -154,23 +158,23 @@ function Rig(p: HumanSceneProps) {
     return () => { live = false; };
   }, [itemKeys]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // garment colour, or the fit map's vertex colours, without rebuilding meshes
+  // garment colour, or the fit map's vertex colours, without rebuilding meshes (a design keeps its own colours)
   const { garmentTint } = p.look;
-  const garmentColors = p.items.find((i) => i.kind === "garment")?.colors ?? null;
+  const garmentColors = p.items.find((i) => i.kind === "garment" || i.kind === "design")?.colors ?? null;
   const [readyTick, setReadyTick] = useState(0);
   useEffect(() => {
     for (const w of worn.current.values()) {
-      if (w.item.kind !== "garment") continue;
-      const m = w.mesh.material as THREE.MeshStandardMaterial, geo = w.mesh.geometry;
-      m.userData.map ??= m.map ?? "none";
-      if (garmentColors && garmentColors.length === w.item.fit.vertices * 3) {
-        geo.setAttribute("color", new THREE.BufferAttribute(garmentColors, 3));
-        m.vertexColors = true; m.map = null; m.color.set("#ffffff");
-      } else {
-        geo.deleteAttribute("color");
-        m.vertexColors = false; m.map = m.userData.map === "none" ? null : m.userData.map; m.color.set(garmentTint);
+      if (w.item.kind !== "garment" && w.item.kind !== "design") continue;
+      const geo = w.mesh.geometry;
+      const on = !!garmentColors && garmentColors.length === w.item.fit.vertices * 3;
+      if (on) geo.setAttribute("color", new THREE.BufferAttribute(garmentColors, 3)); else geo.deleteAttribute("color");
+      for (const m of ([] as THREE.Material[]).concat(w.mesh.material) as THREE.MeshStandardMaterial[]) {
+        m.userData.map ??= m.map ?? "none";
+        m.userData.color ??= "#" + m.color.getHexString();
+        if (on) { m.vertexColors = true; m.map = null; m.color.set("#ffffff"); }
+        else { m.vertexColors = false; m.map = m.userData.map === "none" ? null : m.userData.map; m.color.set(w.item.kind === "design" ? m.userData.color : garmentTint); }
+        m.needsUpdate = true;
       }
-      m.needsUpdate = true;
     }
     invalidate();
   }, [garmentTint, garmentColors, itemKeys, readyTick, invalidate]);

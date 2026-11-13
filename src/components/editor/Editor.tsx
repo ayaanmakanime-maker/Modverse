@@ -314,6 +314,7 @@ function EditorLayout(p: {
   const [exportOpen, setExportOpen] = useState(false);
   const production = useEditor((s) => s.production);
   const guides3d = useEditor((s) => s.guides3d);
+  const projectId = useEditor((s) => s.projectId);
   const config = useEditor((s) => s.config);
   const report = useLiveValidation();
   const price = useDesignPrice(config);
@@ -411,7 +412,7 @@ function EditorLayout(p: {
               <div className="ml-auto flex flex-wrap items-center gap-1.5">
                 <Segmented size="sm" label="3D view" value={p.view3d} onChange={p.setView3d} options={[{ value: "front", label: "Front" }, { value: "back", label: "Back" }, { value: "left", label: "Side" }, { value: "three-quarter", label: "¾" }]} />
                 <Select aria-label="Lighting" value={p.lighting} onChange={(e) => p.setLighting(e.target.value as LightingPreset)} className="!w-auto !py-0.5 !text-[0.68rem]"><option value="studio">Studio light</option><option value="daylight">Daylight</option><option value="evening">Evening</option></Select>
-                {p.mode === "pro" && <a href="/design/human-studio" target="_blank" rel="noopener" className="mv-chip !border-champagne !px-2 !py-0.5 !text-[0.68rem] text-champagne" data-testid="toolbar-human-studio"><User className="mr-1 inline size-3" />Human Studio</a>}
+                {p.mode === "pro" && <a href={projectId ? `/design/human-studio?design=${projectId}&size=${config.size}` : "/design/human-studio"} target="_blank" rel="noopener" className="mv-chip !border-champagne !px-2 !py-0.5 !text-[0.68rem] text-champagne" data-testid="toolbar-human-studio"><User className="mr-1 inline size-3" />Human Studio</a>}
                 <button type="button" className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" onClick={() => setExportOpen(true)} data-testid="open-export-3d"><Download className="mr-1 inline size-3" />Export 3D</button>
               </div>
             )}

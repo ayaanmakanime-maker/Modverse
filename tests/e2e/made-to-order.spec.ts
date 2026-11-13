@@ -41,7 +41,7 @@ test("made to order: shop → customise within manufacturing limits → cart →
   await expect(page.getByTestId("mto-art-method").locator("option")).toHaveCount(1);
   await expect(mto).toHaveAttribute("data-valid", "yes");
   expect(Number(await mto.getAttribute("data-price"))).toBeGreaterThan(base + 200 + 160);
-  await expect(page.getByTestId("mto-human-studio")).toHaveAttribute("href", "/design/human-studio?garment=elvs-male-shirt-untucked-bd1");
+  await expect(page.getByTestId("mto-human-studio")).toHaveAttribute("href", "/design/human-studio?garment=elvs-male-shirt-untucked-bd1&size=L&fabric=oxford-140&colour=sky&fit=slim");
 
   // The server applies the same rules: an out-of-range alteration is refused.
   const bad = await page.request.post("/api/cart", { headers: ORIGIN, data: { garmentId: "elvs-male-shirt-untucked-bd1", options: { fabricId: "oxford-140", colourId: "sky", size: "L", fit: "slim", lengthAdjustCm: 9, sleeveAdjustCm: 0, trims: {}, measurementProfileId: null, monogram: null, artwork: [] }, quantity: 1 } });

@@ -493,6 +493,34 @@ export const wishlistGarments = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.garmentId] })],
 );
 
+/**
+ * A saved Human Studio fitting: the body (tape measurements as entered, cm / kg), build, what was worn (a collection
+ * garment with its size, fabric and colour, or one of the customer's own designs), styling and pose. Body data is
+ * stored only with the customer's explicit consent and deleted with the account.
+ */
+export const fittings = pgTable(
+  "fittings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    audience: text("audience", { enum: ["men", "women"] }).notNull(),
+    measurements: jsonb("measurements").notNull(),
+    build: jsonb("build").notNull().default({}),
+    garmentId: text("garment_id"),
+    designId: uuid("design_id"),
+    size: text("size"),
+    fabricId: text("fabric_id"),
+    colourId: text("colour_id"),
+    styling: jsonb("styling").notNull().default({}),
+    pose: text("pose"),
+    consentAt: ts("consent_at").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("fittings_user_idx").on(t.userId)],
+);
+
 export const carts = pgTable("carts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),

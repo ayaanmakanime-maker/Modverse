@@ -119,7 +119,7 @@ interface PanelTextures {
  * topstitching, hem turn-ups, procedural creases). Yoke artwork is drawn into
  * the back texture.
  */
-function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: number, relief: boolean, production = false, guides = false): PanelTextures {
+export function useZoneTextures(config: DesignConfig, geo: GarmentGeometry, pxPerCm: number, relief: boolean, production = false, guides = false): PanelTextures {
   const [textures, setTextures] = useState<PanelTextures>({ maps: {}, relief: {} });
   const [assetTick, setAssetTick] = useState(0);
   useEffect(() => subscribeAssets(() => setAssetTick((t) => t + 1)), []);

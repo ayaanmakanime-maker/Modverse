@@ -37,17 +37,18 @@ export function baseNormals(a: HumanAsset, P: Float32Array): Float32Array {
 export function garmentClearance(fit: GarmentFit, sized: Float32Array, user: Float32Array, normals: Float32Array): Float32Array {
   const g = fitGarment(fit, sized);
   const out = new Float32Array(fit.vertices);
-  const { refs, weights } = fit, ws = fit.weightScale;
+  const { refs, weights } = fit, ws = fit.weightScale, K = fit.k ?? 3;
+  // weighted sum of a per-body-vertex array under garment vertex v
+  const under = (arr: Float32Array, v: number, axis: number) => { let t = 0; for (let k = 0; k < K; k++) t += arr[refs[v * K + k] * 3 + axis] * weights[v * K + k] * ws; return t; };
   for (let v = 0; v < fit.vertices; v++) {
-    const o = v * 3, a = refs[o] * 3, b = refs[o + 1] * 3, c = refs[o + 2] * 3;
-    const wa = weights[o] * ws, wb = weights[o + 1] * ws, wc = weights[o + 2] * ws;
+    const o = v * 3;
     // your skin under this vertex, and the size body's skin under it
-    const ux = user[a] * wa + user[b] * wb + user[c] * wc, uy = user[a + 1] * wa + user[b + 1] * wb + user[c + 1] * wc, uz = user[a + 2] * wa + user[b + 2] * wb + user[c + 2] * wc;
-    let nx = normals[a] * wa + normals[b] * wb + normals[c] * wc, ny = normals[a + 1] * wa + normals[b + 1] * wb + normals[c + 1] * wc, nz = normals[a + 2] * wa + normals[b + 2] * wb + normals[c + 2] * wc;
+    const ux = under(user, v, 0), uy = under(user, v, 1), uz = under(user, v, 2);
+    let nx = under(normals, v, 0), ny = under(normals, v, 1), nz = under(normals, v, 2);
     let l = Math.hypot(nx, ny, nz);
     if (l < 0.3) {
       // bound to helper geometry (skirts, tights): use the garment's own offset direction on the size body
-      const sx = sized[a] * wa + sized[b] * wb + sized[c] * wc, sy = sized[a + 1] * wa + sized[b + 1] * wb + sized[c + 1] * wc, sz = sized[a + 2] * wa + sized[b + 2] * wb + sized[c + 2] * wc;
+      const sx = under(sized, v, 0), sy = under(sized, v, 1), sz = under(sized, v, 2);
       nx = g[o] - sx; ny = g[o + 1] - sy; nz = g[o + 2] - sz; l = Math.hypot(nx, ny, nz);
       if (l < 0.2) { out[v] = NaN; continue; }
     }

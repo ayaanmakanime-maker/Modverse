@@ -139,7 +139,7 @@ export function bodyPositions(a: HumanAsset, s: BodyState, out?: Float32Array): 
     for (const [inc, dec] of CONTROL_TARGETS[id](s.sex)) {
       const m = a.morphs.get(v > 0 ? inc : dec);
       if (!m) continue;
-      const w = Math.min(1, Math.abs(v));
+      const w = Math.min(MAX_MORPH, Math.abs(v));
       for (let k = 0; k < m.i.length; k++) { const o = m.i[k] * 3; p[o] += m.d[k * 3] * w; p[o + 1] += m.d[k * 3 + 1] * w; p[o + 2] += m.d[k * 3 + 2] * w; }
     }
   }
@@ -156,24 +156,82 @@ export function bodyPositions(a: HumanAsset, s: BodyState, out?: Float32Array): 
 
 /* ------------------------------------------------------------------ tape measurements */
 
-export type MeasureId = "height" | "chest" | "waist" | "hip" | "neck" | "shoulder" | "armLength" | "bicep" | "wrist" | "inseam" | "thigh" | "calf" | "torsoLength";
-export const MEASURES: { id: MeasureId; label: string; control: ControlId; how: string }[] = [
-  { id: "height", label: "Height", control: "height", how: "floor to the top of the head" },
-  { id: "chest", label: "Chest / bust", control: "bust", how: "fullest girth of the chest, under the arms" },
-  { id: "waist", label: "Waist", control: "waist", how: "narrowest girth between ribs and hips" },
-  { id: "hip", label: "Hip", control: "hips", how: "fullest girth around the seat" },
-  { id: "neck", label: "Neck", control: "neck", how: "girth half-way up the neck" },
-  { id: "shoulder", label: "Shoulder width", control: "shoulder", how: "across the back, shoulder point to shoulder point" },
-  { id: "armLength", label: "Arm length", control: "armLength", how: "shoulder point → elbow → wrist" },
-  { id: "bicep", label: "Upper arm", control: "upperarm", how: "fullest girth of the upper arm" },
-  { id: "wrist", label: "Wrist", control: "wrist", how: "girth at the wrist" },
-  { id: "inseam", label: "Inseam", control: "legLength", how: "crotch to floor" },
-  { id: "thigh", label: "Thigh", control: "thigh", how: "fullest girth of the upper thigh" },
-  { id: "calf", label: "Calf", control: "calf", how: "fullest girth of the calf" },
-  { id: "torsoLength", label: "Nape to waist", control: "napeToWaist", how: "base of the neck at the back to the waist" },
+export type MeasureId = "height" | "weight" | "chest" | "underbust" | "waist" | "hip" | "neck" | "shoulder" | "armLength" | "bicep" | "wrist" | "inseam" | "thigh" | "calf" | "torsoLength";
+/**
+ * What the solver moves to reach a measurement: a MakeHuman control, or "fullness" (overall body weight): the weight
+ * macro together with the girths the customer has not given, in natural proportions (see FULLNESS).
+ */
+export type SolveControl = ControlId | "fullness";
+export interface MeasureDef {
+  id: MeasureId; label: string; control: SolveControl; how: string; unit: "cm" | "kg"; step: number;
+  /** adult range offered by the slider (roughly the 1st–99th percentile of adult tape measurements) */
+  range: Record<Sex, [number, number]>;
+  /** measured for this sex only (underbust: bra sizing) */
+  sex?: Sex;
+}
+export const MEASURES: MeasureDef[] = [
+  { id: "height", label: "Height", control: "height", how: "floor to the top of the head", unit: "cm", step: 0.5, range: { male: [150, 205], female: [140, 195] } },
+  { id: "weight", label: "Weight", control: "fullness", how: "estimated from the body's volume (1.01 kg per litre)", unit: "kg", step: 0.5, range: { male: [45, 140], female: [38, 130] } },
+  { id: "chest", label: "Chest / bust", control: "bust", how: "fullest girth of the chest, under the arms", unit: "cm", step: 0.5, range: { male: [75, 140], female: [70, 140] } },
+  { id: "underbust", label: "Underbust", control: "underbust", how: "girth directly under the bust, where a bra band sits", unit: "cm", step: 0.5, range: { male: [65, 130], female: [60, 125] }, sex: "female" },
+  { id: "waist", label: "Waist", control: "waist", how: "narrowest girth between ribs and hips", unit: "cm", step: 0.5, range: { male: [60, 140], female: [55, 135] } },
+  { id: "hip", label: "Hip", control: "hips", how: "fullest girth around the seat", unit: "cm", step: 0.5, range: { male: [78, 140], female: [80, 150] } },
+  { id: "neck", label: "Neck", control: "neck", how: "girth half-way up the neck", unit: "cm", step: 0.5, range: { male: [30, 52], female: [27, 45] } },
+  { id: "shoulder", label: "Shoulder width", control: "shoulder", how: "across the back, shoulder point to shoulder point", unit: "cm", step: 0.5, range: { male: [36, 56], female: [32, 50] } },
+  { id: "armLength", label: "Arm length", control: "armLength", how: "shoulder point → elbow → wrist", unit: "cm", step: 0.5, range: { male: [50, 75], female: [46, 70] } },
+  { id: "bicep", label: "Upper arm", control: "upperarm", how: "fullest girth of the upper arm", unit: "cm", step: 0.5, range: { male: [22, 48], female: [20, 45] } },
+  { id: "wrist", label: "Wrist", control: "wrist", how: "girth at the wrist", unit: "cm", step: 0.5, range: { male: [14, 21], female: [13, 19] } },
+  { id: "inseam", label: "Inseam", control: "legLength", how: "crotch to floor", unit: "cm", step: 0.5, range: { male: [65, 95], female: [60, 90] } },
+  { id: "thigh", label: "Thigh", control: "thigh", how: "fullest girth of the upper thigh", unit: "cm", step: 0.5, range: { male: [42, 80], female: [42, 85] } },
+  { id: "calf", label: "Calf", control: "calf", how: "fullest girth of the calf", unit: "cm", step: 0.5, range: { male: [30, 50], female: [28, 48] } },
+  { id: "torsoLength", label: "Nape to waist", control: "napeToWaist", how: "base of the neck at the back to the waist", unit: "cm", step: 0.5, range: { male: [38, 54], female: [34, 50] } },
 ];
+/** The measurements shown and solved for a sex. */
+export const measuresFor = (sex: Sex) => MEASURES.filter((m) => !m.sex || m.sex === sex);
 
-type V3 = [number, number, number];
+/**
+ * Overall body weight: how much each control moves per unit of "fullness" (−1 … 1), from MakeHuman's weight macro
+ * plus the girths a heavier or lighter body gains or loses with it. A girth the customer gave keeps its own value.
+ */
+export const FULLNESS: Record<Sex, Partial<Record<ControlId, number>>> = {
+  male: { weight: 1, bust: 0.6, underbust: 0.8, waist: 1.3, hips: 0.7, upperarm: 0.9, thigh: 0.8, calf: 0.7, neck: 0.8, knee: 0.5, ankle: 0.4, wrist: 0.4 },
+  female: { weight: 1, bust: 0.3, underbust: 0.8, waist: 1.2, hips: 1, upperarm: 1.1, thigh: 1.1, calf: 0.8, neck: 0.6, knee: 0.6, ankle: 0.4, wrist: 0.4 },
+};
+/**
+ * Fullness range: about BMI 16 to 38 for an adult. Above 1 the targets are extrapolated (they are smooth radial
+ * girth changes, which stay clean a little past MakeHuman's own range); MAX_MORPH caps any target weight.
+ */
+export const FULLNESS_RANGE: [number, number] = [-0.8, 1.5];
+export const MAX_MORPH = 1.5;
+
+/** Bra cup letter (EU / UK sizing) from bust − underbust (cm). */
+export function cupLetter(bust: number, underbust: number): string {
+  const d = bust - underbust;
+  const cups = ["AA", "A", "B", "C", "D", "E", "F", "G", "H"];
+  return cups[Math.min(cups.length - 1, Math.max(0, Math.floor((d - 10) / 2)))];
+}
+
+/** Body volume (litres) of the closed body surface, by the divergence theorem. */
+export function bodyVolume(a: HumanAsset, p: Float32Array): number {
+  const idx = a.bodyIndex, o = a.orig;
+  // origin inside the torso keeps the error of the small openings (eyes, mouth) negligible
+  let cx = 0, cy = 0, cz = 0;
+  for (let k = 0; k < a.bodyVerts.length; k += 7) { const v = a.bodyVerts[k] * 3; cx += p[v]; cy += p[v + 1]; cz += p[v + 2]; }
+  const n = Math.ceil(a.bodyVerts.length / 7); cx /= n; cy /= n; cz /= n;
+  let vol = 0;
+  for (let t = 0; t < idx.length; t += 3) {
+    const A = o[idx[t]] * 3, B = o[idx[t + 1]] * 3, C = o[idx[t + 2]] * 3;
+    const ax = p[A] - cx, ay = p[A + 1] - cy, az = p[A + 2] - cz;
+    const bx = p[B] - cx, by = p[B + 1] - cy, bz = p[B + 2] - cz;
+    const qx = p[C] - cx, qy = p[C + 1] - cy, qz = p[C + 2] - cz;
+    vol += ax * (by * qz - bz * qy) - ay * (bx * qz - bz * qx) + az * (bx * qy - by * qx);
+  }
+  return Math.abs(vol) / 6 / 1000;
+}
+/** Whole-body density (kg per litre) used for the weight estimate: lean tissue, fat and the air in the lungs. */
+export const BODY_DENSITY = 1.01;
+
+export type V3 = [number, number, number];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const len = (a: V3) => Math.hypot(a[0], a[1], a[2]);
 const lerp = (a: V3, b: V3, t: number): V3 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -240,6 +298,21 @@ const WRIST = new Set<number>([R.forearmL, R.handL]);
 const THIGH = new Set<number>([R.uplegL]);
 const CALF = new Set<number>([R.legL]);
 
+/** Shoulder points (acromion): the highest shoulder / upper-arm vertex above each shoulder joint. Left is +x. */
+export function shoulderPoints(a: HumanAsset, p: Float32Array, j = joints(a, p)): { left: V3; right: V3 } {
+  const acromion = (joint: V3, regions: number[]): V3 => {
+    let best: V3 = joint, by = -Infinity;
+    for (let v = 0; v < a.meta.vertices; v++) {
+      if (!a.isBody[v] || !regions.includes(a.region[v])) continue;
+      const x = p[v * 3], y = p[v * 3 + 1], z = p[v * 3 + 2];
+      if (Math.hypot(x - joint[0], z - joint[2]) > 3 || y < joint[1]) continue;
+      if (y > by) { by = y; best = [x, y, z]; }
+    }
+    return best;
+  };
+  return { left: acromion(j.get("LeftArm")!.head, [R.shoulderL, R.armL]), right: acromion(j.get("RightArm")!.head, [R.shoulderR, R.armR]) };
+}
+
 /** Every tape measurement of the body (cm). */
 export function measureBody(a: HumanAsset, p: Float32Array): Record<MeasureId, number> {
   const j = joints(a, p);
@@ -258,23 +331,28 @@ export function measureBody(a: HumanAsset, p: Float32Array): Record<MeasureId, n
     }
     return { g: best === Infinity ? 0 : best, y: at };
   };
-  const hips = J("Hips").head, spine2 = J("Spine2").head, armL = J("LeftArm").head, armR = J("RightArm").head;
+  const hips = J("Hips").head, spine2 = J("Spine2").head, armL = J("LeftArm").head;
   const chest = scan(TORSO, spine2[1] - 6, armL[1] - 5, "max");
   const waist = scan(TORSO, hips[1] + 2, spine2[1], "min");
   const hip = scan(SEAT, J("LeftUpLeg").head[1] - 16, hips[1], "max");
-  const neckMid = lerp(J("Neck").head, J("Head").head, 0.45);
-  // shoulder point (acromion): the highest shoulder / upper-arm vertex above the shoulder joint
-  const acromion = (joint: V3, regions: number[]): V3 => {
-    let best: V3 = joint, by = -Infinity;
-    for (let v = 0; v < a.meta.vertices; v++) {
-      if (!a.isBody[v] || !regions.includes(a.region[v])) continue;
-      const x = p[v * 3], y = p[v * 3 + 1], z = p[v * 3 + 2];
-      if (Math.hypot(x - joint[0], z - joint[2]) > 3 || y < joint[1]) continue;
-      if (y > by) { by = y; best = [x, y, z]; }
+  // underbust: just below the bust, where the girth profile stops falling (the fold under the breasts) — the level
+  // furthest below the straight line from the bust level to the waist; a flat chest uses 40% of the way down
+  const underbust = (() => {
+    const top = chest.y, bot = waist.y + 1, h = 0.5;
+    if (top - bot < 3) return chest.g;
+    const at = (y: number) => horiz(TORSO, y);
+    const span = top - waist.y;
+    let best = 0, g = 0;
+    for (let y = top - h; y > bot; y -= h) {
+      const gy = at(y);
+      if (gy <= 0) continue;
+      const below = chest.g + ((waist.g - chest.g) * (top - y)) / span - gy;
+      if (below > best) { best = below; g = gy; }
     }
-    return best;
-  };
-  const acL = acromion(armL, [R.shoulderL, R.armL]), acR = acromion(armR, [R.shoulderR, R.armR]);
+    return best > 0.8 ? g : at(top - 0.4 * span) || chest.g;
+  })();
+  const neckMid = lerp(J("Neck").head, J("Head").head, 0.45);
+  const { left: acL, right: acR } = shoulderPoints(a, p, j);
   // across the back: the back half of the section just below the shoulder points, from one side to the other
   const backArc = (() => {
     const y = (acL[1] + acR[1]) / 2 - 2.5;
@@ -327,7 +405,9 @@ export function measureBody(a: HumanAsset, p: Float32Array): Record<MeasureId, n
   const upleg = J("LeftUpLeg").head, leg = J("LeftLeg").head, foot = J("LeftFoot").head;
   return {
     height: maxY - minY,
+    weight: bodyVolume(a, p) * BODY_DENSITY,
     chest: chest.g,
+    underbust: Math.min(underbust, chest.g),
     waist: waist.g,
     hip: hip.g,
     neck: horiz(NECK, neckMid[1]),

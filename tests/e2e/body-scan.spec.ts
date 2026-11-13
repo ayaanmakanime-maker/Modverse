@@ -40,7 +40,7 @@ test("Fit tab: Human Studio entry and scan-to-fit", async ({ page }) => {
   await page.getByTestId("tab-fit").click();
   // the old Atlas / Aura avatars are gone: the Fit tab points to the Human Studio mannequin
   await expect(page.getByTestId("avatar-studio")).toHaveCount(0);
-  await expect(page.getByTestId("open-human-studio")).toHaveAttribute("href", "/design/human-studio");
+  await expect(page.getByTestId("open-human-studio")).toHaveAttribute("href", /^\/design\/human-studio(\?design=[0-9a-f-]{36}&size=[A-Z0-9]+)?$/);
   // Scan flow from the Fit tab (manual entry path) applies reviewed values.
   await page.getByTestId("fit-scan").click();
   await page.getByTestId("scan-consent-check").check();

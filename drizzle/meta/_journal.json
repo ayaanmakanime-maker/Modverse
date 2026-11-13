@@ -92,6 +92,13 @@
       "when": 1794575195891,
       "tag": "0012_v28_wishlist_garments",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794592448661,
+      "tag": "0013_v29_fittings",
+      "breakpoints": true
     }
   ]
 }

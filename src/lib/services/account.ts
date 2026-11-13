@@ -42,6 +42,9 @@ export const bodySchema = z.object({
   inseam: z.number().positive().optional(),
   thigh: z.number().positive().optional(),
   calf: z.number().positive().optional(),
+  /** Human Studio: underbust girth (bra band) and body weight in kg */
+  underbust: z.number().positive().optional(),
+  weight: z.number().positive().max(400).optional(),
 });
 
 const provenanceSchema = z.object({ source: z.enum(["user", "camera", "derived"]), confidence: z.enum(["high", "medium", "low"]), toleranceCm: z.number().min(0).max(30).optional(), at: z.string().max(40).optional() });
@@ -120,6 +123,8 @@ export async function deleteAccount(user: SessionUser) {
     await tx.delete(s.libraryRecent).where(eq(s.libraryRecent.userId, user.id));
     await tx.delete(s.savedCompositions).where(eq(s.savedCompositions.userId, user.id));
     await tx.delete(s.wishlistItems).where(eq(s.wishlistItems.userId, user.id));
+    await tx.delete(s.wishlistGarments).where(eq(s.wishlistGarments.userId, user.id));
+    await tx.delete(s.fittings).where(eq(s.fittings.userId, user.id));
     await tx.delete(s.outboxEmails).where(eq(s.outboxEmails.userId, user.id));
     await tx.update(s.designProjects).set({ deletedAt: new Date(), status: "archived" }).where(eq(s.designProjects.userId, user.id));
     await tx.delete(s.uploadedAssets).where(eq(s.uploadedAssets.userId, user.id));
