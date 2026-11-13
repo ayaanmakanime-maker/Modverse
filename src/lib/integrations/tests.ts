@@ -66,10 +66,20 @@ export async function testIntegration(id: string, creds: Record<string, string>)
           : { ok: false, message: `Key valid, but the model "${model}" is not available to this key.`, partial: true };
       }
       case "comfyui": {
-        const res = await withRetry(() => fetch(`${creds.baseUrl.replace(/\/$/, "")}/system_stats`, { signal: timeout() }));
+        const base = creds.baseUrl.replace(/\/+$/, "");
+        const auth: Record<string, string> = creds.authToken ? { Authorization: `Bearer ${creds.authToken}` } : {};
+        const res = await withRetry(() => fetch(`${base}/system_stats`, { headers: auth, signal: timeout() }));
+        if (res.status === 401 || res.status === 403) return { ok: false, message: `The server rejected the access token (${res.status}).` };
         if (!res.ok) return { ok: false, message: `ComfyUI responded ${res.status}` };
-        const data = (await res.json()) as { devices?: { name: string; vram_total?: number }[] };
-        return { ok: true, message: `Connected. Devices: ${data.devices?.map((d) => d.name).join(", ") || "unknown"}. Verify model licences before commercial use.` };
+        const data = (await res.json()) as { system?: { comfyui_version?: string }; devices?: { name: string; vram_total?: number }[] };
+        if (creds.modelFiles) { try { JSON.parse(creds.modelFiles); } catch { return { ok: false, message: "Model file overrides are not valid JSON." }; } }
+        // which of The Muse's models have their files installed (GET /object_info/<loader>)
+        const { museModelReport } = await import("../ai/comfy/report");
+        const report = await museModelReport({ baseUrl: base, token: creds.authToken || null, enabledModels: creds.enabledModels, modelFiles: creds.modelFiles });
+        const gpus = data.devices?.map((d) => `${d.name}${d.vram_total ? ` (${Math.round(d.vram_total / 2 ** 30)} GB)` : ""}`).join(", ") || "unknown";
+        const ready = report.filter((r) => r.ready).map((r) => r.name);
+        const missing = report.filter((r) => !r.ready).map((r) => `${r.name}: missing ${r.missing.join(", ")}`);
+        return { ok: true, partial: !ready.length, message: `Connected to ComfyUI${data.system?.comfyui_version ? ` ${data.system.comfyui_version}` : ""} on ${gpus}. Ready: ${ready.join(", ") || "none"}.${missing.length ? ` Not installed — ${missing.join("; ")}.` : ""}` };
       }
       case "razorpay": {
         const auth = Buffer.from(`${creds.keyId}:${creds.keySecret}`).toString("base64");

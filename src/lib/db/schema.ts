@@ -842,6 +842,37 @@ export const discountCodes = pgTable(
   (t) => [uniqueIndex("discount_codes_code_uq").on(t.code)],
 );
 
+/**
+ * The Muse image studio: one row per generation request on the ComfyUI GPU server. Outputs are stored as the
+ * owner's private uploads (kind "generated"); only the owner can read, list, cancel or delete a generation.
+ */
+export const imageGenerations = pgTable(
+  "image_generations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    modelId: text("model_id").notNull(),
+    mode: text("mode", { enum: ["txt2img", "img2img", "edit"] }).notNull(),
+    prompt: text("prompt").notNull(),
+    negativePrompt: text("negative_prompt").notNull().default(""),
+    /** Resolved parameters: aspect, width, height, count, steps, cfg, seed, strength. */
+    params: jsonb("params").notNull(),
+    referenceUploadId: uuid("reference_upload_id").references(() => uploadedAssets.id, { onDelete: "set null" }),
+    status: text("status", { enum: ["queued", "running", "finalizing", "succeeded", "failed", "cancelled"] }).notNull().default("queued"),
+    promptId: text("prompt_id"),
+    error: text("error"),
+    /** Upload ids of the generated images, in output order. */
+    outputs: jsonb("outputs").notNull().default([]),
+    /** Lineage for "regenerate" (same seed) and "variation" (new seed). */
+    parentId: uuid("parent_id"),
+    saved: boolean("saved").notNull().default(false),
+    createdAt: createdAt(),
+    startedAt: ts("started_at"),
+    finishedAt: ts("finished_at"),
+  },
+  (t) => [index("image_generations_user_idx").on(t.userId, t.createdAt), index("image_generations_status_idx").on(t.status)],
+);
+
 export const platformSettings = pgTable("platform_settings", {
   key: text("key").primaryKey(),
   value: jsonb("value").notNull(),

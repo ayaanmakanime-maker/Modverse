@@ -18,6 +18,7 @@ npm run build && npm start      # http://localhost:3000   (or: npm run dev)
 
 * The database is **embedded PostgreSQL (PGlite)** stored in `.data/` — no install required. Set `DATABASE_URL` to use any PostgreSQL server instead (verified on PostgreSQL 16).
 * On first start, an admin, a staff and a demo customer account are created with **random passwords written to `.data/ADMIN_CREDENTIALS.txt`** (git-ignored). Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` to choose your own.
+* **The Muse image studio** (`/design/muse`): FLUX.1 [schnell], SDXL, Qwen-Image and FLUX.2 [klein] 4B on your own ComfyUI GPU server — setup in `docs/MUSE_IMAGE_STUDIO.md` (needs a GPU server; not usable without one).
 * **Human Studio** (Atelier Pro, `/design/human-studio`): a fitting mannequin for men and women shaped to tape measurements, trying 3D collection garments on by size with a fit map. See `docs/HUMAN_STUDIO.md`.
 * `npm run models:fetch` downloads the MediaPipe pose/segmentation models for the trial room; without them it falls back to the public MediaPipe CDN.
 * Copy `.env.example` to `.env.local` only if you need to override defaults. **Never commit `.env*` or `.data/`.**

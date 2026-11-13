@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { Eye, EyeOff, Lock, Unlock, ChevronUp, ChevronDown, ChevronRight, Star, Upload, Wand2, Type, Group as GroupIcon, Ungroup, Save, Trash2, Copy, ClipboardPaste, GripVertical, Folder as FolderIcon, CornerLeftDown } from "lucide-react";
@@ -425,6 +426,7 @@ export function UploadPanel() {
       </div>
       <div className="space-y-2 border-t border-line pt-4">
         <p className="mv-eyebrow !text-[0.6rem]">AI artwork generation</p>
+        <Link href="/design/muse" className="mv-chip inline-flex !text-[0.68rem]" data-testid="open-muse-studio"><Wand2 className="size-3" /> The Muse image studio — four models, gallery, image-to-image</Link>
         {gen?.available ? (
           <>
             <textarea className="mv-input min-h-14" placeholder="Describe the artwork — e.g. a minimal line-art peacock" value={prompt} onChange={(e) => setPrompt(e.target.value)} />

@@ -46,3 +46,6 @@ Added with the characters and Meta Muse work: `avatar-rig-utils.test.ts` (14 —
 Integration tests on PostgreSQL: create an **empty, throwaway** database, run `DATABASE_URL=… npm run db:migrate`, then `DATABASE_URL=… npx vitest run tests/integration`. Fixture e-mails get a per-run suffix so the four files can share the database in one run, but the suite assumes empty global state (e.g. no Shiprocket credentials), so use a fresh database for each run — never a database with real data.
 
 Camera tests use Chromium's fake device and software GL, so they verify the pipeline, not real-world tracking quality. 3D FPS in CI is software-rendered. Latest results: BUILD_STATUS.md.
+
+* `muse-studio.spec.ts` + `comfy-double.ts` — The Muse against a ComfyUI **test double** (routes and response shapes of ComfyUI; validates submitted graphs; no real images). `muse-models.test.ts` — per-model workflow graphs and capability rules. Real generation needs a GPU server (see MUSE_IMAGE_STUDIO.md).
+* `made-to-order.spec.ts` / `made-to-order.test.ts` — shop → customise within manufacturing limits → cart → checkout → admin → manufacturer sheet; option rules and pricing.

@@ -79,9 +79,17 @@ export async function generateArtwork(user: SessionUser, prompt: string, count =
     if (!res.ok) throw new ApiError(502, "image_provider_error", `OpenAI image generation failed (${res.status})`);
     const data = (await res.json()) as { data?: { b64_json?: string }[] };
     for (const d of data.data ?? []) if (d.b64_json) results.push(await storeUpload(user, { name: "generated.png", bytes: Buffer.from(d.b64_json, "base64") }, "generated"));
+  } else if (comfy && !comfy.credentials.workflow) {
+    // The Muse's per-model workflows: the first installed model, waited for here (quick generate in the editor)
+    const { museModels, createGeneration, getGeneration } = await import("../services/muse");
+    const model = (await museModels()).models.find((m) => m.available && m.modes.includes("txt2img"));
+    if (!model) throw new ApiError(503, "no_image_model", "The GPU server is connected but none of The Muse's models is installed yet.");
+    let g = await createGeneration(user, { modelId: model.id, prompt: `${prompt}. ${PRINT_STYLE}`, count: Math.min(count, model.maxOutputs) });
+    for (let i = 0; i < 90 && ["queued", "running", "finalizing"].includes(g.status); i++) { await new Promise((r) => setTimeout(r, 2000)); g = await getGeneration(user, g.id); }
+    if (g.status !== "succeeded") throw new ApiError(g.status === "failed" ? 502 : 504, "image_generation_failed", g.error ?? "The GPU server did not return an image in time — it will appear in The Muse studio when it finishes.");
+    for (const img of g.images) results.push({ id: img.id, url: img.url, mime: "image/png", width: img.width, height: img.height, colors: null, kind: "generated", name: `muse-${g.modelId}.png` });
   } else if (comfy) {
     const base = comfy.credentials.baseUrl.replace(/\/$/, "");
-    if (!comfy.credentials.workflow) throw new ApiError(503, "comfyui_workflow_missing", "ComfyUI is connected but no workflow JSON is configured.");
     const workflow = JSON.parse(comfy.credentials.workflow.replace(/\{\{prompt\}\}/g, prompt.replace(/["\\]/g, "")));
     const sub = await fetch(`${base}/prompt`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: workflow }), signal: AbortSignal.timeout(15_000) });
     if (!sub.ok) throw new ApiError(502, "image_provider_error", `ComfyUI rejected the workflow (${sub.status})`);
