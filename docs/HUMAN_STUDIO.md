@@ -51,7 +51,7 @@ Typical fit time is 0.1–3.5 s.
 
 ## Garments on the body (`src/lib/human/fit-garment.ts`)
 * The 3D collection garments are MakeHuman community clothes, made for hm08. Each `.mhclo` binds every garment vertex to three body vertices (barycentric weights) plus an offset scaled by the body's size along each axis. The build script converts that binding to the vertex order of the committed GLB (matched by exact position, 0 misses): `fit.json` + `fit.bin` per garment.
-* **84 of the 85 garments are fitted**. The lace-up blouse's `.mhclo` has no usable binding.
+* **119 of the 120 garments are fitted** (tops, shirts, suits, dresses, skirts, trousers, jeans and shorts). The lace-up blouse's `.mhclo` has no usable binding.
 * A garment follows every change of the body: height, girths, lengths. Body faces the garment's `delete_verts` covers completely are hidden.
 * Check: a men's shirt on the male base lands within ≈ 2 cm of where its author modelled it, mostly a vertical offset of the authoring body (unit test).
 
@@ -76,7 +76,7 @@ The recommended size is the smallest size whose chart body is no more than 2 cm 
 
 **Checks (unit test on the real assets):** a men's shirt in a size cut for a smaller body is tight on > 15 % of its vertices; a size cut for a larger body on < 5 %; the garment on the body it was fitted to is never tight. **e2e:** for a 92/72/100 cm woman the recommended size is M; two sizes down (XS) the tight share rises.
 
-`/design/human-studio?garment=<id>` opens with that garment (and the matching mannequin).
+`/design/human-studio?garment=<id>` opens with that garment (and the matching mannequin). Garments are filtered by type; trousers and skirts are sized by waist and hip and replace the styling trousers. Product pages link here as "Find my size on the mannequin".
 
 ## Motion (`src/lib/human/pose.ts`)
 * Forward kinematics on the 52-bone rig and linear-blend skinning on the CPU with the CC0 weights; everything worn is re-fitted to the posed body every frame.

@@ -1,0 +1,103 @@
+{
+  "id": "punkduck-female-tight-jeans",
+  "name": "Female Tight Jeans",
+  "originalName": "punkduck_female_tight_jeans",
+  "audience": "women",
+  "category": "trousers",
+  "collection": "Jeans",
+  "description": "female tight jeans by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"female tight jeans\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-female-tight-jeans.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_female_tight_jeans.mhclo",
+      "original/tightjeans.mhmat",
+      "original/tightjeans.obj",
+      "original/tightjeans.png",
+      "original/tightjeans_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "tightjeans.png",
+        "sha256": "acc013ef052e8b89d5afbce1818f50b0a77382a926fcacc0dad680a5939f6093",
+        "bytes": 5441511
+      },
+      {
+        "name": "punkduck_female_tight_jeans.mhclo",
+        "sha256": "2e3ef3b712d5058403b8831871e0a47b91c0fce620f1e649cd511cd40b08e24c",
+        "bytes": 162927
+      },
+      {
+        "name": "tightjeans_normals.png",
+        "sha256": "9dcb4a98ed1ca7e48804b46775fbeda71f2ea8c2141a4cca695d29282946e746",
+        "bytes": 4026154
+      },
+      {
+        "name": "tightjeans.obj",
+        "sha256": "19f5341595702fbd3e96ced237912c0b78e6ee771812227e6fe09c8d3ef82d21",
+        "bytes": 182994
+      },
+      {
+        "name": "tightjeans.mhmat",
+        "sha256": "a212f0904bbab51bbd7a71423458389604b937a5e6b64786e2b45645b9bba42f",
+        "bytes": 858
+      }
+    ],
+    "glbBytes": 440532
+  },
+  "geometry": {
+    "vertices": 2570,
+    "triangles": 4216,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 44.1,
+      "height": 88.5,
+      "depth": 24.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "pants",
+    "jeans"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -1,0 +1,105 @@
+{
+  "id": "toigo-tiered-mini-skirt",
+  "name": "Tiered Mini Skirt",
+  "originalName": "toigo_tiered_mini_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "tiered mini skirt by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts01/skirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "293fa0c15e28e8dcea8dfff20cae31aa4b0d1268a6e6ba0a53a92ebb0f36c882"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"tiered mini skirt\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-tiered-mini-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/SkirtMini-blackLeather-NORM.png",
+      "original/SkirtMini-blackLeather-spec.png",
+      "original/SkirtMini-blackLeather.png",
+      "original/tier_skirt_mini.mhmat",
+      "original/tier_skirt_mini.obj",
+      "original/toigo_tiered_mini_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "tier_skirt_mini.obj",
+        "sha256": "f81fde12201f188ba2390362a00bdec1d297f953b9c599008b719b7751cca615",
+        "bytes": 477983
+      },
+      {
+        "name": "SkirtMini-blackLeather-NORM.png",
+        "sha256": "1080d7bcf8992fe63d348a5e29027c57e814df7fa13cc7721977b50ba8db1aa5",
+        "bytes": 1299368
+      },
+      {
+        "name": "tier_skirt_mini.mhmat",
+        "sha256": "a610f5b1261f5086566db8ad51d6b755fb785baf459460797c171ff52f1f0d7f",
+        "bytes": 588
+      },
+      {
+        "name": "SkirtMini-blackLeather-spec.png",
+        "sha256": "28c9c3811af457ed274c4065268c69f8446f6f76c59a5a90a72db42c5b22e0e4",
+        "bytes": 21361
+      },
+      {
+        "name": "SkirtMini-blackLeather.png",
+        "sha256": "76f515076ec14b8c77889c0dcbc7b29676e3737909c7f70ec5edb2490c46cf5e",
+        "bytes": 942609
+      },
+      {
+        "name": "toigo_tiered_mini_skirt.mhclo",
+        "sha256": "48fdcaedcbbfdf49c023818bc765ae2fb1054bc3db45bb15c88e965e4c6204bd",
+        "bytes": 369147
+      }
+    ],
+    "glbBytes": 1080676
+  },
+  "geometry": {
+    "vertices": 7443,
+    "triangles": 10656,
+    "hasUv": true,
+    "uvCoverage": 0.85,
+    "boundsCm": {
+      "width": 48.8,
+      "height": 28.5,
+      "depth": 31.8
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0,
+      0,
+      0
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

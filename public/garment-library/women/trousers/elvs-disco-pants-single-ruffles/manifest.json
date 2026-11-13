@@ -1,0 +1,106 @@
+{
+  "id": "elvs-disco-pants-single-ruffles",
+  "name": "Disco Pants Single Ruffles",
+  "originalName": "elvs_disco_pants_single_ruffles",
+  "audience": "women",
+  "category": "trousers",
+  "collection": "Trousers",
+  "description": "pant",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"disco pants single ruffles\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-disco-pants-single-ruffles.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_disco_pants_single_ruffles.mhclo",
+      "original/elvs_discopant_sruffle1.mhmat",
+      "original/elvs_discopant_sruffle1.obj",
+      "original/normals.png",
+      "original/singleruffletex1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_discopant_sruffle1.obj",
+        "sha256": "2f55f9859281929bbb1fb2a5c8ed5c52d36ebeade5ab49a32b513f4380163d40",
+        "bytes": 650335
+      },
+      {
+        "name": "elvs_discopant_sruffle1.mhmat",
+        "sha256": "12bb007e6520179d72d21eaae53476951cf8d92d60d2e72f432eda399a1157e0",
+        "bytes": 888
+      },
+      {
+        "name": "normals.png",
+        "sha256": "c6a42f38fb66226e60aeab1b0c151268852e2ee00ccd4031687c9ab3c81ff95f",
+        "bytes": 2654689
+      },
+      {
+        "name": "singleruffletex1.png",
+        "sha256": "db866c9f0ebec6663f23b27229a0fea760f91db75fe2ad5aff9abb4d004a4b7d",
+        "bytes": 2402878
+      },
+      {
+        "name": "elvs_disco_pants_single_ruffles.mhclo",
+        "sha256": "a3963173513187d8f362c9b8576558e1f48c33a5f77ece3ba0fcb86db388bbf2",
+        "bytes": 322964
+      }
+    ],
+    "glbBytes": 1264112
+  },
+  "geometry": {
+    "vertices": 10312,
+    "triangles": 10290,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 57.8,
+      "height": 99.5,
+      "depth": 29.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "casual",
+    "festive",
+    "vintage",
+    "pants",
+    "disco"
+  ],
+  "integrationStatus": "integrated"
+}

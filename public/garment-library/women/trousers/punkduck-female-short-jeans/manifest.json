@@ -1,0 +1,103 @@
+{
+  "id": "punkduck-female-short-jeans",
+  "name": "Female Short Jeans",
+  "originalName": "punkduck_female_short_jeans",
+  "audience": "women",
+  "category": "trousers",
+  "collection": "Jeans",
+  "description": "female short jeans by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "pants03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants03/pants03_ccby.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "8753f0cd79a9987a6f490ec5621a4a392df90647ca504fa2c1a500f9c3c2f26a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"female short jeans\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-female-short-jeans.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/punkduck_female_short_jeans.mhclo",
+      "original/shortjeans.mhmat",
+      "original/shortjeans.obj",
+      "original/shortjeans.png",
+      "original/shortjeans_normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "punkduck_female_short_jeans.mhclo",
+        "sha256": "6afa0d2ebae71ebf9192f42daa3b05a0e028bdf2c8ce37374e83981375d533d2",
+        "bytes": 88789
+      },
+      {
+        "name": "shortjeans.mhmat",
+        "sha256": "808fda20ac69c7f68d49701ebd5b7310969ddc663021fb06e2423caf624ff508",
+        "bytes": 855
+      },
+      {
+        "name": "shortjeans.png",
+        "sha256": "acc013ef052e8b89d5afbce1818f50b0a77382a926fcacc0dad680a5939f6093",
+        "bytes": 5441511
+      },
+      {
+        "name": "shortjeans.obj",
+        "sha256": "413bae6f903f921890a2f2146875fa742136755dfa34cde3568986db2c68ad63",
+        "bytes": 93296
+      },
+      {
+        "name": "shortjeans_normals.png",
+        "sha256": "9dcb4a98ed1ca7e48804b46775fbeda71f2ea8c2141a4cca695d29282946e746",
+        "bytes": 4026154
+      }
+    ],
+    "glbBytes": 379248
+  },
+  "geometry": {
+    "vertices": 1444,
+    "triangles": 2112,
+    "hasUv": true,
+    "uvCoverage": 0.96,
+    "boundsCm": {
+      "width": 39,
+      "height": 27.8,
+      "depth": 24.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "jeans",
+    "pants"
+  ],
+  "integrationStatus": "integrated"
+}

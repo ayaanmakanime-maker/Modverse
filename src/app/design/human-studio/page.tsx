@@ -14,7 +14,7 @@ export default async function HumanStudioPage({ searchParams }: { searchParams: 
   const { garment } = await searchParams;
   const garments = (await visibleGarments())
     .filter((g) => existsSync(path.join(process.cwd(), "public/garment-library", g.path, "fit.json")))
-    .map((g) => ({ id: g.id, name: g.name, audience: g.audience, collection: g.collection, base: `/garment-library/${g.path}`, glb: `/garment-library/${g.path}/${g.glb}`, thumbnail: g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null, attribution: g.attribution, licence: g.licence }));
+    .map((g) => ({ id: g.id, name: g.name, audience: g.audience, category: g.category, collection: g.collection, base: `/garment-library/${g.path}`, glb: `/garment-library/${g.path}/${g.glb}`, thumbnail: g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null, attribution: g.attribution, licence: g.licence }));
   return (
     <div className="min-h-dvh">
       <header className="flex h-16 items-center gap-4 border-b border-line px-4 md:px-6">

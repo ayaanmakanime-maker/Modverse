@@ -32,6 +32,30 @@
     {
       "id": "suits03",
       "page": "https://static.makehumancommunity.org/assets/assetpacks/suits03.html"
+    },
+    {
+      "id": "suits02",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/suits02.html"
+    },
+    {
+      "id": "pants01",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/pants01.html"
+    },
+    {
+      "id": "pants02",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html"
+    },
+    {
+      "id": "pants03",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/pants03.html"
+    },
+    {
+      "id": "skirts01",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/skirts01.html"
+    },
+    {
+      "id": "skirts02",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html"
     }
   ],
   "acceptedLicences": [
@@ -55,7 +79,6 @@
     "fire_suit",
     "emt_",
     "uniform",
-    "pants",
     "boots",
     "coverall",
     "ballet",
@@ -67,7 +90,12 @@
     "triathlon",
     "skintight",
     "skinsuit",
-    "robe"
+    "robe",
+    "pantsuit",
+    "swim",
+    "native-american",
+    "native_american",
+    "maria"
   ],
   "manualSources": [
     {

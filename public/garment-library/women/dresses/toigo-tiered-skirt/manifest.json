@@ -1,0 +1,95 @@
+{
+  "id": "toigo-tiered-skirt",
+  "name": "Tiered Skirt",
+  "originalName": "toigo_tiered_skirt",
+  "audience": "women",
+  "category": "dresses",
+  "collection": "Dresses",
+  "description": "tiered skirt by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts01/skirts01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "293fa0c15e28e8dcea8dfff20cae31aa4b0d1268a6e6ba0a53a92ebb0f36c882"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"tiered skirt\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-tiered-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/ShadesTex-PINK.png",
+      "original/tier_skirt.mhmat",
+      "original/tier_skirt.obj",
+      "original/toigo_tiered_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "tier_skirt.mhmat",
+        "sha256": "faaf69214ad10fd23fe2ebbb07a886999f86a8fc6775ae00629ba5605307987c",
+        "bytes": 479
+      },
+      {
+        "name": "tier_skirt.obj",
+        "sha256": "1d1032708077c4863ffcfb6deee3c27261a3a582c97dce8e9603e94d7c097cae",
+        "bytes": 573425
+      },
+      {
+        "name": "ShadesTex-PINK.png",
+        "sha256": "cd981ab28ff1916e168f64c7933a82a022fae670b6b301f0c307a1807f4a7b3a",
+        "bytes": 1775694
+      },
+      {
+        "name": "toigo_tiered_skirt.mhclo",
+        "sha256": "cab11bb05f906156ad571f8cccc03f73ea78212a0376e1b6e8f369e4a909245b",
+        "bytes": 443825
+      }
+    ],
+    "glbBytes": 503088
+  },
+  "geometry": {
+    "vertices": 8686,
+    "triangles": 12960,
+    "hasUv": true,
+    "uvCoverage": 0.92,
+    "boundsCm": {
+      "width": 51.2,
+      "height": 82.5,
+      "depth": 42
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.8,
+      0.8,
+      0.8
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "dress"
+  ],
+  "integrationStatus": "integrated"
+}

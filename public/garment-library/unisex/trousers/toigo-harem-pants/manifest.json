@@ -1,0 +1,93 @@
+{
+  "id": "toigo-harem-pants",
+  "name": "Harem Pants",
+  "originalName": "toigo_harem_pants",
+  "audience": "unisex",
+  "category": "trousers",
+  "collection": "Trousers",
+  "description": "harem pants by MargaretToigo (MakeHuman community asset).",
+  "source": {
+    "pack": "pants01",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants01.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants01/pants01_cc0.zip",
+    "creator": "MargaretToigo",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "e4e0ec60db34f279be291a83cfd7b342a7c5cf09bb7676682a5f39f4f6ac4ad9"
+  },
+  "licence": {
+    "id": "CC0",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "attribution": "\"harem pants\" by MargaretToigo, MakeHuman Community, CC0 (no attribution required; credited as a courtesy).",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "toigo-harem-pants.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/HaremPants.png",
+      "original/pants_harem.mhmat",
+      "original/pants_harem.obj",
+      "original/toigo_harem_pants.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "toigo_harem_pants.mhclo",
+        "sha256": "9cdfb91852c9d3952ef621d58aeb0b73f1be98b5448c84bb621dc45f3b828287",
+        "bytes": 375603
+      },
+      {
+        "name": "pants_harem.obj",
+        "sha256": "5b3ae43d2a2e52c9bf825e4c56f4aed69ef8221cfa3fa0d1c86e721cc6c7e57d",
+        "bytes": 476836
+      },
+      {
+        "name": "HaremPants.png",
+        "sha256": "75067b13c0d28293e99fda8b5156e80496622bf42c5abd32491a5456da4dd04c",
+        "bytes": 5787123
+      },
+      {
+        "name": "pants_harem.mhmat",
+        "sha256": "bda009f2d77cd3d0c3af6268026d08f1e294f0c0806b1679b4bdd3dc0c96de9c",
+        "bytes": 500
+      }
+    ],
+    "glbBytes": 724256
+  },
+  "geometry": {
+    "vertices": 7030,
+    "triangles": 10912,
+    "hasUv": true,
+    "uvCoverage": 0.7,
+    "boundsCm": {
+      "width": 50.3,
+      "height": 83.7,
+      "depth": 24.9
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

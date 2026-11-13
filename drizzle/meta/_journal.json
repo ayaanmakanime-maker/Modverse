@@ -71,6 +71,13 @@
       "when": 1794408744624,
       "tag": "0009_v25_graphics_registry",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794570423401,
+      "tag": "0010_v26_made_to_order",
+      "breakpoints": true
     }
   ]
 }

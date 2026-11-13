@@ -1,0 +1,99 @@
+{
+  "id": "elvs-asymmetrical-skirt",
+  "name": "Asymmetrical Skirt",
+  "originalName": "elvs_asymmetrical_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "asymmetrical skirt by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"asymmetrical skirt\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-asymmetrical-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/asym_black_skirt.jpg",
+      "original/asym_bs_normals.jpg",
+      "original/asym_skirt3.mhmat",
+      "original/asym_skirt3.obj",
+      "original/elvs_asymmetrical_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "asym_skirt3.mhmat",
+        "sha256": "e82ae0a6175c5fbd07e68bd33c5d3b751146c029f339a62cd689991f338bdf9f",
+        "bytes": 802
+      },
+      {
+        "name": "asym_black_skirt.jpg",
+        "sha256": "5608834ccdef851411d77c37b5869058f7a9dccdae7106b198acc5a57ec2aa32",
+        "bytes": 1812867
+      },
+      {
+        "name": "elvs_asymmetrical_skirt.mhclo",
+        "sha256": "8b35791d34c87f992bb0db73839a12f2f4786a1eaf8d0f002ab4fcc1405c294f",
+        "bytes": 99076
+      },
+      {
+        "name": "asym_skirt3.obj",
+        "sha256": "b2500d79048924b31ad486b0dd340b8f927a585d42f29469b3c5b1932f005c38",
+        "bytes": 113138
+      },
+      {
+        "name": "asym_bs_normals.jpg",
+        "sha256": "2b172696a77b4c94c163023a27bf06b227994d38acb5534d93c9a71bb3f3c33c",
+        "bytes": 1639438
+      }
+    ],
+    "glbBytes": 318664
+  },
+  "geometry": {
+    "vertices": 1651,
+    "triangles": 2746,
+    "hasUv": true,
+    "uvCoverage": 1,
+    "boundsCm": {
+      "width": 43.4,
+      "height": 68.6,
+      "depth": 25.2
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.64,
+      0.6264,
+      0.5867
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [],
+  "integrationStatus": "integrated"
+}

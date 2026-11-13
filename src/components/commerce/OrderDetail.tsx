@@ -12,6 +12,7 @@ import { FIT_FEEDBACK_LABEL, FIT_FEEDBACK_SCALE, type FitFeedbackValue } from "@
 import { useSession } from "@/components/session";
 import { DisputeForm } from "@/components/partners/DisputeForm";
 import { DesignFlat } from "@/components/garment/DesignFlat";
+import { MtoDetails, MtoThumb } from "./MtoLine";
 import type { DesignConfig } from "@/lib/garment/schema";
 
 /** Customer-facing production wording (partner identities are never shown). */
@@ -76,7 +77,7 @@ const FLOW = ["pending_payment", "payment_confirmed", "design_validation", "awai
 
 interface Data {
   order: { id: string; orderNumber: string; status: string; subtotal: number; discount?: number; discountCode?: string | null; gst: number; shipping: number; total: number; isSimulated: boolean; paymentStatus: string; createdAt: string; shippingAddress: Record<string, string> };
-  items: { id: string; designName: string; size: string; quantity: number; unitPrice: number; version: number; reviewStatus: string; projectId: string | null; designSnapshot?: DesignConfig; specSnapshot: { validation?: { status: string } } }[];
+  items: { id: string; kind?: "design" | "library"; designName: string; size: string; quantity: number; unitPrice: number; version: number; reviewStatus: string; projectId: string | null; designSnapshot?: DesignConfig | Record<string, unknown>; specSnapshot: { validation?: { status: string } } }[];
   events: { id: string; status: string; note: string | null; createdAt: string }[];
   payments: { provider: string; environment: string; status: string; amount: number; signatureVerified: boolean; providerPaymentId: string | null }[];
   shipments: { courier: string | null; awb: string | null; status: string; trackingUrl: string | null; direction?: string; events?: { at: string; status: string; location?: string | null; note?: string | null }[]; podName?: string | null }[];
@@ -134,13 +135,13 @@ export function OrderDetail({ data, confirmation }: { data: Data; confirmation?:
           {data.items.map((it) => (
             <div key={it.id} className="p-3 text-sm">
               <div className="flex items-center justify-between gap-3">
-                {it.designSnapshot && <div className="grid w-28 shrink-0 grid-cols-2 gap-1"><DesignFlat config={it.designSnapshot} view="front" className="h-14 w-full" /><DesignFlat config={it.designSnapshot} view="back" className="h-14 w-full" /></div>}
-                <div className="min-w-0 flex-1"><p>{it.designName} <span className="text-mute">· v{it.version} snapshot</span></p><p className="text-xs text-mute">Size {it.size} · qty {it.quantity} · review {it.reviewStatus.replace("_", " ")} · checks {it.specSnapshot.validation?.status ?? "-"}</p></div>
+                {it.kind === "library" ? <MtoThumb snapshot={it.designSnapshot} className="h-14 w-14" /> : it.designSnapshot && <div className="grid w-28 shrink-0 grid-cols-2 gap-1"><DesignFlat config={it.designSnapshot as DesignConfig} view="front" className="h-14 w-full" /><DesignFlat config={it.designSnapshot as DesignConfig} view="back" className="h-14 w-full" /></div>}
+                <div className="min-w-0 flex-1"><p>{it.designName} <span className="text-mute">· {it.kind === "library" ? "made to order" : `v${it.version} snapshot`}</span></p>{it.kind === "library" && <MtoDetails snapshot={it.designSnapshot} compact />}<p className="text-xs text-mute">Size {it.size} · qty {it.quantity} · review {it.reviewStatus.replace("_", " ")} · checks {it.specSnapshot.validation?.status ?? "-"}</p></div>
                 <span className="tabular-nums">{formatINR(it.unitPrice * it.quantity)}</span>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <button className="mv-chip !text-[0.65rem]" data-testid="reorder-item" onClick={async () => { try { const r = await api<{ cart: { lines: { quantity: number }[] }; restored: number }>(`/api/orders/${o.id}/reorder`, { body: { itemId: it.id } }); setCartCount(r.cart.lines.reduce((a, l) => a + l.quantity, 0)); toast(r.restored ? "Restored the ordered design and added it to your cart" : "Added to your cart at today's price"); } catch (e) { toast(errorMessage(e), "bad"); } }}>Reorder</button>
-                <button className="mv-chip !text-[0.65rem]" data-testid="redesign-item" onClick={async () => { try { const r = await api<{ projectId: string }>(`/api/orders/${o.id}/redesign`, { body: { itemId: it.id } }); router.push(`/design/${r.projectId}?mode=atelier`); } catch (e) { toast(errorMessage(e), "bad"); } }}>Redesign</button>
+                {it.kind !== "library" && <button className="mv-chip !text-[0.65rem]" data-testid="redesign-item" onClick={async () => { try { const r = await api<{ projectId: string }>(`/api/orders/${o.id}/redesign`, { body: { itemId: it.id } }); router.push(`/design/${r.projectId}?mode=atelier`); } catch (e) { toast(errorMessage(e), "bad"); } }}>Redesign</button>}
               </div>
               {canVerify && <FitFeedbackForm key={feedback[it.id] ? "has" : "new"} itemId={it.id} existing={feedback[it.id]} />}
             </div>

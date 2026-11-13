@@ -1,0 +1,106 @@
+{
+  "id": "elvs-disco-pants-skinny",
+  "name": "Disco Pants Skinny",
+  "originalName": "elvs_disco_pants_skinny",
+  "audience": "women",
+  "category": "trousers",
+  "collection": "Trousers",
+  "description": "pant",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"disco pants skinny\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-disco-pants-skinny.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_disco_pant1.mhmat",
+      "original/elvs_disco_pant1.obj",
+      "original/elvs_disco_pants_skinny.mhclo",
+      "original/normals.png",
+      "original/panttex1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_disco_pant1.mhmat",
+        "sha256": "a8a08e028f19a12552778baabb0782747aba096568b0f26a0ca0c3df1531e2d0",
+        "bytes": 863
+      },
+      {
+        "name": "normals.png",
+        "sha256": "70a83a124023820e35d5149c2a695d2b450b8eb8c01fa279a7f0e0a2651a9d8c",
+        "bytes": 2403866
+      },
+      {
+        "name": "elvs_disco_pant1.obj",
+        "sha256": "f85795f17645953332c651a7aac66b09af862cc2659d1d18d5dae17eec5ff43b",
+        "bytes": 403913
+      },
+      {
+        "name": "elvs_disco_pants_skinny.mhclo",
+        "sha256": "2bf2c3a52890709d853276017e46384ef883d4ebc97dd4f514274e28daaa3a0c",
+        "bytes": 202232
+      },
+      {
+        "name": "panttex1.png",
+        "sha256": "56bff88c97e0445819acc1f23d1108c49fd0434b9e9cafb5358dcfa31c0fcdcb",
+        "bytes": 2151948
+      }
+    ],
+    "glbBytes": 904712
+  },
+  "geometry": {
+    "vertices": 6490,
+    "triangles": 6460,
+    "hasUv": true,
+    "uvCoverage": 0.9,
+    "boundsCm": {
+      "width": 43.2,
+      "height": 99.5,
+      "depth": 24.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "formal",
+    "festive",
+    "vintage",
+    "pants",
+    "disco"
+  ],
+  "integrationStatus": "integrated"
+}

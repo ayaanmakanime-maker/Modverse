@@ -340,7 +340,7 @@ export function TextPanel() {
 type UploadRow = UploadItem;
 
 /** Not signed in: offer a one-click guest account right here (keeps the open design), or sign in. */
-function UploadSignIn() {
+export function UploadSignIn() {
   const { setUser } = useSession();
   const [guest, setGuest] = useState(false);
   const [busy, setBusy] = useState(false);

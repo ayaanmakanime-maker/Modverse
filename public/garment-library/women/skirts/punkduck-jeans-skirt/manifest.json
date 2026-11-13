@@ -1,0 +1,103 @@
+{
+  "id": "punkduck-jeans-skirt",
+  "name": "Jeans Skirt",
+  "originalName": "punkduck_jeans_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "jeans skirt by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"jeans skirt\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-jeans-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/jeansskirt.mhmat",
+      "original/jeansskirt.obj",
+      "original/jeansskirt.png",
+      "original/jeansskirt_normals.png",
+      "original/punkduck_jeans_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "punkduck_jeans_skirt.mhclo",
+        "sha256": "3b2abe372d289665a14dcfd84eeca04ae72b54f7a219fdf2ea8968d563f99171",
+        "bytes": 56688
+      },
+      {
+        "name": "jeansskirt_normals.png",
+        "sha256": "41a59051ef33ec60f76c2d85f91e5f85ca70db39736d5cba19cabd0562fc98a1",
+        "bytes": 4542454
+      },
+      {
+        "name": "jeansskirt.png",
+        "sha256": "0e5d02b208e847fe8cef87896232caf098dc501a8d63d8f6c8aa39e8c4f4653b",
+        "bytes": 6036431
+      },
+      {
+        "name": "jeansskirt.obj",
+        "sha256": "7ef795e70115fff361166e9032cc79a290dd503cda4863d956367914bd472658",
+        "bytes": 59713
+      },
+      {
+        "name": "jeansskirt.mhmat",
+        "sha256": "3d7dc1eeb44fa0a8a285d672357533e889c2e2ec691117170bd97fe5efeb25e0",
+        "bytes": 892
+      }
+    ],
+    "glbBytes": 504636
+  },
+  "geometry": {
+    "vertices": 916,
+    "triangles": 1458,
+    "hasUv": true,
+    "uvCoverage": 0.95,
+    "boundsCm": {
+      "width": 39.4,
+      "height": 30,
+      "depth": 25.1
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "skirt",
+    "jeans"
+  ],
+  "integrationStatus": "integrated"
+}

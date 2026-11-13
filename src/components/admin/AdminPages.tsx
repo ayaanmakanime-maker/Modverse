@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { api, errorMessage } from "@/lib/client/api";
 import { formatINR } from "@/lib/garment/pricing";
 import { DesignFlat } from "@/components/garment/DesignFlat";
+import { MtoDetails, MtoThumb } from "@/components/commerce/MtoLine";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { Badge, Button, EmptyState, Input, Modal, Notice, Select, Spinner, toast } from "@/components/ui";
 import { COLLECTIONS } from "@/lib/library/collections";
@@ -82,7 +83,7 @@ export function AdminOrders() {
   );
 }
 
-interface AdminOrder { order: { id: string; orderNumber: string; status: string; total: number; isSimulated: boolean; paymentStatus: string; shippingAddress: Record<string, string>; notes: string | null }; items: { id: string; designName: string; size: string; quantity: number; unitPrice: number; reviewStatus: string; projectId: string | null; version: number; designSnapshot: DesignConfig; specSnapshot: { validation?: { status: string; counts: Record<string, number> } } }[]; events: { id: string; status: string; note: string | null; createdAt: string }[]; shipments: { courier: string; awb: string; status: string }[] }
+interface AdminOrder { order: { id: string; orderNumber: string; status: string; total: number; isSimulated: boolean; paymentStatus: string; shippingAddress: Record<string, string>; notes: string | null }; items: { id: string; kind?: "design" | "library"; designName: string; size: string; quantity: number; unitPrice: number; reviewStatus: string; projectId: string | null; version: number; designSnapshot: DesignConfig; specSnapshot: { validation?: { status: string; counts: Record<string, number> } } }[]; events: { id: string; status: string; note: string | null; createdAt: string }[]; shipments: { courier: string; awb: string; status: string }[] }
 const NEXT_STATUSES = ["design_validation", "awaiting_production_approval", "manufacturing", "quality_inspection", "packed", "shipped", "delivered", "cancelled", "refunded"];
 export function AdminOrderDetail({ id }: { id: string }) {
   const { data, reload, error } = useApi<AdminOrder>(`/api/admin/orders/${id}`);
@@ -101,9 +102,10 @@ export function AdminOrderDetail({ id }: { id: string }) {
         <p className="mv-eyebrow">Items — production approval required before manufacturing</p>
         {data.items.map((it) => (
           <div key={it.id} className="mv-card flex flex-wrap items-center gap-4 p-3">
-            <div className="grid w-40 grid-cols-2 gap-1"><DesignFlat config={it.designSnapshot} view="front" className="h-24 w-full" /><DesignFlat config={it.designSnapshot} view="back" className="h-24 w-full" /></div>
+            {it.kind === "library" ? <MtoThumb snapshot={it.designSnapshot} className="h-24 w-24" /> : <div className="grid w-40 grid-cols-2 gap-1"><DesignFlat config={it.designSnapshot} view="front" className="h-24 w-full" /><DesignFlat config={it.designSnapshot} view="back" className="h-24 w-full" /></div>}
             <div className="min-w-0 flex-1 text-sm">
-              <p>{it.designName} · v{it.version} snapshot · size {it.size} · qty {it.quantity}</p>
+              <p>{it.designName} · {it.kind === "library" ? "made to order" : `v${it.version} snapshot`} · size {it.size} · qty {it.quantity}</p>
+              {it.kind === "library" && <MtoDetails snapshot={it.designSnapshot} />}
               <p className="text-xs text-mute">Automated checks: {it.specSnapshot.validation?.status ?? "n/a"} ({it.specSnapshot.validation?.counts?.error ?? 0} errors, {it.specSnapshot.validation?.counts?.warning ?? 0} warnings) · review: {it.reviewStatus.replace("_", " ")}</p>
               {it.projectId && <a className="text-xs underline" href={`/api/designs/${it.projectId}/techpack?format=pdf&version=${it.version}`} target="_blank" rel="noopener">Tech pack PDF</a>}
             </div>

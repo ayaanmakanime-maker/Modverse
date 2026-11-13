@@ -1,0 +1,117 @@
+{
+  "id": "elvs-retro-girly-shorts1",
+  "name": "Retro Girly Shorts",
+  "originalName": "elvs_retro_girly_shorts1",
+  "audience": "women",
+  "category": "trousers",
+  "collection": "Shorts",
+  "description": "retro girly shorts by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "pants03",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants03.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants03/pants03_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "8753f0cd79a9987a6f490ec5621a4a392df90647ca504fa2c1a500f9c3c2f26a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"retro girly shorts\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-retro-girly-shorts1.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/bumpgshort.png",
+      "original/elvs_retro_girly_shorts1.mhclo",
+      "original/girlyshortex5.png",
+      "original/normalsgsh.png",
+      "original/retro_girlyshort1.mhmat",
+      "original/retro_girlyshort1.obj",
+      "original/specs.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "normalsgsh.png",
+        "sha256": "33f5f6c90ad2338e89a08ca5d38a979bede9a80fc58b59e741916df101a6d9b3",
+        "bytes": 1902846
+      },
+      {
+        "name": "bumpgshort.png",
+        "sha256": "b2c6630174b99392036165a6e7caa7d62aee455ed872743792d33121392ef4a2",
+        "bytes": 1549161
+      },
+      {
+        "name": "specs.png",
+        "sha256": "2f83d70231cf6c903067d2fe8f91500e7a1c3ddbfd2a7fad5e727df13069bd99",
+        "bytes": 1086661
+      },
+      {
+        "name": "retro_girlyshort1.mhmat",
+        "sha256": "ce90afe484f57a4da22e30b4a663e76542b49768e04f45548d524d592718fb4b",
+        "bytes": 880
+      },
+      {
+        "name": "elvs_retro_girly_shorts1.mhclo",
+        "sha256": "47166dab197625a8ca7d0806f87a7e98b16093402b09ed0ec06c10833c702250",
+        "bytes": 981297
+      },
+      {
+        "name": "retro_girlyshort1.obj",
+        "sha256": "6f05848f0751e9e5ea0fe81c3abe3998c13b9b68332df0df3fb2810f59f85835",
+        "bytes": 1746185
+      },
+      {
+        "name": "girlyshortex5.png",
+        "sha256": "bade67420fb7799aeee22029633d7390169a36e5b7972f36d82f5d9b47ab383f",
+        "bytes": 1410277
+      }
+    ],
+    "glbBytes": 1982848
+  },
+  "geometry": {
+    "vertices": 23911,
+    "triangles": 28815,
+    "hasUv": true,
+    "uvCoverage": 0.98,
+    "boundsCm": {
+      "width": 39.2,
+      "height": 29.8,
+      "depth": 33.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.6392,
+      0,
+      0.2029
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "shorts",
+    "ribbon",
+    "vintage",
+    "retro",
+    "ladies ware"
+  ],
+  "integrationStatus": "integrated"
+}

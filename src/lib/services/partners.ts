@@ -1,4 +1,5 @@
 import "server-only";
+import { garmentTypeFor, GARMENT_TYPE_LABELS, getMtoFabric, MTO_GARMENT_TYPES, parseLibraryLine } from "../garment/made-to-order";
 import { randomBytes } from "node:crypto";
 import { and, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -35,7 +36,7 @@ export { STAGES, SHIPMENT_STATUSES };
 // ── Schemas ───────────────────────────────────────────────────────
 export const manufacturerCapabilitiesSchema = z.object({
   methods: z.array(z.enum(PRINT_METHODS)).min(1),
-  garmentTypes: z.array(z.enum(["tshirt", "shirt"])).min(1),
+  garmentTypes: z.array(z.enum(MTO_GARMENT_TYPES)).min(1),
   // Organisations registered before the Kids range was retired may still list "kids": it is dropped on read/save.
   audiences: z.preprocess((v) => (Array.isArray(v) ? v.filter((a) => a !== "kids") : v), z.array(z.enum(AUDIENCES)).min(1)),
   fabrics: z.array(z.enum(["knit", "woven"])).min(1),
@@ -135,10 +136,24 @@ export async function reviewOrganization(admin: SessionUser, orgId: string, deci
 // ── Capability matching ──────────────────────────────────────────
 type OrderItem = typeof s.orderItems.$inferSelect;
 
-export function matchManufacturer(caps: ManufacturerCaps, items: Pick<OrderItem, "designSnapshot" | "quantity">[]): { ok: boolean; reasons: string[] } {
+export function matchManufacturer(caps: ManufacturerCaps, items: (Pick<OrderItem, "designSnapshot" | "quantity"> & { kind?: OrderItem["kind"] })[]): { ok: boolean; reasons: string[] } {
   const reasons: string[] = [];
   const qty = items.reduce((a, i) => a + i.quantity, 0);
   for (const it of items) {
+    if (it.kind === "library") {
+      // made-to-order collection garment: category, range, fabric construction and decoration methods
+      const line = parseLibraryLine(it.designSnapshot);
+      if (!line) { reasons.push("Unreadable made-to-order item"); continue; }
+      const type = garmentTypeFor(line.garment.category);
+      if (!caps.garmentTypes.includes(type)) reasons.push(`Doesn't make ${GARMENT_TYPE_LABELS[type].toLowerCase()}`);
+      const aud = line.garment.audience === "unisex" ? null : line.garment.audience;
+      if (aud && !caps.audiences.includes(aud)) reasons.push(`Doesn't produce ${aud}'s garments`);
+      const fab = getMtoFabric(line.options.fabricId)?.construction;
+      if (fab && !caps.fabrics.includes(fab)) reasons.push(`Doesn't work with ${fab} fabrics`);
+      for (const a of line.options.artwork) if (!caps.methods.includes(a.method)) reasons.push(`No ${a.method} capability`);
+      if (line.options.monogram && !caps.methods.includes("embroidery")) reasons.push("No embroidery capability (monogram)");
+      continue;
+    }
     const cfg = designConfigSchema.parse(it.designSnapshot);
     if (!caps.garmentTypes.includes(cfg.garmentType)) reasons.push(`Doesn't make ${cfg.garmentType === "tshirt" ? "T-shirts" : "shirts"}`);
     if (!caps.audiences.includes(cfg.audience)) reasons.push(`Doesn't produce ${cfg.audience}'s garments`);
@@ -262,7 +277,11 @@ async function myJob(db: Db, orgId: string, jobId: string) {
 /** Order items as a manufacturer may see them: design, spec and quantities — no customer data or retail prices. */
 function manufacturerItem(i: OrderItem) {
   const spec = i.specSnapshot as Record<string, unknown>;
-  return { id: i.id, designName: i.designName, version: i.version, size: i.size, quantity: i.quantity, reviewStatus: i.reviewStatus, designSnapshot: i.designSnapshot, spec: { garment: spec.garment, fabric: spec.fabric, measurements: spec.measurements, validation: spec.validation, placements: (spec.placements ?? []) as Record<string, unknown>[] } };
+  if (i.kind === "library") {
+    const { price: _price, pricingRulesVersion: _v, ...sheet } = spec; // production sheet without retail prices
+    return { id: i.id, kind: i.kind, designName: i.designName, version: i.version, size: i.size, quantity: i.quantity, reviewStatus: i.reviewStatus, designSnapshot: i.designSnapshot, spec: { ...sheet, placements: (spec.placements ?? []) as Record<string, unknown>[] } };
+  }
+  return { id: i.id, kind: i.kind, designName: i.designName, version: i.version, size: i.size, quantity: i.quantity, reviewStatus: i.reviewStatus, designSnapshot: i.designSnapshot, spec: { garment: spec.garment, fabric: spec.fabric, measurements: spec.measurements, validation: spec.validation, placements: (spec.placements ?? []) as Record<string, unknown>[] } };
 }
 
 export async function listMyJobs(user: SessionUser) {

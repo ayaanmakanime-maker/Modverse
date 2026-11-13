@@ -1,0 +1,99 @@
+{
+  "id": "elvs-jeans-straight-leg",
+  "name": "Jeans Straight Leg",
+  "originalName": "elvs_jeans_straight_leg",
+  "audience": "men",
+  "category": "trousers",
+  "collection": "Jeans",
+  "description": "jeans straight leg by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"jeans straight leg\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-jeans-straight-leg.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_jeans_straight_leg.mhclo",
+      "original/jeanstex1.png",
+      "original/mens_elv_jeans2slf.mhmat",
+      "original/mens_elv_jeans2slf.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_jeans_straight_leg.mhclo",
+        "sha256": "a236750938e771e7f887e853a2e7dc1604b3fe247cbfe901147eff768b7f0087",
+        "bytes": 210287
+      },
+      {
+        "name": "jeanstex1.png",
+        "sha256": "a556d0e1329f2974c4bf6cd0875515d96ca189fa7805b829daf7af4ce9744ace",
+        "bytes": 1589579
+      },
+      {
+        "name": "mens_elv_jeans2slf.mhmat",
+        "sha256": "8d86cceb685eef8a5bea4c35fb3c03b9f1bc4d029f1912eede4346ddbf3a063e",
+        "bytes": 814
+      },
+      {
+        "name": "mens_elv_jeans2slf.obj",
+        "sha256": "b023a0fbf686b6246358e65548256a528914a17bc98ab99290f8bbcf5de8781f",
+        "bytes": 256638
+      }
+    ],
+    "glbBytes": 575504
+  },
+  "geometry": {
+    "vertices": 3977,
+    "triangles": 5708,
+    "hasUv": true,
+    "uvCoverage": 0.99,
+    "boundsCm": {
+      "width": 49.6,
+      "height": 101,
+      "depth": 27.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "jeans",
+    "menswear",
+    "fashion",
+    "traditional",
+    "casual"
+  ],
+  "integrationStatus": "integrated"
+}

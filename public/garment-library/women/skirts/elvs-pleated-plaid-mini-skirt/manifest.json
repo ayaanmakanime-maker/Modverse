@@ -1,0 +1,99 @@
+{
+  "id": "elvs-pleated-plaid-mini-skirt",
+  "name": "Pleated Plaid Mini Skirt",
+  "originalName": "elvs_pleated_plaid_mini_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "pleated plaid mini skirt by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"pleated plaid mini skirt\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-pleated-plaid-mini-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_pleated_plaid_mini_skirt.mhclo",
+      "original/pleated_skirtelv1.mhmat",
+      "original/pleated_skirtelv1.obj",
+      "original/ruffskirttex1.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "pleated_skirtelv1.mhmat",
+        "sha256": "e153dadd7d7a74ac42acf0b3acaa2a265d7c85fe043b09ce0efbfa7a09aae1b7",
+        "bytes": 819
+      },
+      {
+        "name": "pleated_skirtelv1.obj",
+        "sha256": "95e7dde409267b88384cfaaa6a457fc9e71137b0d6a10a6844316d66d493d93b",
+        "bytes": 1412162
+      },
+      {
+        "name": "ruffskirttex1.png",
+        "sha256": "c695a3512409312ab96e7b84e12faf17e255fe3343dd2bd5c29beb5c98767049",
+        "bytes": 1554356
+      },
+      {
+        "name": "elvs_pleated_plaid_mini_skirt.mhclo",
+        "sha256": "74ede918f24244ca8052cb3c62b8bc8f4443e85953bdf6c1d5b8a7b35d463886",
+        "bytes": 800109
+      }
+    ],
+    "glbBytes": 1227604
+  },
+  "geometry": {
+    "vertices": 20640,
+    "triangles": 22973,
+    "hasUv": true,
+    "uvCoverage": 0.97,
+    "boundsCm": {
+      "width": 41.2,
+      "height": 36.3,
+      "depth": 29.4
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "skirt",
+    "ladies ware",
+    "pleated",
+    "short skirt",
+    "female"
+  ],
+  "integrationStatus": "integrated"
+}

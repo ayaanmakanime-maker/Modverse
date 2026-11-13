@@ -20,8 +20,8 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <p className="mv-eyebrow">3D garment collection</p>
-      <h1 className="mv-display mt-2 text-4xl">Real 3D garments, ready to customise</h1>
-      <p className="mt-3 max-w-3xl text-sm text-bone-2">{all.length} downloaded garment models with verified open licences (CC0 / CC BY). Recolour them, change the finish and place your artwork in 3D. They are visual models: made-to-order production still runs on ModVerse&apos;s measured garments in the <Link className="underline" href="/shop/men">Men</Link> and <Link className="underline" href="/shop/women">Women</Link> ranges.</p>
+      <h1 className="mv-display mt-2 text-4xl">Real 3D garments, made to order</h1>
+      <p className="mt-3 max-w-3xl text-sm text-bone-2">{all.length} downloaded garment models with verified open licences (CC0 / CC BY): shirts, tees, hoodies, knitwear, suits, dresses, skirts, trousers and more. Choose a stocked fabric and colour, your size or measurements, fit, length, trims, monogram and artwork within what the workshop can make, and order it — also from the <Link className="underline" href="/shop/men">Men</Link> and <Link className="underline" href="/shop/women">Women</Link> ranges.</p>
       <form className="mt-6 flex flex-wrap items-center gap-2" action="/collection">
         {audience !== "all" && <input type="hidden" name="for" value={audience} />}
         {category && <input type="hidden" name="category" value={category} />}

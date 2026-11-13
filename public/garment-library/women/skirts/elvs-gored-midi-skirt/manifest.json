@@ -1,0 +1,106 @@
+{
+  "id": "elvs-gored-midi-skirt",
+  "name": "Gored Midi Skirt",
+  "originalName": "elvs_gored_midi_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "skirt",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"gored midi skirt\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-gored-midi-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_gored_midi_skirt.mhclo",
+      "original/elvs_gored_midiskirt1.mhmat",
+      "original/elvs_gored_midiskirt1.obj",
+      "original/goredskirttex1.png",
+      "original/normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "elvs_gored_midi_skirt.mhclo",
+        "sha256": "d8da20dfc7e7d87c493d7305f79e18c53209b56b0ca8f8799dca58874631f10e",
+        "bytes": 317335
+      },
+      {
+        "name": "normals.png",
+        "sha256": "0c0cf751370159ad710316e1101a10e8237bcd2876aa2b31ede7af6f4a3d7865",
+        "bytes": 1229191
+      },
+      {
+        "name": "goredskirttex1.png",
+        "sha256": "7e6aee4fdc44c9a147c4d87dbcce444c07b98cfa0843176789d0af7f359df1c5",
+        "bytes": 993639
+      },
+      {
+        "name": "elvs_gored_midiskirt1.mhmat",
+        "sha256": "6971aea3aed7c37d163c57f7ac8cb8059834f539435cf24f079af26df08aaa8f",
+        "bytes": 881
+      },
+      {
+        "name": "elvs_gored_midiskirt1.obj",
+        "sha256": "aa333bfc4400b928eee7bb037aa40787d7cce8c60dd4d598b53a6359d22a4a43",
+        "bytes": 629575
+      }
+    ],
+    "glbBytes": 1031308
+  },
+  "geometry": {
+    "vertices": 10226,
+    "triangles": 9837,
+    "hasUv": true,
+    "uvCoverage": 0.92,
+    "boundsCm": {
+      "width": 51.9,
+      "height": 70.2,
+      "depth": 36.2
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "formal",
+    "festive",
+    "contemporary",
+    "skirt",
+    "gored"
+  ],
+  "integrationStatus": "integrated"
+}

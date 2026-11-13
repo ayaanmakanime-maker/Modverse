@@ -1,0 +1,102 @@
+{
+  "id": "punkduck-black-mini-skirt",
+  "name": "Black Mini Skirt",
+  "originalName": "punkduck_black_mini_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "black mini skirt by punkduck (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "punkduck",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"black mini skirt\" by punkduck, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "punkduck-black-mini-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/blackminiskirt.mhmat",
+      "original/blackminiskirt.obj",
+      "original/blackminiskirt.png",
+      "original/blackminiskirt_normals.png",
+      "original/punkduck_black_mini_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "blackminiskirt.png",
+        "sha256": "5a659b8a48dd1471ae74a5b5b0fb939d4b3b56b5e27193ded1b08d3d65ac0422",
+        "bytes": 1683994
+      },
+      {
+        "name": "punkduck_black_mini_skirt.mhclo",
+        "sha256": "04238a6e119b593fdfc7d2936c94b935c62e54c5634d8a7b9bdc6c142b3437b1",
+        "bytes": 47917
+      },
+      {
+        "name": "blackminiskirt.obj",
+        "sha256": "f43d2d4fbf084b85432206e5248cb9a92e0e489c1c155091a7f7e447e4714a79",
+        "bytes": 52010
+      },
+      {
+        "name": "blackminiskirt.mhmat",
+        "sha256": "5622ed6cdaea52301ec7722bf4f39a650dd8c794d6923ed717ce1901b45da6fb",
+        "bytes": 807
+      },
+      {
+        "name": "blackminiskirt_normals.png",
+        "sha256": "bc22a2d2a7b59163149fba0db3095db497ab2c2d65617a47ad4e2a2367652885",
+        "bytes": 3698768
+      }
+    ],
+    "glbBytes": 226988
+  },
+  "geometry": {
+    "vertices": 779,
+    "triangles": 1308,
+    "hasUv": true,
+    "uvCoverage": 0.94,
+    "boundsCm": {
+      "width": 38.8,
+      "height": 39.7,
+      "depth": 25.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      1,
+      1,
+      1
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "skirt"
+  ],
+  "integrationStatus": "integrated"
+}

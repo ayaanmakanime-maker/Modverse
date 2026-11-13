@@ -1,0 +1,104 @@
+{
+  "id": "mtknife-pleated-mini-skirt",
+  "name": "Pleated Mini Skirt",
+  "originalName": "mtknife_pleated_mini_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "pleated mini skirt by MTKnife (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "MTKnife",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"pleated mini skirt\" by MTKnife, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mtknife-pleated-mini-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/mtknife_pleated_mini_skirt.mhclo",
+      "original/pleated_miniskirt.mhmat",
+      "original/pleated_miniskirt.obj",
+      "original/pleated_miniskirt.png",
+      "original/pleated_miniskirt_norm.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "mtknife_pleated_mini_skirt.mhclo",
+        "sha256": "3437f759cddc7d6688d40fdc117bd59dd740039b83cc25a69673c96cbd75b924",
+        "bytes": 138505
+      },
+      {
+        "name": "pleated_miniskirt.mhmat",
+        "sha256": "6f82ebc250979985c45232bae2d607ac95b80576593394990da372d7e725e08c",
+        "bytes": 594
+      },
+      {
+        "name": "pleated_miniskirt_norm.png",
+        "sha256": "98f1660e3a90f1f22011b65abeed76cca9e88692f8c84ab97c53caf95ef8c3a7",
+        "bytes": 585725
+      },
+      {
+        "name": "pleated_miniskirt.png",
+        "sha256": "3d736fbdcf540f3ca366d472b11c512065d180abe3d578dac6ed5b6158198c66",
+        "bytes": 1117166
+      },
+      {
+        "name": "pleated_miniskirt.obj",
+        "sha256": "1f91efc0e5b08248bb12a25bc4c60106a25ae09051ef1f7c0118db0a8ed4c7fa",
+        "bytes": 219957
+      }
+    ],
+    "glbBytes": 196480
+  },
+  "geometry": {
+    "vertices": 3643,
+    "triangles": 3732,
+    "hasUv": true,
+    "uvCoverage": 0.72,
+    "boundsCm": {
+      "width": 49,
+      "height": 27.5,
+      "depth": 34.7
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "skirt",
+    "miniskirt",
+    "pleated"
+  ],
+  "integrationStatus": "integrated"
+}

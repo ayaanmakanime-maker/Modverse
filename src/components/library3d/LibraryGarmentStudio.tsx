@@ -11,8 +11,9 @@ import * as THREE from "three";
 import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-type Side = "front" | "back" | "left" | "right";
-interface DecalItem { id: number; kind: "image" | "text"; src: string; side: Side; size: number; up: number; label: string }
+export type Side = "front" | "back" | "left" | "right";
+/** `x`: horizontal offset across the front / back (−1 … 1 of the half width), e.g. a left-chest placement. */
+export interface DecalItem { id: number; kind: "image" | "text"; src: string; side: Side; size: number; up: number; label: string; x?: number; aspect?: number }
 const SWATCHES = ["#FFFFFF", "#111111", "#C9A96A", "#B3261E", "#1F4E79", "#2E6B4F", "#6B4E9B", "#E7A5B4", "#F2C94C", "#7A7A7A"];
 const VIEWS: Record<string, [number, number, number]> = { Front: [0, 0.1, 1], Back: [0, 0.1, -1], Side: [1, 0.1, 0], "¾": [0.65, 0.2, 0.75] };
 
@@ -74,11 +75,12 @@ function Model({ url, tint, useTexture, roughness, decals, onReady, onError }: {
     <mesh geometry={mesh.geometry} material={mesh.material} castShadow name="library-garment">
       {decals.map((d) => {
         const y = size.y * (0.18 + d.up * 0.3);
-        const pos: [number, number, number] = d.side === "front" ? [0, y, box.max.z] : d.side === "back" ? [0, y, box.min.z] : d.side === "left" ? [box.max.x * 0.82, size.y * 0.3, 0] : [box.min.x * 0.82, size.y * 0.3, 0];
+        const dx = (d.x ?? 0) * size.x * 0.5;
+        const pos: [number, number, number] = d.side === "front" ? [dx, y, box.max.z] : d.side === "back" ? [-dx, y, box.min.z] : d.side === "left" ? [box.max.x * 0.82, size.y * 0.3, 0] : [box.min.x * 0.82, size.y * 0.3, 0];
         const rot: [number, number, number] = d.side === "front" ? [0, 0, 0] : d.side === "back" ? [0, Math.PI, 0] : d.side === "left" ? [0, Math.PI / 2, 0] : [0, -Math.PI / 2, 0];
         const depth = (d.side === "front" || d.side === "back" ? size.z : size.x) * 0.9;
         return (
-          <Decal key={d.id} position={pos} rotation={rot} scale={[d.size, d.kind === "text" ? d.size / 2 : d.size, depth]}>
+          <Decal key={d.id} position={pos} rotation={rot} scale={[d.size, d.kind === "text" ? d.size / 2 : d.size * (d.aspect ?? 1), depth]}>
             <meshStandardMaterial map={tex(d.src)} transparent polygonOffset polygonOffsetFactor={-4} roughness={0.8} depthWrite={false} />
           </Decal>
         );
@@ -132,7 +134,12 @@ async function exportGarment(root: THREE.Object3D, format: ExportFormat, meta: {
   return new Blob([zipSync(files, { level: 6 }) as unknown as ArrayBuffer], { type: "application/zip" });
 }
 
-export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence }: { url: string; name: string; heightCm: number; attribution: string; licence: string }) {
+/**
+ * `order`: the garment is being customised for a made-to-order purchase. Colour and artwork then come from the
+ * order options (a solid fabric colour, so the creator's printed texture is switched off), and the free-form
+ * colour / decal tools are hidden.
+ */
+export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence, order }: { url: string; name: string; heightCm: number; attribution: string; licence: string; order?: { tint: string; decals: DecalItem[] } }) {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const [exporting, setExporting] = useState("");
   const doExport = async (format: ExportFormat) => {
@@ -148,10 +155,11 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     } finally { setExporting(""); }
   };
-  const [tint, setTint] = useState("#FFFFFF");
-  const [useTexture, setUseTexture] = useState(true);
+  const [tintFree, setTint] = useState("#FFFFFF");
+  const [useTextureFree, setUseTexture] = useState(true);
   const [roughness, setRoughness] = useState(0.85);
-  const [decals, setDecals] = useState<DecalItem[]>([]);
+  const [decalsFree, setDecals] = useState<DecalItem[]>([]);
+  const tint = order?.tint ?? tintFree, useTexture = order ? false : useTextureFree, decals = order?.decals ?? decalsFree;
   const [side, setSide] = useState<Side>("front");
   const [text, setText] = useState("");
   const [textColor, setTextColor] = useState("#111111");
@@ -165,7 +173,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
   const patch = (id: number, p: Partial<DecalItem>) => setDecals((d) => d.map((x) => (x.id === id ? { ...x, ...p } : x)));
   const chip = "mv-chip !px-2 !py-0.5 !text-[0.68rem]";
   return (
-    <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]" data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
+    <div className={order ? "space-y-3" : "mt-4 grid gap-4 lg:grid-cols-[1fr_320px]"} data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
       <div className="relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-line">
         {error ? <p className="p-6 text-sm text-mute">{error}</p> : (
           <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
@@ -186,7 +194,8 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
           {Object.keys(VIEWS).map((v) => <button key={v} className="rounded-full px-2.5 py-1 text-[0.66rem] text-bone-2 hover:bg-surface-3" onClick={() => setView(v)} data-testid={`libview-${v}`}>{v}</button>)}
         </div>
       </div>
-      <div className="space-y-4 text-sm">
+      <div className={order ? "space-y-3 text-sm" : "space-y-4 text-sm"}>
+        {!order && <>
         <section className="mv-card p-4">
           <h2 className="text-bone">Colour</h2>
           <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Garment colour">
@@ -221,6 +230,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
             ))}
           </ul>
         </section>
+        </>}
         <button className="mv-btn mv-btn-primary w-full" data-testid="library-export" onClick={() => { const gl = glRef.current; if (!gl) return; const a = document.createElement("a"); a.href = gl.domElement.toDataURL("image/png"); a.download = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-preview.png`; a.click(); }}>Export preview (PNG)</button>
         <div className="mv-card p-4">
           <h2 className="text-bone">Download the 3D garment</h2>
@@ -232,7 +242,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
             <span className="text-[0.62rem] text-mute">GLB + your artwork files + settings + the creator credit.</span>
           </div>
         </div>
-        <p className="text-xs text-mute">Artwork is projected onto the model for preview. This garment is a visual 3D model without sewing patterns, so it can&apos;t be ordered yet; use the Men / Women ranges for made-to-order pieces.</p>
+        <p className="text-xs text-mute">{order ? "Preview: the fabric colour and artwork are shown on the creator's 3D model. The workshop cuts the style from its graded pattern in the fabric you choose." : "Artwork is projected onto the model for preview."}</p>
       </div>
     </div>
   );

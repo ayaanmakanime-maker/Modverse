@@ -54,7 +54,7 @@ export async function visibleGarments(): Promise<LibraryGarment[]> {
   return libraryIndex().filter((g) => !off.has(g.id));
 }
 
-export const COLLECTION_LABELS: Record<string, string> = { tshirts: "T-shirts & polos", shirts: "Shirts", tops: "Tops & tanks", blouses: "Blouses & tunics", knitwear: "Knitwear", sweatwear: "Hoodies & sweatwear", tailoring: "Suits & blazers", dresses: "Dresses & kimonos", jumpsuits: "Jumpsuits" };
+export { COLLECTION_LABELS } from "./garment-library-labels";
 
 /** Categories from the brief for which no free, commercially usable model could be downloaded yet. */
 export const AWAITING_ASSET = ["Bomber, varsity, denim, leather and puffer jackets", "Trench coats and overcoats", "Sports jerseys and track jackets", "Kurtas, kurtis and Nehru jackets", "Flannel, denim and Cuban-collar shirts", "Corset, bustier and peplum tops", "Boleros and shrugs"];

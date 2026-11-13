@@ -20,11 +20,13 @@ import { fitBody, type FitResult } from "@/lib/human/solve";
 import { loadGarmentFit, type GarmentFit } from "@/lib/human/fit-garment";
 import { baseNormals, clearanceColors, clearanceSummary, EASE_BANDS, garmentClearance, sizeFits, smoothClearance } from "@/lib/human/fit-map";
 import { bodyForSize } from "@/lib/garment/sizing";
+import { COLLECTION_LABELS } from "@/lib/garment-library-labels";
+import { mtoProfileFor } from "@/lib/garment/made-to-order";
 import { loadPart, loadPartsIndex, partBase, type PartInfo, type PartKind, type PartMesh, type PartsIndex } from "@/lib/human/parts";
 import { POSES, type PoseId } from "@/lib/human/pose";
 import { garmentMesh, HumanScene, type MannequinStyle, type ViewId, type WornItem } from "./HumanScene";
 
-export interface HumanStudioGarment { id: string; name: string; audience: string; collection: string; base: string; glb: string; thumbnail: string | null; attribution: string; licence: string }
+export interface HumanStudioGarment { id: string; name: string; audience: string; category: string; collection: string; base: string; glb: string; thumbnail: string | null; attribution: string; licence: string }
 
 const PROFILE_TO_MEASURE: Partial<Record<string, MeasureId>> = { height: "height", chest: "chest", waist: "waist", hip: "hip", neck: "neck", shoulder: "shoulder", armLength: "armLength", bicep: "bicep", wrist: "wrist", inseam: "inseam", thigh: "thigh", calf: "calf", torsoLength: "torsoLength" };
 type Slots = Partial<Record<PartKind, string>>;
@@ -133,7 +135,13 @@ export function HumanStudio({ garments, initialGarment }: { garments: HumanStudi
   const bySex = (p: PartInfo) => !p.sex || p.sex === sex;
   const list = (k: PartKind) => (parts?.parts ?? []).filter((p) => p.kind === k && bySex(p));
   const garment = garments.find((g) => g.id === garmentId) ?? null;
-  const shownGarments = garments.filter((g) => g.audience === audience);
+  const ownGarments = garments.filter((g) => g.audience === audience || g.audience === "unisex");
+  const [type, setType] = useState("");
+  const types = [...new Set(ownGarments.map((g) => g.category))];
+  const shownGarments = ownGarments.filter((g) => !type || g.category === type);
+  /** Trousers and skirts are worn alone (no styling trousers); dresses and jumpsuits too. */
+  const bottomsCovered = !!garment && ["trousers", "skirts", "dresses", "jumpsuits"].includes(garment.category);
+  const sizeKeys = (garment && mtoProfileFor(garment.category)?.sizeKeys) || (["chest", "waist", "hip"] as const);
 
   // load what is worn
   const [loaded, setLoaded] = useState<Record<string, PartMesh>>({});
@@ -141,9 +149,9 @@ export function HumanStudio({ garments, initialGarment }: { garments: HumanStudi
   const wanted = useMemo(() => {
     const ids: [PartKind, string][] = [];
     if (slots.shoes) ids.push(["shoes", slots.shoes]);
-    if (outfitId) ids.push(["outfits", outfitId]); else if (slots.bottoms) ids.push(["bottoms", slots.bottoms]);
+    if (outfitId) ids.push(["outfits", outfitId]); else if (slots.bottoms && !bottomsCovered) ids.push(["bottoms", slots.bottoms]);
     return ids;
-  }, [slots, outfitId]);
+  }, [slots, outfitId, bottomsCovered]);
   useEffect(() => {
     if (!parts) return;
     let live = true;
@@ -169,7 +177,7 @@ export function HumanStudio({ garments, initialGarment }: { garments: HumanStudi
   const [size, setSize] = useState<string | null>(null);
   const [fitMap, setFitMap] = useState(true);
   const yours = measured ? { chest: targets.chest ?? measured.chest, waist: targets.waist ?? measured.waist, hip: targets.hip ?? measured.hip } : null;
-  const sizing = useMemo(() => (yours ? sizeFits(audience, yours) : null), [audience, yours?.chest, yours?.waist, yours?.hip]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sizing = useMemo(() => (yours ? sizeFits(audience, yours, [...sizeKeys]) : null), [audience, yours?.chest, yours?.waist, yours?.hip, sizeKeys.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const activeSize = size ?? sizing?.recommended ?? "M";
   const userH = measured ? Math.round(measured.height) : 0;
   const sizeKey = garment && !outfitId && fitMap && userH ? `${sex}|${activeSize}|${userH}|${JSON.stringify(fixedControls)}` : "";
@@ -304,7 +312,11 @@ export function HumanStudio({ garments, initialGarment }: { garments: HumanStudi
         <h2 className="font-medium text-bone">Try on</h2>
         <div>
           <p className="mb-1 text-xs text-bone-2">Garments <span className="text-mute">(3D collection · {audience === "men" ? "men" : "women"})</span></p>
-          <div className="grid max-h-44 grid-cols-4 gap-1.5 overflow-y-auto mv-scroll" data-testid="hm-garments">
+          <div className="mb-1.5 flex flex-wrap gap-1" role="group" aria-label="Garment type">
+            <button className="mv-chip !px-2 !py-0.5 !text-[0.6rem]" data-active={!type} onClick={() => setType("")}>All</button>
+            {types.map((t) => <button key={t} className="mv-chip !px-2 !py-0.5 !text-[0.6rem]" data-active={type === t} onClick={() => setType(t)} data-testid={`hm-type-${t}`}>{COLLECTION_LABELS[t] ?? t}</button>)}
+          </div>
+          <div className="grid max-h-52 grid-cols-4 gap-1.5 overflow-y-auto mv-scroll" data-testid="hm-garments">
             <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !garmentId && !outfitId ? "border-champagne" : "border-line")} onClick={() => { setGarmentId(""); setOutfitId(""); }}>None</button>
             {shownGarments.map((g) => (
               <button key={g.id} title={g.name} onClick={() => { setGarmentId(g.id); setOutfitId(""); }} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", g.id === garmentId && !outfitId ? "border-champagne" : "border-line")} data-testid={`hm-garment-${g.id}`}>
@@ -333,7 +345,7 @@ export function HumanStudio({ garments, initialGarment }: { garments: HumanStudi
               <table className="w-full text-[0.62rem]" data-testid="hm-size-table">
                 <thead className="text-mute"><tr><th className="text-left font-normal">Size {activeSize} cut for</th><th className="font-normal">Chart</th><th className="font-normal">You</th><th className="font-normal">Room</th></tr></thead>
                 <tbody>
-                  {(["chest", "waist", "hip"] as const).map((k) => {
+                  {sizeKeys.map((k) => {
                     const d = chartRow.deltas[k];
                     return <tr key={k}><td className="text-bone-2">{k === "chest" && sex === "female" ? "Bust" : k[0].toUpperCase() + k.slice(1)}</td><td className="text-right tabular-nums">{(yours![k] + d).toFixed(0)}</td><td className="text-right tabular-nums">{yours![k].toFixed(0)}</td><td className={clsx("text-right tabular-nums", d < -2 ? "text-bad" : d < 0 ? "text-warn" : "text-ok")}>{signed(d)}</td></tr>;
                   })}

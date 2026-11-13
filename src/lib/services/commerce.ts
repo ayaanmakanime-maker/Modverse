@@ -14,6 +14,8 @@ import { designSummary } from "../garment/design";
 import { getActiveIntegration } from "../integrations/config";
 import { createProject, getProjectForUser, loadBodyForProfile, validationContext } from "./designs";
 import { sendEmail } from "../email";
+import { describeMto, mtoOptionsSchema, mtoProfileFor, mtoTechSpec, parseLibraryLine, priceMto, validateMto, type LibraryLine, type MtoOptions } from "../garment/made-to-order";
+import { visibleGarments } from "../garment-library";
 
 export const ORDER_FLOW: s.Order["status"][] = [
   "pending_payment", "payment_confirmed", "design_validation", "awaiting_production_approval", "manufacturing", "quality_inspection", "packed", "shipped", "delivered",
@@ -42,17 +44,35 @@ export async function getCart(user: SessionUser) {
     .where(eq(s.cartItems.cartId, cart.id))
     .orderBy(desc(s.cartItems.createdAt));
   const rules = await getPricingRules(db);
-  const lines = items.map(({ item, project, version }) => {
+  const designLines = items.map(({ item, project, version }) => {
     const config = designConfigSchema.parse(version.config);
     const price = priceFor(config, item.size, rules);
     return {
-      id: item.id, projectId: project.id, name: project.name, version: item.version, size: item.size, quantity: item.quantity,
+      kind: "design" as const, library: null as LibraryLine | null, thumbnail: null as string | null,
+      id: item.id, projectId: project.id as string | null, name: project.name, version: item.version, size: item.size, quantity: item.quantity,
       sizes: sizesFor(config.audience), unitPrice: price.unitPrice, unitGst: price.gst, gstRate: price.gstRate, lineTotal: (price.unitPrice + price.gst) * item.quantity,
       priceLines: price.lines, summary: designSummary(config), validationStatus: version.validationStatus, config,
       /** Price stored when the item was added — differs if pricing rules changed since. */
       priceChanged: item.unitPrice !== price.unitPrice,
     };
   });
+  // made-to-order collection garments: re-validated and re-priced on every read
+  const libRows = await db.select().from(s.cartItems).where(and(eq(s.cartItems.cartId, cart.id), eq(s.cartItems.kind, "library"))).orderBy(desc(s.cartItems.createdAt));
+  const libraryLines = libRows.flatMap((item) => {
+    const line = parseLibraryLine(item.library);
+    if (!line) return [];
+    const options = { ...line.options, size: item.size };
+    const price = priceMto(line.garment, options, rules);
+    const problems = validateMto(line.garment, options);
+    return [{
+      kind: "library" as const, library: { ...line, options }, thumbnail: line.garment.thumbnail,
+      id: item.id, projectId: null as string | null, name: line.garment.name, version: 0, size: item.size, quantity: item.quantity,
+      sizes: sizesFor(line.garment.audience === "women" ? "women" : "men"), unitPrice: price.unitPrice, unitGst: price.gst, gstRate: price.gstRate, lineTotal: (price.unitPrice + price.gst) * item.quantity,
+      priceLines: price.lines, summary: describeMto(line.garment, options), validationStatus: problems.length ? "fail" : "pass", config: null as DesignConfig | null,
+      priceChanged: item.unitPrice !== price.unitPrice,
+    }];
+  });
+  const lines = [...designLines, ...libraryLines];
   const subtotal = lines.reduce((a, l) => a + l.unitPrice * l.quantity, 0);
   let discountError: string | null = null;
   let discount: Awaited<ReturnType<typeof checkDiscount>> | null = null;
@@ -87,6 +107,41 @@ export async function addToCart(user: SessionUser, input: { projectId: string; s
   return getCart(user);
 }
 
+/** Check a made-to-order line against the live catalogue and the customer's own data (profile, uploads). */
+async function checkLibraryLine(db: Db, user: SessionUser, garmentId: string, raw: unknown): Promise<LibraryLine> {
+  const g = (await visibleGarments()).find((x) => x.id === garmentId);
+  if (!g || !mtoProfileFor(g.category)) throw notFound("Garment");
+  const parsed = mtoOptionsSchema.safeParse(raw);
+  if (!parsed.success) throw badRequest("Invalid options");
+  const options: MtoOptions = { ...parsed.data, monogram: parsed.data.monogram ? { ...parsed.data.monogram, text: parsed.data.monogram.text.trim() } : null };
+  const garment = { id: g.id, name: g.name, audience: g.audience, category: g.category, collection: g.collection, licence: g.licence, attribution: g.attribution, thumbnail: g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null };
+  const problems = validateMto(garment, options);
+  if (problems.length) throw new ApiError(400, "not_manufacturable", problems.join(" "), { problems });
+  if (options.measurementProfileId) {
+    const [mp] = await db.select({ id: s.measurementProfiles.id }).from(s.measurementProfiles).where(and(eq(s.measurementProfiles.id, options.measurementProfileId), eq(s.measurementProfiles.userId, user.id)));
+    if (!mp) throw notFound("Measurement profile");
+  }
+  for (const a of options.artwork) {
+    const [up] = await db.select({ id: s.uploadedAssets.id }).from(s.uploadedAssets).where(and(eq(s.uploadedAssets.id, a.uploadId), eq(s.uploadedAssets.userId, user.id)));
+    if (!up) throw notFound("Artwork upload");
+  }
+  return { garment, options };
+}
+
+/** Add a made-to-order 3D collection garment (validated against the manufacturing rules) to the cart. */
+export async function addLibraryToCart(user: SessionUser, input: { garmentId: string; options: unknown; quantity: number }) {
+  const db = await getDb();
+  const line = await checkLibraryLine(db, user, input.garmentId, input.options);
+  const cart = await getOrCreateCart(db, user.id);
+  const unitPrice = priceMto(line.garment, line.options, await getPricingRules(db)).unitPrice;
+  const same = (await db.select().from(s.cartItems).where(and(eq(s.cartItems.cartId, cart.id), eq(s.cartItems.kind, "library"), eq(s.cartItems.size, line.options.size))))
+    .find((r) => JSON.stringify(parseLibraryLine(r.library)) === JSON.stringify(line));
+  if (same) await db.update(s.cartItems).set({ quantity: Math.min(50, same.quantity + input.quantity), unitPrice }).where(eq(s.cartItems.id, same.id));
+  else await db.insert(s.cartItems).values({ cartId: cart.id, kind: "library", projectId: null, version: 0, library: line, size: line.options.size, quantity: input.quantity, unitPrice });
+  await db.update(s.carts).set({ updatedAt: new Date() }).where(eq(s.carts.id, cart.id));
+  return getCart(user);
+}
+
 async function ownedCartItem(db: Db, user: SessionUser, itemId: string) {
   const cart = await getOrCreateCart(db, user.id);
   const [it] = await db.select().from(s.cartItems).where(and(eq(s.cartItems.id, itemId), eq(s.cartItems.cartId, cart.id)));
@@ -97,7 +152,15 @@ async function ownedCartItem(db: Db, user: SessionUser, itemId: string) {
 export async function updateCartItem(user: SessionUser, itemId: string, input: { quantity?: number; size?: string }) {
   const db = await getDb();
   const it = await ownedCartItem(db, user, itemId);
-  const [v] = await db.select().from(s.designVersions).where(and(eq(s.designVersions.projectId, it.projectId), eq(s.designVersions.version, it.version)));
+  if (it.kind === "library") {
+    const line = parseLibraryLine(it.library);
+    if (!line) throw badRequest("This item can no longer be ordered; remove it from the cart");
+    const options = { ...line.options, size: input.size ?? it.size };
+    if (validateMto(line.garment, options).length) throw badRequest("Invalid size");
+    await db.update(s.cartItems).set({ quantity: input.quantity ?? it.quantity, size: options.size, library: { ...line, options }, unitPrice: priceMto(line.garment, options, await getPricingRules(db)).unitPrice }).where(eq(s.cartItems.id, it.id));
+    return getCart(user);
+  }
+  const [v] = await db.select().from(s.designVersions).where(and(eq(s.designVersions.projectId, it.projectId!), eq(s.designVersions.version, it.version)));
   const config = designConfigSchema.parse(v.config);
   const size = input.size ?? it.size;
   if (!sizesFor(config.audience).includes(size)) throw badRequest("Invalid size");
@@ -127,6 +190,13 @@ export async function reorder(user: SessionUser, orderId: string, itemId?: strin
   const rules = await getPricingRules(db);
   let restored = 0;
   for (const it of picked) {
+    if (it.kind === "library") {
+      const line = parseLibraryLine(it.designSnapshot);
+      if (!line) continue;
+      // re-checked against today's catalogue and rules (the garment may have been withdrawn)
+      await addLibraryToCart(user, { garmentId: line.garment.id, options: { ...line.options, size: it.size }, quantity: it.quantity });
+      continue;
+    }
     let projectId = it.projectId;
     let version = it.version;
     const exists = projectId ? (await db.select({ id: s.designVersions.id }).from(s.designVersions).innerJoin(s.designProjects, eq(s.designProjects.id, s.designVersions.projectId)).where(and(eq(s.designVersions.projectId, projectId), eq(s.designVersions.version, version), eq(s.designProjects.userId, user.id)))).length > 0 : false;
@@ -151,6 +221,7 @@ export async function redesignFromOrder(user: SessionUser, orderId: string, item
   if (order.userId !== user.id) throw notFound("Order");
   const it = items.find((i) => i.id === itemId);
   if (!it) throw notFound("Order item");
+  if (it.kind === "library") throw new ApiError(409, "made_to_order", "Made-to-order collection garments are customised again on their product page.");
   const config = designConfigSchema.parse(it.designSnapshot);
   const { project } = await createProject(user, { name: `${it.designName} — redesign`.slice(0, 80), modelId: config.modelId, audience: config.audience, config, mode: "atelier" });
   return { projectId: project.id };
@@ -178,6 +249,7 @@ export async function checkout(user: SessionUser, input: { addressId?: string; a
   // Final prices are always the server's. If they changed since the customer saw them, ask them to confirm.
   if (input.expectedTotal !== undefined && input.expectedTotal !== cart.total) throw new ApiError(409, "price_changed", `The total is now ₹${cart.total} (was ₹${input.expectedTotal}). Please review your cart before paying.`, { total: cart.total });
   if (cart.discountError) throw new ApiError(409, "invalid_discount", `${cart.discountError} — remove the code to continue.`);
+  if (cart.lines.some((l) => l.kind === "library" && l.validationStatus === "fail")) throw new ApiError(409, "not_manufacturable", "A made-to-order item no longer meets the manufacturing rules. Remove it and customise it again.");
   const rules = await getPricingRules(db);
   let address: CheckoutAddress;
   if (input.addressId) {
@@ -195,16 +267,28 @@ export async function checkout(user: SessionUser, input: { addressId?: string; a
       .values({ orderNumber: orderNumber(), userId: user.id, status: "pending_payment", subtotal: cart.subtotal, discount: cart.discount, discountCode: cart.discount ? cart.discountCode : null, gst: cart.gst, shipping: cart.shipping, total: cart.total, shippingAddress: address, paymentProvider: provider, isSimulated: provider === "simulated", notes: input.notes?.slice(0, 500) ?? null })
       .returning();
     for (const l of cart.lines) {
-      const config = { ...l.config, size: l.size };
+      if (l.kind === "library" && l.library) {
+        const { garment, options } = l.library;
+        const body = (await loadBodyForProfile(tx as unknown as Db, user.id, options.measurementProfileId)) ?? null;
+        const spec = mtoTechSpec(garment, options, { body: body as Record<string, number> | null });
+        const price = priceMto(garment, options, rules);
+        await tx.insert(s.orderItems).values({
+          orderId: o.id, kind: "library", projectId: null, version: 0, designName: garment.name, designSnapshot: { garment, options },
+          specSnapshot: { ...spec, validation: { status: "pass", counts: { errors: 0, warnings: 0 } }, price, pricingRulesVersion: rules.version, placements: options.artwork.map((a, index) => ({ index, zone: a.zone, method: a.method, widthCm: a.widthCm, heightCm: a.heightCm, reference: a.uploadId })) },
+          size: l.size, quantity: l.quantity, unitPrice: l.unitPrice,
+        });
+        continue;
+      }
+      const config = { ...l.config!, size: l.size };
       const body = await loadBodyForProfile(tx as unknown as Db, user.id, config.measurementProfileId);
-      const spec = buildTechSpec(config, { name: l.name, version: l.version, id: l.projectId }, validationContext(config, body), rules);
+      const spec = buildTechSpec(config, { name: l.name, version: l.version, id: l.projectId ?? undefined }, validationContext(config, body), rules);
       await tx.insert(s.orderItems).values({
-        orderId: o.id, projectId: l.projectId, version: l.version, designName: l.name, designSnapshot: config,
+        orderId: o.id, kind: "design", projectId: l.projectId, version: l.version, designName: l.name, designSnapshot: config,
         // Price snapshot: the itemised breakdown and the rules version that produced it.
         specSnapshot: { garment: spec.garment, fabric: spec.fabric, measurements: spec.measurements, validation: { status: spec.validation.status, counts: spec.validation.counts }, price: spec.price, pricingRulesVersion: rules.version, placements: spec.placements },
         size: l.size, quantity: l.quantity, unitPrice: l.unitPrice,
       });
-      await tx.update(s.designProjects).set({ status: "ordered", updatedAt: new Date() }).where(eq(s.designProjects.id, l.projectId));
+      await tx.update(s.designProjects).set({ status: "ordered", updatedAt: new Date() }).where(eq(s.designProjects.id, l.projectId!));
     }
     await tx.insert(s.orderEvents).values({ orderId: o.id, status: "pending_payment", note: provider === "simulated" ? "Order created — awaiting SIMULATED payment (no payment provider configured)" : "Order created — awaiting Razorpay payment", actorUserId: user.id });
     await tx.insert(s.payments).values({ orderId: o.id, provider, environment: provider === "simulated" ? "simulated" : razorpay!.environment, amount: o.total, status: "created" });

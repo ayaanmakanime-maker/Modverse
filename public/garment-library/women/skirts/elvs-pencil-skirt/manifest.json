@@ -1,0 +1,106 @@
+{
+  "id": "elvs-pencil-skirt",
+  "name": "Pencil Skirt",
+  "originalName": "elvs_pencil_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "skirt",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"pencil skirt\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-pencil-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/clothtexturevintagelv.png",
+      "original/elvs_disco_pencilskirt1.mhmat",
+      "original/elvs_disco_pencilskirt1.obj",
+      "original/elvs_pencil_skirt.mhclo",
+      "original/normals.png"
+    ],
+    "originalChecksums": [
+      {
+        "name": "normals.png",
+        "sha256": "ddc069d1b9a68981a1090e2ece082d641ae3fbaacdfe2c738e6c8d00a671cee5",
+        "bytes": 327041
+      },
+      {
+        "name": "elvs_pencil_skirt.mhclo",
+        "sha256": "69279a22cf7e98a47b5356e6dc2231256552294c1eb69f28014e77201fae4365",
+        "bytes": 147446
+      },
+      {
+        "name": "clothtexturevintagelv.png",
+        "sha256": "8841dd84c0aa24e35b783a6a9d96d223abcae534f72b106543ddd6b0d25d7c13",
+        "bytes": 306215
+      },
+      {
+        "name": "elvs_disco_pencilskirt1.obj",
+        "sha256": "796037d771caf7d6a1cb323373c3b98f8588e8774793a8dd42fa984c28bba7e1",
+        "bytes": 283824
+      },
+      {
+        "name": "elvs_disco_pencilskirt1.mhmat",
+        "sha256": "668d89b15e30a9bfe2b65e07e9f49deba29902bb7cb45273f20a8225e8bce42d",
+        "bytes": 896
+      }
+    ],
+    "glbBytes": 663916
+  },
+  "geometry": {
+    "vertices": 4636,
+    "triangles": 4552,
+    "hasUv": true,
+    "uvCoverage": 0.62,
+    "boundsCm": {
+      "width": 39.6,
+      "height": 61.7,
+      "depth": 25.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": true,
+    "baseColor": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "formal",
+    "festive",
+    "vintage",
+    "skirt",
+    "disco"
+  ],
+  "integrationStatus": "integrated"
+}

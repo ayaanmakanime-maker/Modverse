@@ -1,0 +1,99 @@
+{
+  "id": "elvs-jeans-bootcut",
+  "name": "Jeans Bootcut",
+  "originalName": "elvs_jeans_bootcut",
+  "audience": "men",
+  "category": "trousers",
+  "collection": "Jeans",
+  "description": "jeans bootcut by Elvaerwyn (MakeHuman community asset).",
+  "source": {
+    "pack": "pants02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/pants02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/pants02/pants02_ccby.zip",
+    "creator": "Elvaerwyn",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "9dbcd65e03ab100977079b6960e91c334bed92e948aeda5423f11997a133904a"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"jeans bootcut\" by Elvaerwyn, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "elvs-jeans-bootcut.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/elvs_jeans_bootcut.mhclo",
+      "original/jeanstex1.png",
+      "original/mens_elv_jeans1f.mhmat",
+      "original/mens_elv_jeans1f.obj"
+    ],
+    "originalChecksums": [
+      {
+        "name": "jeanstex1.png",
+        "sha256": "a556d0e1329f2974c4bf6cd0875515d96ca189fa7805b829daf7af4ce9744ace",
+        "bytes": 1589579
+      },
+      {
+        "name": "mens_elv_jeans1f.obj",
+        "sha256": "76a153ebee820512bd0a1f1735c67b0ac0187a1ae0ecfdef41bac92939916384",
+        "bytes": 256638
+      },
+      {
+        "name": "mens_elv_jeans1f.mhmat",
+        "sha256": "eb7603e5b092d00d23f4d76d73db182dee5db690a4c73ba8c5fcae851d76330b",
+        "bytes": 783
+      },
+      {
+        "name": "elvs_jeans_bootcut.mhclo",
+        "sha256": "2a4d59bba50b704c59f20adb00bacd021cb36b7d0ce26573b39f2323352ac8e7",
+        "bytes": 210341
+      }
+    ],
+    "glbBytes": 575488
+  },
+  "geometry": {
+    "vertices": 3977,
+    "triangles": 5708,
+    "hasUv": true,
+    "uvCoverage": 0.99,
+    "boundsCm": {
+      "width": 53.5,
+      "height": 103.5,
+      "depth": 27.5
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": false
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "pant",
+    "menswear",
+    "fashion",
+    "traditional",
+    "jeans"
+  ],
+  "integrationStatus": "integrated"
+}

@@ -495,8 +495,12 @@ export const cartItems = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     cartId: uuid("cart_id").notNull().references(() => carts.id, { onDelete: "cascade" }),
-    projectId: uuid("project_id").notNull().references(() => designProjects.id, { onDelete: "cascade" }),
+    /** "design": a customer design (project + version); "library": a made-to-order 3D collection garment. */
+    kind: text("kind", { enum: ["design", "library"] }).notNull().default("design"),
+    projectId: uuid("project_id").references(() => designProjects.id, { onDelete: "cascade" }),
     version: integer("version").notNull(),
+    /** Library lines: { garment: MtoGarmentRef, options: MtoOptions } (validated on every read). */
+    library: jsonb("library"),
     size: text("size").notNull(),
     quantity: integer("quantity").notNull(),
     unitPrice: integer("unit_price").notNull(),
@@ -542,6 +546,8 @@ export const orderItems = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+    /** "design" (designSnapshot is a DesignConfig) or "library" (designSnapshot is { garment, options }). */
+    kind: text("kind", { enum: ["design", "library"] }).notNull().default("design"),
     projectId: uuid("project_id").references(() => designProjects.id, { onDelete: "set null" }),
     version: integer("version").notNull(),
     designName: text("design_name").notNull(),

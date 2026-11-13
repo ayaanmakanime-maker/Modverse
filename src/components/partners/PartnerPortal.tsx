@@ -6,6 +6,8 @@ import clsx from "clsx";
 import { Factory, Truck } from "lucide-react";
 import { api, errorMessage } from "@/lib/client/api";
 import { DesignFlat } from "@/components/garment/DesignFlat";
+import { MtoDetails, MtoThumb } from "@/components/commerce/MtoLine";
+import { GARMENT_TYPE_LABELS, MTO_GARMENT_TYPES } from "@/lib/garment/made-to-order";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { AUDIENCES, PRINT_METHODS, type PrintMethod } from "@/lib/garment/types";
 import { PRINT_METHOD_INFO } from "@/lib/garment/fabrics";
@@ -72,7 +74,7 @@ function CapabilitiesEditor({ type, value, onChange }: { type: OrgType; value: R
     return (
       <div className="space-y-3" data-testid="caps-manufacturer">
         <Chips label="Decoration methods" options={PRINT_METHODS} value={c.methods} onChange={(methods) => set({ methods })} render={(m) => PRINT_METHOD_INFO[m as PrintMethod].name} />
-        <Chips label="Garments" options={["tshirt", "shirt"] as const} value={c.garmentTypes} onChange={(garmentTypes) => set({ garmentTypes })} render={(g) => (g === "tshirt" ? "T-shirts" : "Shirts")} />
+        <Chips label="Garments" options={MTO_GARMENT_TYPES} value={c.garmentTypes} onChange={(garmentTypes) => set({ garmentTypes })} render={(g) => GARMENT_TYPE_LABELS[g as keyof typeof GARMENT_TYPE_LABELS] ?? g} />
         <Chips label="Audiences" options={AUDIENCES} value={c.audiences} onChange={(audiences) => set({ audiences })} />
         <Chips label="Fabric construction" options={["knit", "woven"] as const} value={c.fabrics} onChange={(fabrics) => set({ fabrics })} />
         <div className="grid gap-3 sm:grid-cols-3">
@@ -239,7 +241,7 @@ function ShipmentsTable({ rows }: { rows?: ShipmentRow[] }) {
 // ── Manufacturer job ──────────────────────────────────────────────
 interface JobEvent { id: string; kind: string; payload: Record<string, unknown>; createdAt: string }
 interface Quotation { id: string; amount: number; leadTimeDays: number; breakdown: Record<string, number>; notes: string | null; status: string; reviewNote: string | null; createdAt: string }
-interface JobItem { id: string; designName: string; version: number; size: string; quantity: number; designSnapshot: DesignConfig; spec: { garment?: { model?: string; fit?: string }; fabric?: { name?: string; colourName?: string; gsm?: number }; placements: { index: number; zone: string; method: string; widthCm: number; heightCm: number; reference: string }[] } }
+interface JobItem { id: string; kind?: "design" | "library"; designName: string; version: number; size: string; quantity: number; designSnapshot: DesignConfig; spec: { garment?: { model?: string; fit?: string }; fabric?: { name?: string; colourName?: string; gsm?: number }; placements: { index: number; zone: string; method: string; widthCm: number; heightCm: number; reference: string }[] } }
 interface JobView { job: { id: string; status: string; stage: string | null; dueAt: string | null; rejectionReason: string | null; orderId: string }; order: { orderNumber: string; status: string; createdAt: string }; items: JobItem[]; quotations: Quotation[]; events: JobEvent[] }
 
 export function ManufacturerJob({ id }: { id: string }) {
@@ -278,11 +280,12 @@ export function ManufacturerJob({ id }: { id: string }) {
       <Section title="Garments to produce">
         {data.items.map((it) => (
           <div key={it.id} className="flex flex-wrap gap-4 border-t border-line pt-3 first:border-0 first:pt-0" data-testid="job-item">
-            <div className="grid w-full max-w-sm grid-cols-2 gap-2 sm:w-72"><DesignFlat config={it.designSnapshot} view="front" className="w-full" /><DesignFlat config={it.designSnapshot} view="back" className="w-full" /></div>
+            {it.kind === "library" ? <MtoThumb snapshot={it.designSnapshot} className="h-40 w-40" /> : <div className="grid w-full max-w-sm grid-cols-2 gap-2 sm:w-72"><DesignFlat config={it.designSnapshot} view="front" className="w-full" /><DesignFlat config={it.designSnapshot} view="back" className="w-full" /></div>}
             <div className="min-w-0 flex-1 space-y-1 text-sm">
-              <p>{it.designName} <span className="text-mute">· v{it.version}</span></p>
-              <p className="text-xs text-mute">{it.spec.garment?.model} · {it.spec.garment?.fit} fit · size <strong className="text-bone">{it.size}</strong> · quantity <strong className="text-bone">{it.quantity}</strong></p>
+              <p>{it.designName} <span className="text-mute">· {it.kind === "library" ? "made to order" : `v${it.version}`}</span></p>
+              {it.kind === "library" ? <><p className="text-xs text-mute">Size <strong className="text-bone">{it.size}</strong> · quantity <strong className="text-bone">{it.quantity}</strong></p><MtoDetails snapshot={it.designSnapshot} /></> : <><p className="text-xs text-mute">{it.spec.garment?.model} · {it.spec.garment?.fit} fit · size <strong className="text-bone">{it.size}</strong> · quantity <strong className="text-bone">{it.quantity}</strong></p>
               <p className="text-xs text-mute">Fabric: {it.spec.fabric?.name} · {it.spec.fabric?.colourName} · {it.spec.fabric?.gsm} GSM</p>
+              </>}
               {!!it.spec.placements.length && <ul className="text-xs">{it.spec.placements.map((p) => <li key={p.index}>#{p.index} {p.zone} · {p.method} · {p.widthCm}×{p.heightCm} cm · {p.reference}</li>)}</ul>}
               <a className="mv-chip inline-flex" href={`/api/partner/jobs/${id}/techpack?item=${it.id}`} target="_blank" rel="noopener" data-testid="job-techpack">Production tech pack (PDF)</a>
             </div>

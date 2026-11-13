@@ -1,0 +1,96 @@
+{
+  "id": "mtknife-low-mini-skirt",
+  "name": "Low Mini Skirt",
+  "originalName": "mtknife_low_mini_skirt",
+  "audience": "women",
+  "category": "skirts",
+  "collection": "Skirts",
+  "description": "low mini skirt by MTKnife (MakeHuman community asset).",
+  "source": {
+    "pack": "skirts02",
+    "pageUrl": "https://static.makehumancommunity.org/assets/assetpacks/skirts02.html",
+    "downloadUrl": "https://files.makehumancommunity.org/asset_packs/skirts02/skirts02_cc-by.zip",
+    "creator": "MTKnife",
+    "downloadedAt": "2026-11-13",
+    "archiveSha256": "20958a4669d88efc8295e2a4f5c97677f97ca47607478ee99e1a141525cff5b3"
+  },
+  "licence": {
+    "id": "CC-BY",
+    "commercialUse": true,
+    "attributionRequired": true,
+    "attribution": "\"low mini skirt\" by MTKnife, MakeHuman Community, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Converted to GLB by ModVerse.",
+    "redistribution": true
+  },
+  "files": {
+    "glb": "mtknife-low-mini-skirt.glb",
+    "thumbnail": "thumbnail.webp",
+    "original": [
+      "original/low_mini_skirt.mhmat",
+      "original/low_mini_skirt.obj",
+      "original/low_mini_skirt.png",
+      "original/mtknife_low_mini_skirt.mhclo"
+    ],
+    "originalChecksums": [
+      {
+        "name": "low_mini_skirt.obj",
+        "sha256": "f48b39103ce5db27cf1bccc3f0a77f6f0adc410a1a6bb89de61858770ecf344a",
+        "bytes": 32586
+      },
+      {
+        "name": "mtknife_low_mini_skirt.mhclo",
+        "sha256": "ba2d35b0d38c947fb4dbcbc0d5b2699ea5461efff80d6b06e928521049d6e0f4",
+        "bytes": 29089
+      },
+      {
+        "name": "low_mini_skirt.mhmat",
+        "sha256": "fa00edf435269bf5f933bd33a55b9b9510bfdba776115e351a75b1303f79e07a",
+        "bytes": 486
+      },
+      {
+        "name": "low_mini_skirt.png",
+        "sha256": "d786ebfd08b13d80780e6ecb6af64d4e9a17101ed00b7c2dad4caa95b7a9ca34",
+        "bytes": 1090145
+      }
+    ],
+    "glbBytes": 219200
+  },
+  "geometry": {
+    "vertices": 746,
+    "triangles": 864,
+    "hasUv": true,
+    "uvCoverage": 0.68,
+    "boundsCm": {
+      "width": 34.7,
+      "height": 17,
+      "depth": 21.6
+    },
+    "degenerateTriangles": 0
+  },
+  "materials": {
+    "baseColorTexture": true,
+    "normalTexture": false,
+    "baseColor": [
+      0.64,
+      0.64,
+      0.64
+    ],
+    "doubleSided": true,
+    "alpha": true
+  },
+  "rigging": "Not skinned. Ships with MakeHuman fitting data (.mhclo, base mesh hm08) that binds it to a MakeHuman body.",
+  "sewingPatterns": false,
+  "qualityLevel": "B",
+  "manufacturing": "Visual 3D garment (mesh + UV + textures). No sewing patterns or graded sizes: not manufacturing-ready.",
+  "customisation": [
+    "colour tint",
+    "fabric finish",
+    "texture swap",
+    "artwork decals (front / back / sleeves)"
+  ],
+  "sizes": "One mesh, modelled on the default MakeHuman body. Bounds above are of that mesh, not a size chart.",
+  "tags": [
+    "female",
+    "skirt"
+  ],
+  "integrationStatus": "integrated"
+}

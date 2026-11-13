@@ -100,10 +100,10 @@ export function clearanceSummary(c: Float32Array): Record<EaseBand["id"], number
 export type SizeKey = "chest" | "waist" | "hip";
 export interface SizeRowFit { size: string; deltas: Record<SizeKey, number>; worst: number }
 /** Size chart against the body: delta = size-chart body − yours (negative: the size was cut for a smaller body). */
-export function sizeFits(audience: Audience, body: Record<SizeKey, number>): { rows: SizeRowFit[]; recommended: string } {
+export function sizeFits(audience: Audience, body: Record<SizeKey, number>, keys: SizeKey[] = ["chest", "waist", "hip"]): { rows: SizeRowFit[]; recommended: string } {
   const rows = SIZE_CHARTS[audience].map((r) => {
     const deltas = { chest: r.chest - body.chest, waist: r.waist - body.waist, hip: r.hip - body.hip };
-    return { size: r.size, deltas, worst: Math.min(deltas.chest, deltas.waist, deltas.hip) };
+    return { size: r.size, deltas, worst: Math.min(...keys.map((k) => deltas[k])) };
   });
   // the smallest size cut for a body no more than 2 cm smaller than yours anywhere (the pattern carries its own ease)
   const ok = rows.find((r) => r.worst >= -2) ?? rows[rows.length - 1];
