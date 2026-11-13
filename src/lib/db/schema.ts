@@ -494,6 +494,26 @@ export const wishlistGarments = pgTable(
 );
 
 /**
+ * A customer's customisation of a shop style (a 3D collection garment), made in the design studio: the made-to-order
+ * options (fabric, colour, size, fit, alterations, trims, monogram, artwork). Worn on the Human Studio mannequin and
+ * ordered from the editor.
+ */
+export const garmentDesigns = pgTable(
+  "garment_designs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    garmentId: text("garment_id").notNull(),
+    name: text("name").notNull(),
+    mode: text("mode", { enum: ["studio", "atelier", "pro"] }).notNull().default("studio"),
+    options: jsonb("options").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("garment_designs_user_idx").on(t.userId)],
+);
+
+/**
  * A saved Human Studio fitting: the body (tape measurements as entered, cm / kg), build, what was worn (a collection
  * garment with its size, fabric and colour, or one of the customer's own designs), styling and pose. Body data is
  * stored only with the customer's explicit consent and deleted with the account.

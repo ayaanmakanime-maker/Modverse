@@ -32,11 +32,15 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   const studio = page.getByTestId("library-studio");
   await expect(studio).toHaveAttribute("data-loaded", "yes", { timeout: 120_000 });
   await expect(page.getByTestId("garment-attribution")).toContainText("MakeHuman");
+  // the product page has no customisation of its own: it opens the design studio
+  await expect(page.getByTestId("mto")).toHaveCount(0);
+  await page.getByTestId("customise-pro").click();
+  await page.waitForURL(/\/design\/garment\/new\?garment=.+&mode=pro/);
+  await expect(studio).toHaveAttribute("data-loaded", "yes", { timeout: 120_000 });
   // made to order: the stocked colour card drives the preview (the creator's texture is off)
   await page.getByTestId("mto-colour-maroon").click();
   await expect(page.getByTestId("mto")).toHaveAttribute("data-valid", "yes");
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("library-export").click()]);
-  expect(download.suggestedFilename()).toMatch(/preview\.png$/);
+  await page.getByTestId("open-export-3d").click();
   // 3D downloads of the customised garment in every format of the Export Studio
   const grab = async (id: string) => {
     const [d] = await Promise.all([page.waitForEvent("download"), page.getByTestId(id).click()]);
@@ -74,13 +78,11 @@ test("3D collection lists only downloaded, licensed garment files; a real model 
   // headless Chromium throttles a long burst of downloads from one page: continue on a fresh load
   await page.reload();
   await expect(studio).toHaveAttribute("data-loaded", "yes", { timeout: 120_000 });
+  await page.getByTestId("open-export-3d").click();
   expect((await grab("export3d-obj-print")).name).toMatch(/-obj-mm\.zip$/);
   const dxf = (await grab("export3d-dxf")).buf.toString("utf8");
   expect(dxf).toContain("AC1009");
   expect(dxf.match(/\n3DFACE\n/g)?.length ?? 0).toBeGreaterThan(1000);
-  const zip = (await grab("export-zip")).buf;
-  expect(zip.subarray(0, 2).toString("latin1")).toBe("PK");
-  for (const name of ["garment.glb", "project.json", "ATTRIBUTION.txt"]) expect(zip.includes(Buffer.from(name))).toBe(true);
   expect(errors).toEqual([]);
 });
 

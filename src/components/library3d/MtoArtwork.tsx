@@ -186,3 +186,18 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
     </section>
   );
 }
+
+/** Preview images for saved artwork: the customer's uploads, library graphics (looked up) and text (rendered). */
+export async function resolveArtPreviews(artwork: Art[]): Promise<Record<string, ArtPreview>> {
+  const out: Record<string, ArtPreview> = {};
+  const assets = artwork.filter((a) => a.assetId).map((a) => a.assetId!);
+  if (assets.length) {
+    const r = await api<{ items: LibraryItem[] }>(`/api/library?ids=${encodeURIComponent(assets.join(","))}&limit=${assets.length}`).catch(() => ({ items: [] as LibraryItem[] }));
+    for (const it of r.items) if (it.url) out[`asset:${it.id}`] = { url: it.url, aspect: it.width && it.height ? it.height / it.width : 1, name: it.name };
+  }
+  await Promise.all(artwork.map(async (a) => {
+    if (a.uploadId) out[a.uploadId] = { url: `/api/uploads/${a.uploadId}`, aspect: a.heightCm / a.widthCm, name: "Your artwork" };
+    else if (a.text) out[artKey(a)] = await renderText(a.text, a.font ?? TEXT_FONTS[0], a.color ?? "#111111");
+  }));
+  return out;
+}

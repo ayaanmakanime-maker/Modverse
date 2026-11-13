@@ -125,6 +125,7 @@ export async function deleteAccount(user: SessionUser) {
     await tx.delete(s.wishlistItems).where(eq(s.wishlistItems.userId, user.id));
     await tx.delete(s.wishlistGarments).where(eq(s.wishlistGarments.userId, user.id));
     await tx.delete(s.fittings).where(eq(s.fittings.userId, user.id));
+    await tx.delete(s.garmentDesigns).where(eq(s.garmentDesigns.userId, user.id));
     await tx.delete(s.outboxEmails).where(eq(s.outboxEmails.userId, user.id));
     await tx.update(s.designProjects).set({ deletedAt: new Date(), status: "archived" }).where(eq(s.designProjects.userId, user.id));
     await tx.delete(s.uploadedAssets).where(eq(s.uploadedAssets.userId, user.id));

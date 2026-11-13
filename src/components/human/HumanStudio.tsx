@@ -26,14 +26,16 @@ import { loadGarmentFit, type GarmentFit } from "@/lib/human/fit-garment";
 import { baseNormals, clearanceColors, clearanceSummary, EASE_BANDS, garmentClearance, sizeFits, smoothClearance } from "@/lib/human/fit-map";
 import { bodyForSize } from "@/lib/garment/sizing";
 import { COLLECTION_LABELS } from "@/lib/garment-library-labels";
-import { getMtoFabric, mtoProfileFor } from "@/lib/garment/made-to-order";
+import { getMtoFabric, mtoProfileFor, type MtoOptions } from "@/lib/garment/made-to-order";
+import { bindToBody } from "@/lib/human/design-bind";
+import { artKey, resolveArtPreviews, ZONE_ANCHOR, type ArtPreview } from "@/components/library3d/MtoArtwork";
 import { safeParseDesignConfig, type DesignConfig } from "@/lib/garment/schema";
 import { loadPart, loadPartsIndex, partBase, type PartInfo, type PartKind, type PartMesh, type PartsIndex } from "@/lib/human/parts";
 import { POSES, type PoseId } from "@/lib/human/pose";
 import { garmentMesh, HumanScene, type MannequinStyle, type ViewId, type WornItem } from "./HumanScene";
 import { useDesignWearable } from "./useDesignWearable";
 
-export interface HumanStudioGarment { id: string; name: string; audience: string; category: string; collection: string; base: string; glb: string; thumbnail: string | null; attribution: string; licence: string }
+export interface HumanStudioGarment { hasFit?: boolean; id: string; name: string; audience: string; category: string; collection: string; base: string; glb: string; thumbnail: string | null; attribution: string; licence: string }
 /** What a link can open Human Studio with (from a product page, the cart, the editor or a saved fitting). */
 export interface HumanStudioInitial { garment?: string; size?: string; fabric?: string; colour?: string; fit?: string; fitting?: string; design?: string }
 
@@ -50,6 +52,8 @@ const TONE_MUSCLE: Record<Tone, (s: Sex) => number> = { soft: () => -0.35, avera
 const DEFAULT_GARMENT: Record<Sex, string[]> = { male: ["elvs-male-shirt-untucked-bd1"], female: ["toigo-shift-dress", "elvs-simple-fashion-dress-1", "toigo-keyhole-neck-dress"] };
 interface Fitting { id: string; name: string; audience: string; measurements: Record<string, number>; build: { tone?: Tone }; garmentId: string | null; designId: string | null; size: string | null; fabricId: string | null; colourId: string | null; styling: { bottoms?: string; shoes?: string; outfit?: string }; pose: string | null }
 interface DesignRow { id: string; name: string; audience: string; garmentType: string }
+interface StyleRow { id: string; name: string; garmentId: string; garment: { name: string; audience: string; thumbnail: string | null } }
+interface StyleDesign { id: string; name: string; garmentId: string; options: MtoOptions }
 
 function Thumb({ kind, part, active, onClick }: { kind: PartKind; part: PartInfo; active: boolean; onClick: () => void }) {
   return (
@@ -163,11 +167,13 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const [profiles, setProfiles] = useState<{ id: string; name: string; audience: string; measurements: Record<string, number> }[]>([]);
   const [fittings, setFittings] = useState<Fitting[]>([]);
   const [designs, setDesigns] = useState<DesignRow[]>([]);
+  const [styles, setStyles] = useState<StyleRow[]>([]);
   useEffect(() => {
     if (!user) return;
     api<{ profiles: typeof profiles }>("/api/account/measurements").then((r) => setProfiles(r.profiles)).catch(() => undefined);
     api<{ fittings: Fitting[] }>("/api/account/fittings").then((r) => setFittings(r.fittings)).catch(() => undefined);
     api<{ designs: DesignRow[] }>("/api/designs").then((r) => setDesigns(r.designs.filter((d) => d.garmentType === "tshirt" || d.garmentType === "shirt"))).catch(() => undefined);
+    api<{ designs: StyleRow[] }>("/api/garment-designs").then((r) => setStyles(r.designs)).catch(() => undefined);
   }, [user]);
 
   /* ---------------- try on ---------------- */
@@ -176,9 +182,12 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const [outfitId, setOutfitId] = useState("");
   const [source, setSource] = useState<"shop" | "designs">(initial.design ? "designs" : "shop");
   const [design, setDesign] = useState<{ id: string; name: string; config: DesignConfig } | null>(null);
+  /** one of your customised shop styles, worn with its fabric colour and artwork */
+  const [styleDesign, setStyleDesign] = useState<StyleDesign | null>(null);
+  const [artPreviews, setArtPreviews] = useState<Record<string, ArtPreview>>({});
   const defaultGarment = (v: Sex) => { const own = garments.filter((g) => (v === "female" ? g.audience === "women" : g.audience === "men")); return (DEFAULT_GARMENT[v].map((id) => own.find((g) => g.id === id)).find(Boolean) ?? own[0])?.id ?? ""; };
   useEffect(() => { if (!start && !initial.design && !initial.fitting) setGarmentId(defaultGarment(sex)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const setSex = (v: Sex) => { setSexRaw(v); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[v]); setGarmentId(defaultGarment(v)); setDesign(null); setOutfitId(""); setSize(null); };
+  const setSex = (v: Sex) => { setSexRaw(v); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[v]); setGarmentId(defaultGarment(v)); setDesign(null); setStyleDesign(null); setOutfitId(""); setSize(null); };
   const applyMeasurements = (m: Record<string, number>) => {
     const next: Partial<Record<MeasureId, string>> = {};
     for (const [k, v] of Object.entries(m)) { const id = PROFILE_TO_MEASURE[k]; if (id && v > 0) next[id] = String(v); }
@@ -217,8 +226,26 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const colour = fabric?.colours.find((c) => c.id === colourId) ?? null;
   const tint = colour?.hex ?? "#FFFFFF";
 
+  // one of your customised shop styles: the garment in your fabric colour, size, fit and artwork
+  async function openStyleDesign(id: string, size?: string): Promise<boolean> {
+    try {
+      const r = await api<{ design: { id: string; name: string; garmentId: string; options: MtoOptions } }>(`/api/garment-designs/${id}`);
+      const d = r.design, g = garments.find((x) => x.id === d.garmentId);
+      if (!g) throw new Error("This style is no longer in the shop");
+      const s: Sex = g.audience === "women" ? "female" : g.audience === "men" ? "male" : sex;
+      if (s !== sex) { setSexRaw(s); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[s]); }
+      firstGarment.current = true;
+      setDesign(null); setOutfitId(""); setSource("designs");
+      setGarmentId(d.garmentId);
+      setFabricId(d.options.fabricId); setColourId(d.options.colourId); setMtoFit(d.options.fit); setSize(size ?? d.options.size); setFitMap(false);
+      setStyleDesign({ id: d.id, name: d.name, garmentId: d.garmentId, options: d.options });
+      resolveArtPreviews(d.options.artwork).then(setArtPreviews).catch(() => undefined);
+      return true;
+    } catch { return false; }
+  }
   // your own design (from the editor)
   async function openDesign(id: string, size?: string) {
+    setStyleDesign(null);
     try {
       const r = await api<{ design: { id: string; name: string }; version: { config: unknown } }>(`/api/designs/${id}`);
       const c = safeParseDesignConfig(r.version.config);
@@ -256,11 +283,14 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
     setGfit(null);
     if (!garment) return;
     let live = true;
-    Promise.all([loadGarmentFit(garment.base), garmentMesh(garment.glb).then((m) => m.geometry.index?.array ?? null)])
+    if (garment.hasFit === false && !asset) return;
+    // a style shipped without a .mhclo binding is bound here, to the base body it was modelled on
+    const fitFor = (m: THREE.Mesh) => (garment.hasFit === false ? Promise.resolve(bindToBody(asset!, asset!.base[garment.audience === "women" ? "female" : "male"], m.geometry.attributes.position.array as Float32Array)) : loadGarmentFit(garment.base));
+    garmentMesh(garment.glb).then((m) => Promise.all([fitFor(m), m.geometry.index?.array ?? null]))
       .then(([f, index]) => live && setGfit({ id: garment.id, fit: f, index }))
       .catch(() => toast("No fitting data for this garment", "bad"));
     return () => { live = false; };
-  }, [garment]);
+  }, [garment, garment?.hasFit === false ? asset : null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ---------------- size and fit map ---------------- */
   const [size, setSize] = useState<string | null>(initial.size ?? null);
@@ -310,10 +340,19 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
       if (!m) continue;
       out.push({ key: `${k}/${id}`, kind: k, fit: m.fit, index: m.index, uv: m.uv, textureUrl: m.textureUrl, color: m.color, alpha: m.info.alpha, twoSided: m.twoSided });
     }
-    if (garment && gfit?.id === garment.id && !outfitId) out.push({ key: `garment/${garment.id}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null, fabric: fabricFamily(garment) });
+    if (garment && gfit?.id === garment.id && !outfitId) {
+      const decals = styleDesign && styleDesign.garmentId === garment.id ? styleDesign.options.artwork.flatMap((a) => {
+        const pv = artPreviews[artKey(a)];
+        if (!pv) return [];
+        const z = ZONE_ANCHOR[a.zone];
+        return [{ url: pv.url, side: z.side, at: { x: z.x + a.offsetXCm, y: z.y - a.offsetYCm }, width: a.widthCm, height: a.heightCm, roll: a.rotation }];
+      }) : [];
+      const dk = decals.map((d) => `${d.url.length}:${d.at.x},${d.at.y},${d.width},${d.roll}`).join("|");
+      out.push({ key: `garment/${garment.id}${dk ? `/${dk}` : ""}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null, fabric: fabricFamily(garment), decals, plain: !!colour });
+    }
     if (design && wearable && !outfitId) out.push({ key: wearable.key, kind: "design", fit: wearable.binding.fit, object: { geometry: wearable.geometry, materials: wearable.materials }, colors: fitMap ? colors : null });
     return out;
-  }, [wanted, loaded, garment, gfit, design, wearable, outfitId, fitMap, colors]);
+  }, [wanted, loaded, garment, gfit, design, wearable, outfitId, fitMap, colors, styleDesign, artPreviews, colour]);
   const [ready, setReady] = useState<string[]>([]);
 
   /* ---------------- motion and view ---------------- */
@@ -337,13 +376,13 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
     setSlots({ bottoms: f.styling.bottoms, shoes: f.styling.shoes });
     setOutfitId(f.styling.outfit ?? "");
     if (f.pose && POSES.some((p) => p.id === f.pose)) setPose(f.pose as PoseId);
-    if (f.designId) void openDesign(f.designId, f.size ?? undefined);
-    else { setDesign(null); setSource("shop"); setGarmentId(f.garmentId ?? ""); firstGarment.current = true; setFabricId(f.fabricId); setColourId(f.colourId); setFitMap(!f.colourId); setSize(f.size); }
+    if (f.designId) void openStyleDesign(f.designId, f.size ?? undefined).then((ok) => { if (!ok) void openDesign(f.designId!, f.size ?? undefined); });
+    else { setDesign(null); setStyleDesign(null); setSource("shop"); setGarmentId(f.garmentId ?? ""); firstGarment.current = true; setFabricId(f.fabricId); setColourId(f.colourId); setFitMap(!f.colourId); setSize(f.size); }
   };
   useEffect(() => {
     if (!user) return;
     if (initial.fitting) api<{ fitting: Fitting }>(`/api/account/fittings/${initial.fitting}`).then((r) => applyFitting(r.fitting)).catch(() => toast("That fitting could not be opened", "bad"));
-    else if (initial.design) void openDesign(initial.design, initial.size);
+    else if (initial.design) void openStyleDesign(initial.design, initial.size).then((ok) => { if (!ok) void openDesign(initial.design!, initial.size); });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   const [saving, setSaving] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -357,8 +396,8 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
       const name = saveName.trim() || `Fitting ${new Date().toLocaleDateString()}`;
       const r = await api<{ fitting: Fitting }>("/api/account/fittings", {
         body: {
-          name, audience, measurements: targets, build: { tone }, garmentId: garment && !outfitId ? garment.id : null, designId: design && !outfitId ? design.id : null,
-          size: wearing ? activeSize : null, fabricId: garment && colour ? fabric!.id : null, colourId: garment && colour ? colour.id : null,
+          name, audience, measurements: targets, build: { tone }, garmentId: garment && !outfitId && !styleDesign ? garment.id : null, designId: !outfitId ? (design?.id ?? styleDesign?.id ?? null) : null,
+          size: wearing ? activeSize : null, fabricId: garment && colour && !styleDesign ? fabric!.id : null, colourId: garment && colour && !styleDesign ? colour.id : null,
           styling: { ...(slots.bottoms ? { bottoms: slots.bottoms } : {}), ...(slots.shoes ? { shoes: slots.shoes } : {}), ...(outfitId ? { outfit: outfitId } : {}) }, pose, consent: true,
         },
       });
@@ -382,8 +421,8 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const chartRow = sizing?.rows.find((r) => r.size === activeSize);
   const bmi = measured ? measured.weight / (measured.height / 100) ** 2 : 0;
   const cup = sex === "female" && measured ? cupLetter(targets.chest ?? measured.chest, targets.underbust ?? measured.underbust) : null;
-  const range = (g: HumanStudioGarment) => (g.audience === "women" || (g.audience === "unisex" && audience === "women") ? "women" : "men");
-  const orderHref = garment ? `/shop/${range(garment)}/${garment.id}?${new URLSearchParams({ size: activeSize, ...(colour ? { fabric: fabric!.id, colour: colour.id } : {}), ...(mtoFit ? { fit: mtoFit } : {}) })}` : design ? `/design/${design.id}` : "";
+  // into the design studio: your saved customisation, or this style with the size, fabric, colour and fit chosen here
+  const orderHref = styleDesign && garment ? `/design/garment/${styleDesign.id}` : garment ? `/design/garment/new?${new URLSearchParams({ garment: garment.id, size: activeSize, ...(colour ? { fabric: fabric!.id, colour: colour.id } : {}), ...(mtoFit ? { fit: mtoFit } : {}) })}` : design ? `/design/${design.id}` : "";
   const canvasGarment = garment && worn(`garment/${garment.id}`) ? garment.id : design && wearable && worn(wearable.key) ? `design:${design.id}` : outfitId && worn(`outfits/${outfitId}`) ? outfitId : "none";
   return (
     <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5 sm:mt-6 xl:grid-cols-[340px_minmax(0,1fr)_330px]" data-testid="human-studio">
@@ -484,9 +523,9 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
               {types.map((t) => <button key={t} className="mv-chip !px-2 !py-0.5 !text-[0.6rem]" data-active={type === t} onClick={() => setType(t)} data-testid={`hm-type-${t}`}>{COLLECTION_LABELS[t] ?? t}</button>)}
             </div>
             <div className="grid max-h-52 grid-cols-4 gap-1.5 overflow-y-auto mv-scroll" data-testid="hm-garments">
-              <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !garmentId && !design && !outfitId ? "border-champagne" : "border-line")} onClick={() => { setGarmentId(""); setDesign(null); setOutfitId(""); }}>None</button>
+              <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !garmentId && !design && !outfitId ? "border-champagne" : "border-line")} onClick={() => { setGarmentId(""); setDesign(null); setStyleDesign(null); setOutfitId(""); }}>None</button>
               {shownGarments.map((g) => (
-                <button key={g.id} title={g.name} onClick={() => { setGarmentId(g.id); setDesign(null); setOutfitId(""); }} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", g.id === garmentId && !design && !outfitId ? "border-champagne" : "border-line")} data-testid={`hm-garment-${g.id}`}>
+                <button key={g.id} title={g.name} onClick={() => { setGarmentId(g.id); setDesign(null); setStyleDesign(null); setOutfitId(""); }} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", g.id === garmentId && !design && !outfitId ? "border-champagne" : "border-line")} data-testid={`hm-garment-${g.id}`}>
                   {g.thumbnail ? <img src={g.thumbnail} alt="" className="aspect-square w-full object-contain" loading="lazy" /> : <div className="aspect-square" />}
                   <span className="line-clamp-1 text-mute">{g.name}</span>
                 </button>
@@ -495,20 +534,25 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
           </div>
         ) : (
           <div className="space-y-1.5" data-testid="hm-designs">
-            {!user ? <p className="text-xs text-mute"><Link href="/login?next=/design/human-studio" className="underline">Sign in</Link> to wear the T-shirts and shirts you designed in the editor.</p>
-              : designs.length === 0 ? <p className="text-xs text-mute">No T-shirt or shirt designs yet. <Link href="/design/new?mode=pro" className="underline">Design one</Link> and it appears here.</p>
-                : designs.map((d) => (
+            {!user ? <p className="text-xs text-mute"><Link href="/login?next=/design/human-studio" className="underline">Sign in</Link> to wear the designs you made in the studio.</p>
+              : designs.length + styles.length === 0 ? <p className="text-xs text-mute">No designs yet. <Link href="/design/new" className="underline">Design one</Link> — any style from the shop or your own T-shirt or shirt — and it appears here.</p>
+                : [...styles.map((d) => (
+                  <button key={d.id} className={clsx("flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs", styleDesign?.id === d.id ? "border-champagne" : "border-line")} onClick={() => { void openStyleDesign(d.id).then((ok) => { if (!ok) toast("This design could not be opened", "bad"); }); }} data-testid={`hm-design-${d.id}`}>
+                    {d.garment.thumbnail && <img src={d.garment.thumbnail} alt="" className="size-8 shrink-0 rounded bg-surface-2 object-contain" />}
+                    <span className="min-w-0 flex-1 truncate">{d.name}</span><span className="text-[0.6rem] text-mute">{d.garment.name}</span>
+                  </button>
+                )), ...designs.map((d) => (
                   <button key={d.id} className={clsx("flex w-full items-center justify-between rounded-lg border px-2 py-1.5 text-left text-xs", design?.id === d.id ? "border-champagne" : "border-line")} onClick={() => openDesign(d.id)} data-testid={`hm-design-${d.id}`}>
                     <span className="truncate">{d.name}</span><span className="text-[0.6rem] text-mute">{d.garmentType === "shirt" ? "Shirt" : "T-shirt"} · {d.audience}</span>
                   </button>
-                ))}
+                ))]}
           </div>
         )}
 
         {wearing && (
           <div className="space-y-2 rounded-xl border border-line p-3" data-testid="hm-fitcheck">
             <div className="flex items-center justify-between gap-2">
-              <p className="truncate text-xs font-medium text-bone">{design ? design.name : garment!.name}</p>
+              <p className="truncate text-xs font-medium text-bone" data-testid="hm-wearing">{design ? design.name : styleDesign ? `${styleDesign.name} · ${garment!.name}` : garment!.name}</p>
               <label className="flex shrink-0 items-center gap-1.5 text-[0.65rem]"><input type="checkbox" checked={fitMap} onChange={(e) => setFitMap(e.target.checked)} data-testid="hm-fitmap" /> Fit map</label>
             </div>
             <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Size">
@@ -548,7 +592,7 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              {garment && profile && <Link href={orderHref} className="mv-btn mv-btn-primary !px-3 !py-1.5 !text-xs" data-testid="hm-order"><ShoppingBag className="mr-1 inline size-3.5" />Order in size {activeSize}</Link>}
+              {garment && profile && <Link href={orderHref} className="mv-btn mv-btn-primary !px-3 !py-1.5 !text-xs" data-testid="hm-order"><ShoppingBag className="mr-1 inline size-3.5" />{styleDesign ? "Open my design to order" : `Customise & order in size ${activeSize}`}</Link>}
               {design && <Link href={orderHref} className="mv-btn mv-btn-primary !px-3 !py-1.5 !text-xs" data-testid="hm-order">Open in the editor to order</Link>}
             </div>
             <p className="text-[0.58rem] text-mute">The garment on the mannequin is the pattern fitted to you; the fit map shows where size {activeSize}, cut for the size-chart body, would sit on yours. Size charts are representative — a manufacturer&apos;s graded chart replaces them for production.</p>

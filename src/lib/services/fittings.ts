@@ -54,8 +54,10 @@ export async function createFitting(user: SessionUser, raw: z.input<typeof fitti
   const db = await getDb();
   if (input.garmentId && !(await visibleGarments()).some((g) => g.id === input.garmentId)) throw notFound("Garment");
   if (input.designId) {
+    // one of your T-shirt / shirt designs, or one of your customised shop styles
     const [p] = await db.select({ id: s.designProjects.id }).from(s.designProjects).where(and(eq(s.designProjects.id, input.designId), eq(s.designProjects.userId, user.id), isNull(s.designProjects.deletedAt)));
-    if (!p) throw notFound("Design");
+    const [g] = p ? [p] : await db.select({ id: s.garmentDesigns.id }).from(s.garmentDesigns).where(and(eq(s.garmentDesigns.id, input.designId), eq(s.garmentDesigns.userId, user.id)));
+    if (!g) throw notFound("Design");
   }
   const [{ n }] = await db.select({ n: count() }).from(s.fittings).where(eq(s.fittings.userId, user.id));
   if (n >= MAX_FITTINGS) throw badRequest(`You can keep up to ${MAX_FITTINGS} fittings — delete one first`);

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { bodyPositions, cupLetter, joints, measureBody, MEASURES, measuresFor, parseHumanAsset, type HumanMeta } from "@/lib/human/model";
 import { fitBody, fitControls, solveLinear } from "@/lib/human/solve";
 import { fitGarment, hiddenMask, parseGarmentFit } from "@/lib/human/fit-garment";
-import { bindDesign, designParts } from "@/lib/human/design-bind";
+import { bindDesign, bindToBody, designParts } from "@/lib/human/design-bind";
 import { BodyCollider, bodyTriangles } from "@/lib/human/garment-cloth";
 import { buildGarmentGeometry } from "@/lib/three/garment-geometry";
 import { createDesign } from "@/lib/garment/design";
@@ -162,4 +162,24 @@ describe("Human Studio: your own designs on the mannequin", () => {
       expect(opening, model).toBeLessThan(1);
     }
   }, 60_000);
+});
+
+describe("Human Studio: every shop style can be worn", () => {
+  it("a style without a .mhclo binding is bound in the browser and follows the body", () => {
+    const dir = "public/garment-library/women/blouses/punkduck-lace-up-blouse";
+    const glb = readFileSync(path.join(root, dir, "punkduck-lace-up-blouse.glb"));
+    const jl = glb.readUInt32LE(12); const j = JSON.parse(glb.subarray(20, 20 + jl).toString());
+    const acc = j.accessors[j.meshes[0].primitives[0].attributes.POSITION]; const bv = j.bufferViews[acc.bufferView];
+    const start = glb.byteOffset + 28 + jl + (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0);
+    const P = new Float32Array(glb.buffer.slice(start, start + acc.count * 12));
+    const fit = bindToBody(asset, asset.base.female, P);
+    const back = fitGarment(fit, asset.base.female);
+    let err = 0;
+    for (let i = 0; i < P.length; i++) err = Math.max(err, Math.abs(back[i] - P[i]));
+    expect(err).toBeLessThan(0.01);
+    // a fuller body pushes the blouse forward and back (depth), like the bound garments
+    const big = fitGarment(fit, bodyPositions(asset, { sex: "female", controls: { weight: 1, bust: 1, waist: 1 }, scale: 1 }));
+    const depth = (a: Float32Array) => { let lo = Infinity, hi = -Infinity; for (let i = 2; i < a.length; i += 3) { lo = Math.min(lo, a[i]); hi = Math.max(hi, a[i]); } return hi - lo; };
+    expect(depth(big)).toBeGreaterThan(depth(P) + 2);
+  });
 });

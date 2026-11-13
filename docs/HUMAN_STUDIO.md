@@ -59,7 +59,7 @@ Typical fit time is 0.1–3.5 s.
 
 ## Garments on the body (`src/lib/human/fit-garment.ts`)
 * The 3D collection garments are MakeHuman community clothes, made for hm08. Each `.mhclo` binds every garment vertex to three body vertices (barycentric weights) plus an offset scaled by the body's size along each axis. The build script converts that binding to the vertex order of the committed GLB (matched by exact position, 0 misses): `fit.json` + `fit.bin` per garment.
-* **119 of the 120 garments are fitted** (tops, shirts, suits, dresses, skirts, trousers, jeans and shorts). The lace-up blouse's `.mhclo` has no usable binding.
+* **All 120 garments can be worn.** 119 come with their `.mhclo` binding; the lace-up blouse has none, so Human Studio binds it in the browser (`bindToBody`: every vertex to its 8 nearest body vertices of the base body it was modelled on, Gaussian weights plus an offset — exact on that body, and it follows every other shape and pose).
 * A garment follows every change of the body: height, girths, lengths. Body faces the garment's `delete_verts` covers completely are hidden.
 * Check: a men's shirt on the male base lands within ≈ 2 cm of where its author modelled it, mostly a vertical offset of the authoring body (unit test).
 
@@ -74,6 +74,9 @@ Typical fit time is 0.1–3.5 s.
 Human Studio is a **fitting tool, not a character creator**. The body is shown as a mannequin (wireframe over a translucent shell, or a matte dress-form finish), with a neutral head and closed lids; there are no skin, face, eye or hair controls. Men and women each start on MakeHuman's "ideal proportions" (0.45 for men, 0.7 for women; women start with a cup shape of 0.3, replaced by the solved one when bust and underbust are given).
 
 On phones the mannequin comes first (62 % of the screen height), then the body panel, then try-on; the sliders are full width and the page has no horizontal scroll at 412 px.
+
+## Your customised shop styles on the mannequin
+Every style customised in the design studio is one of "My designs" in Human Studio (and `?design=<id>` opens it). It is worn in its fabric colour (the creator's printed texture is switched off, as for a solid stocked fabric), size and fit, with its artwork where the studio placed it. The artwork is a **tracked decal** (`src/lib/three/tracked-decal.ts`): projected once onto the garment at rest with the same box the studio's 3D view uses, every clipped vertex keeps the garment triangle it lies on and its barycentric weights, and in every frame it is rebuilt from the deformed garment — so it moves and stretches with the fabric on any body, in any pose and under cloth simulation. "Open my design to order" goes back to the studio; saved fittings can hold one of these designs.
 
 ## Your own designs on the mannequin (`src/lib/human/design-bind.ts`)
 Signed-in customers can wear the T-shirts and shirts they designed in the editor ("My designs", or `?design=<id>`). The editor builds these garments procedurally (`lib/three/garment-geometry`); Human Studio:

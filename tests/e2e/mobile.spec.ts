@@ -25,11 +25,15 @@ test("mobile: product page, cart, checkout, Human Studio, the Muse and the 3D ed
   await register(page, "Phone Shopper");
   // made-to-order product page: no sideways scroll, the price and Add to cart stay on screen
   await page.goto("/shop/men/elvs-male-shirt-untucked-bd1");
+  await expect(page.getByTestId("customise-studio")).toBeVisible();
+  await noHorizontalOverflow(page);
+  await page.getByTestId("customise-studio").click();
   await expect(page.getByTestId("mto")).toBeVisible();
   await noHorizontalOverflow(page);
   await expect(page.getByTestId("mto-mobile-bar")).toBeVisible();
+  await page.getByTestId("gd-tab-size").click();
   await page.getByTestId("mto-size-L").click();
-  await page.getByTestId("mto-add").click();
+  await page.getByTestId("mto-mobile-bar").getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByText("Added to your cart")).toBeVisible();
   for (const url of ["/cart", "/checkout", "/search?q=shirt", "/shop/men?cat=shirts", "/account", "/design/muse"]) {
     await page.goto(url);

@@ -322,3 +322,30 @@ export function designParts(geo: {
   ];
 }
 type Mesh = { positions: Float32Array; indices: Uint32Array };
+
+/**
+ * Binding for a garment mesh modelled on the MakeHuman body but shipped without a .mhclo binding: every vertex is
+ * tied to its 8 nearest body vertices (torso, arms and legs) with Gaussian weights plus an offset, on `ref` — the base
+ * body the creator modelled it on. The garment then follows every body shape and pose like the bound garments.
+ */
+export function bindToBody(a: HumanAsset, ref: Float32Array, positions: Float32Array): GarmentFit {
+  const allowed = new Set<number>([R.torso, R.neck, R.shoulderL, R.shoulderR, R.armL, R.armR, R.forearmL, R.forearmR, R.uplegL, R.uplegR, R.legL, R.legR]);
+  const verts: number[] = [];
+  for (let v = 0; v < a.meta.vertices; v++) if (a.isBody[v] && allowed.has(a.region[v])) verts.push(v);
+  const grid = new VertexGrid(ref, verts);
+  const n = positions.length / 3;
+  const refs = new Uint16Array(n * K), weights = new Float32Array(n * K), offsets = new Int16Array(n * 3);
+  const q = (t: number) => Math.max(-32767, Math.min(32767, Math.round(t * 1000)));
+  for (let i = 0; i < n; i++) {
+    const x = positions[i * 3], y = positions[i * 3 + 1], z = positions[i * 3 + 2];
+    const { v, d } = grid.nearest(x, y, z, K);
+    while (v.length < K) { v.push(v[0]); d.push(d[0]); }
+    const sigma = Math.max(1.6, d[0] * 0.8);
+    const w = d.map((di) => Math.exp(-((di / sigma) ** 2)));
+    const ws = w.reduce((t, x2) => t + x2, 0) || 1;
+    let bx = 0, by = 0, bz = 0;
+    for (let k = 0; k < K; k++) { refs[i * K + k] = v[k]; weights[i * K + k] = w[k] / ws; bx += ref[v[k] * 3] * weights[i * K + k]; by += ref[v[k] * 3 + 1] * weights[i * K + k]; bz += ref[v[k] * 3 + 2] * weights[i * K + k]; }
+    offsets[i * 3] = q(x - bx); offsets[i * 3 + 1] = q(y - by); offsets[i * 3 + 2] = q(z - bz);
+  }
+  return { refs, weights, weightScale: 1, offsets, scales: {}, hideBody: [], vertices: n, k: K };
+}

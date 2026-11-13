@@ -193,7 +193,11 @@ async function exportGarment(root: THREE.Object3D, format: ExportFormat, meta: {
  * order options (a solid fabric colour, so the creator's printed texture is switched off), and the free-form
  * colour / decal tools are hidden.
  */
-export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence, order }: { url: string; name: string; heightCm: number; attribution: string; licence: string; order?: { tint: string; decals: DecalItem[]; alteration?: Alteration } }) {
+/**
+ * `bare`: only the 3D view, filling its container (the design studio and product pages put their own tools around
+ * it); `onScene` receives the scene for exports.
+ */
+export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence, order, bare, onScene }: { url: string; name: string; heightCm: number; attribution: string; licence: string; order?: { tint: string; decals: DecalItem[]; alteration?: Alteration }; bare?: boolean; onScene?: (s: THREE.Scene) => void }) {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const [exporting, setExporting] = useState("");
   const doExport = async (format: ExportFormat) => {
@@ -227,10 +231,10 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
   const patch = (id: number, p: Partial<DecalItem>) => setDecals((d) => d.map((x) => (x.id === id ? { ...x, ...p } : x)));
   const chip = "mv-chip !px-2 !py-0.5 !text-[0.68rem]";
   return (
-    <div className={order ? "space-y-3" : "mt-4 grid gap-4 lg:grid-cols-[1fr_320px]"} data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
-      <div className="relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-line">
+    <div className={bare ? "h-full" : order ? "space-y-3" : "mt-4 grid gap-4 lg:grid-cols-[1fr_320px]"} data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
+      <div className={bare ? "relative h-full min-h-[240px] overflow-hidden" : "relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-line"}>
         {error ? <p className="p-6 text-sm text-mute">{error}</p> : (
-          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
+          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; onScene?.(scene); gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
             <hemisphereLight args={["#ffffff", "#3a3a3d", 0.5]} />
             <directionalLight position={[70, 130, 150]} intensity={2.2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-150} shadow-camera-right={150} shadow-camera-top={150} shadow-camera-bottom={-150} shadow-camera-far={600} />
             <directionalLight position={[-110, 60, -120]} intensity={1.4} />
@@ -248,7 +252,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
           {Object.keys(VIEWS).map((v) => <button key={v} className="rounded-full px-2.5 py-1 text-[0.66rem] text-bone-2 hover:bg-surface-3" onClick={() => setView(v)} data-testid={`libview-${v}`}>{v}</button>)}
         </div>
       </div>
-      <div className={order ? "space-y-3 text-sm" : "space-y-4 text-sm"}>
+      {!bare && <div className={order ? "space-y-3 text-sm" : "space-y-4 text-sm"}>
         {!order && <>
         <section className="mv-card p-4">
           <h2 className="text-bone">Colour</h2>
@@ -297,7 +301,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
           </div>
         </div>
         <p className="text-xs text-mute">{order ? "Preview: the fabric colour and artwork are shown on the creator's 3D model. The workshop cuts the style from its graded pattern in the fabric you choose." : "Artwork is projected onto the model for preview."}</p>
-      </div>
+      </div>}
     </div>
   );
 }

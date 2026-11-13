@@ -43,9 +43,10 @@ test("PNG uploads: a 36 MB photo is optimised in the browser, a typeless upload 
 test("made-to-order artwork: own PNG, a library graphic and text, moved and rotated, reach the cart and the order", async ({ page }) => {
   test.setTimeout(180_000);
   await register(page, "MTO Artist");
-  await page.goto("/shop/men/toigo-basic-tucked-t-shirt");
+  await page.goto("/design/garment/new?garment=toigo-basic-tucked-t-shirt&mode=atelier");
   await expect(page.getByTestId("library-studio")).toHaveAttribute("data-loaded", "yes", { timeout: 60_000 });
   const mto = page.getByTestId("mto");
+  await page.getByTestId("gd-tab-artwork").click();
   const png = await sharp({ create: { width: 800, height: 800, channels: 4, background: { r: 20, g: 60, b: 160, alpha: 1 } } }).png().toBuffer();
   await page.getByTestId("mto-art-upload").setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: png });
   await expect(page.getByTestId("mto-art-item")).toHaveCount(1, { timeout: 60_000 });
@@ -65,7 +66,9 @@ test("made-to-order artwork: own PNG, a library graphic and text, moved and rota
   await first.getByTestId("mto-art-x").fill("2");
   await expect(mto).toHaveAttribute("data-valid", "yes");
   // proportions previewed on the model
+  await page.getByTestId("gd-tab-size").click();
   await page.getByRole("button", { name: "Longer body length" }).click();
+  await page.getByTestId("gd-tab-order").click();
   await page.getByTestId("mto-add").click();
   await expect(page.getByText("Added to your cart")).toBeVisible();
   const cart = (await (await page.request.get("/api/cart")).json()).cart;

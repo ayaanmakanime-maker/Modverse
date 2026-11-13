@@ -18,36 +18,61 @@ test("made to order: shop → customise within manufacturing limits → cart →
   for (const t of ["shirts", "tailoring", "trousers", "sweatwear"]) await expect(page.getByTestId(`shop-type-${t}`)).toBeVisible();
   await page.getByTestId("shop-type-shirts").click();
   await expect(page.getByTestId("shop-garment-card").first()).toBeVisible();
+  // the product page shows the style; customising happens in the design studio
   await page.goto("/shop/men/elvs-male-shirt-untucked-bd1");
+  await expect(page.getByTestId("style-page")).toBeVisible();
+  await expect(page.getByTestId("mto")).toHaveCount(0);
+  await page.getByTestId("customise-pro").click();
+  await page.waitForURL(/\/design\/garment\/new\?garment=elvs-male-shirt-untucked-bd1&mode=pro/);
   const mto = page.getByTestId("mto");
-  await expect(mto).toBeVisible();
+  await expect(mto).toHaveAttribute("data-mode", "pro");
   await expect(page.getByTestId("library-studio")).toHaveAttribute("data-loaded", "yes", { timeout: 60_000 });
   const base = Number(await mto.getAttribute("data-price"));
 
   // Only manufacturable options: Oxford takes embroidery only, the chest placement is at most 8 × 8 cm.
   await page.getByTestId("mto-fabric-oxford-140").click();
   await page.getByTestId("mto-colour-sky").click();
+  await page.getByTestId("gd-tab-size").click();
   await page.getByTestId("mto-size-L").click();
   await page.getByTestId("mto-fit-slim").click();
   await page.getByRole("button", { name: "Longer body length" }).click();
   await page.getByRole("button", { name: "Longer body length" }).click();
   await expect(page.getByTestId("mto-length")).toHaveText("+2 cm");
+  await page.getByTestId("gd-tab-details").click();
   await page.getByTestId("mto-trim-buttons").selectOption("horn");
   await page.getByTestId("mto-monogram").check();
   await page.getByTestId("mto-monogram-text").fill("AK");
+  await page.getByTestId("gd-tab-artwork").click();
   await page.getByTestId("mto-art-upload").setInputFiles({ name: "crest.png", mimeType: "image/png", buffer: PNG });
   await expect(page.getByTestId("mto-art-item")).toHaveCount(1, { timeout: 60_000 });
   await expect(page.getByTestId("mto-art-method")).toHaveValue("embroidery");
   await expect(page.getByTestId("mto-art-method").locator("option")).toHaveCount(1);
   await expect(mto).toHaveAttribute("data-valid", "yes");
   expect(Number(await mto.getAttribute("data-price"))).toBeGreaterThan(base + 200 + 160);
-  await expect(page.getByTestId("mto-human-studio")).toHaveAttribute("href", "/design/human-studio?garment=elvs-male-shirt-untucked-bd1&size=L&fabric=oxford-140&colour=sky&fit=slim");
+  // the 2D print areas show it; undo takes the last change back and redo restores it
+  await page.getByRole("radio", { name: "Split" }).click();
+  await expect(page.getByTestId("zone-chest-left").getByTestId("zone-art")).toHaveCount(1);
+  await page.getByTestId("undo").click();
+  await expect(page.getByTestId("zone-art")).toHaveCount(0);
+  await page.getByTestId("redo").click();
+  await expect(page.getByTestId("zone-art")).toHaveCount(1);
+  // saved to the account and reopened in the studio
+  await page.getByTestId("design-name").fill("Office Oxford");
+  await page.getByTestId("gd-save").click();
+  await expect(page).toHaveURL(/\/design\/garment\/[0-9a-f-]{36}\?mode=pro/);
+  await page.goto("/account/designs");
+  await expect(page.getByTestId("style-design-row").filter({ hasText: "Office Oxford" })).toContainText("ready to order");
+  await page.getByTestId("style-design-row").filter({ hasText: "Office Oxford" }).getByRole("link").first().click();
+  await expect(page.getByTestId("mto")).toHaveAttribute("data-valid", "yes");
+  await page.getByTestId("gd-tab-size").click();
+  await expect(page.getByTestId("mto-size-L")).toHaveAttribute("aria-checked", "true");
 
   // The server applies the same rules: an out-of-range alteration is refused.
   const bad = await page.request.post("/api/cart", { headers: ORIGIN, data: { garmentId: "elvs-male-shirt-untucked-bd1", options: { fabricId: "oxford-140", colourId: "sky", size: "L", fit: "slim", lengthAdjustCm: 9, sleeveAdjustCm: 0, trims: {}, measurementProfileId: null, monogram: null, artwork: [] }, quantity: 1 } });
   expect(bad.status()).toBe(400);
   expect((await bad.json()).error.message).toMatch(/Length can be altered/);
 
+  await page.getByTestId("gd-tab-order").click();
   await page.getByTestId("mto-add").click();
   await expect(page.getByText("Added to your cart")).toBeVisible();
   await page.goto("/cart");
@@ -110,10 +135,20 @@ test("made to order: knitted pieces are graded sizes only; bottoms size by waist
   await page.goto("/shop/women?cat=skirts#shop");
   await expect(page.getByTestId("shop-garment-card").first()).toBeVisible();
   await page.getByTestId("shop-garment-card").first().click();
-  await expect(page.getByTestId("mto")).toBeVisible();
-  await expect(page.getByTestId("mto-mtm")).toBeVisible(); // skirts can be made to measure
+  await expect(page.getByTestId("style-options")).toContainText("made to measure");
+  await page.getByTestId("customise-pro").click();
+  await page.getByTestId("gd-tab-size").click();
+  await expect(page.getByTestId("mto-mtm")).toBeVisible(); // skirts can be made to measure (Atelier Pro)
+  await page.getByTestId("gd-tab-artwork").click();
   await expect(page.getByTestId("mto-artwork")).toContainText("Left hip up to 8 × 8 cm"); // skirts: a small embroidery at the hip only
-  await page.goto("/shop/men/toigo-basic-tucked-t-shirt");
+  await page.goto("/design/garment/new?garment=toigo-basic-tucked-t-shirt&mode=pro");
+  await page.getByTestId("gd-tab-size").click();
   await expect(page.getByText("Knitted garments are made in graded sizes only.")).toBeVisible();
-  await expect(page.getByTestId("mto-artwork")).toBeVisible();
+  // Design Studio keeps it simple: no fabric list, alterations or monogram
+  await page.goto("/design/garment/new?garment=elvs-male-shirt-untucked-bd1&mode=studio");
+  await expect(page.getByTestId("mto-colour-sky")).toBeVisible();
+  await expect(page.getByTestId("mto-fabric-oxford-140")).toHaveCount(0);
+  await expect(page.getByTestId("gd-tab-details")).toHaveCount(0);
+  await page.getByTestId("gd-tab-size").click();
+  await expect(page.getByTestId("mto-length")).toHaveCount(0);
 });

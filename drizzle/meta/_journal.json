@@ -99,6 +99,13 @@
       "when": 1794592448661,
       "tag": "0013_v29_fittings",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794600586216,
+      "tag": "0014_v30_garment_designs",
+      "breakpoints": true
     }
   ]
 }

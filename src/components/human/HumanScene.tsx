@@ -8,6 +8,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
+import { buildTrackedDecal, garmentProjector, placeTrackedDecal, type TrackedDecal } from "@/lib/three/tracked-decal";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { HumanAsset } from "@/lib/human/model";
 import { buildSkeleton, poseAt, skin, type PoseId } from "@/lib/human/pose";
@@ -30,6 +31,10 @@ export interface WornItem {
   fabric?: keyof typeof FABRIC_CLOTH;
   /** a design from the editor: its merged panels (one geometry group per material) */
   object?: { geometry: THREE.BufferGeometry; materials: THREE.Material[] };
+  /** a stocked fabric colour is chosen: the creator's printed texture is switched off (solid colour, as made) */
+  plain?: boolean;
+  /** artwork on a shop garment, placed as in the design studio (cm from the garment's top centre) */
+  decals?: { url: string; side: "front" | "back" | "left"; at: { x: number; y: number }; width: number; height: number; roll: number }[];
 }
 export type MannequinStyle = "wire" | "solid";
 export interface SceneLook { style: MannequinStyle; garmentTint: string }
@@ -66,7 +71,7 @@ export function garmentMesh(url: string): Promise<THREE.Mesh> {
   return p;
 }
 
-interface Worn { item: WornItem; mesh: THREE.Mesh; target: Float32Array; cloth: GarmentCloth | null; clothFor: Float32Array | null }
+interface Worn { item: WornItem; mesh: THREE.Mesh; target: Float32Array; cloth: GarmentCloth | null; clothFor: Float32Array | null; decals: { mesh: THREE.Mesh; d: TrackedDecal }[] }
 
 function materialFor(it: WornItem): THREE.Material {
   const map = it.textureUrl ? texture(it.textureUrl) : null;
@@ -123,7 +128,11 @@ function Rig(p: HumanSceneProps) {
   useEffect(() => {
     const gr = group.current!, map = worn.current;
     let live = true;
-    for (const [k, w] of map) if (!p.items.some((i) => i.key === k)) { gr.remove(w.mesh); w.mesh.geometry.dispose(); ([] as THREE.Material[]).concat(w.mesh.material).forEach((m) => m.dispose()); map.delete(k); }
+    for (const [k, w] of map) if (!p.items.some((i) => i.key === k)) {
+      gr.remove(w.mesh); w.mesh.geometry.dispose(); ([] as THREE.Material[]).concat(w.mesh.material).forEach((m) => m.dispose());
+      for (const d of w.decals) { d.mesh.geometry.dispose(); (d.mesh.material as THREE.Material).dispose(); }
+      map.delete(k);
+    }
     const report = () => { if (live) { p.onItemsReady([...map.keys()]); setReadyTick((t) => t + 1); } dirty.current = true; invalidate(); };
     for (const it of p.items) {
       if (map.has(it.key)) continue;
@@ -133,7 +142,28 @@ function Rig(p: HumanSceneProps) {
         mesh.name = it.kind === "garment" || it.kind === "design" ? "garment" : `${it.kind}-${it.key}`; mesh.castShadow = true; mesh.frustumCulled = false;
         mesh.renderOrder = 5;
         gr.add(mesh);
-        map.set(it.key, { item: it, mesh, target: new Float32Array(it.fit.vertices * 3), cloth: null, clothFor: null });
+        // artwork: projected once onto the garment at rest, then carried by its triangles in every frame
+        const decals: Worn["decals"] = [];
+        if (it.decals?.length && geo.index) {
+          const rest = geo.attributes.position.array as Float32Array;
+          geo.computeBoundingBox();
+          const b = geo.boundingBox!;
+          const box = { min: [b.min.x, b.min.y, b.min.z] as [number, number, number], max: [b.max.x, b.max.y, b.max.z] as [number, number, number] };
+          for (const a of it.decals) {
+            const d = buildTrackedDecal(rest, geo.index.array, garmentProjector(box, a.side, a.at, a.width, a.height, a.roll));
+            if (!d) continue;
+            const g = new THREE.BufferGeometry();
+            g.setAttribute("position", new THREE.BufferAttribute(placeTrackedDecal(d, rest), 3));
+            g.setAttribute("uv", new THREE.BufferAttribute(d.uv, 2));
+            g.setIndex(new THREE.BufferAttribute(d.index, 1));
+            g.computeVertexNormals();
+            const dm = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: texture(a.url), transparent: true, depthWrite: false, side: THREE.DoubleSide, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+            dm.name = "garment-artwork"; dm.frustumCulled = false; dm.renderOrder = 6;
+            mesh.add(dm);
+            decals.push({ mesh: dm, d });
+          }
+        }
+        map.set(it.key, { item: it, mesh, target: new Float32Array(it.fit.vertices * 3), cloth: null, clothFor: null, decals });
         report();
       };
       if (it.object) {
@@ -161,6 +191,7 @@ function Rig(p: HumanSceneProps) {
   // garment colour, or the fit map's vertex colours, without rebuilding meshes (a design keeps its own colours)
   const { garmentTint } = p.look;
   const garmentColors = p.items.find((i) => i.kind === "garment" || i.kind === "design")?.colors ?? null;
+  const garmentPlain = !!p.items.find((i) => i.kind === "garment")?.plain;
   const [readyTick, setReadyTick] = useState(0);
   useEffect(() => {
     for (const w of worn.current.values()) {
@@ -172,12 +203,12 @@ function Rig(p: HumanSceneProps) {
         m.userData.map ??= m.map ?? "none";
         m.userData.color ??= "#" + m.color.getHexString();
         if (on) { m.vertexColors = true; m.map = null; m.color.set("#ffffff"); }
-        else { m.vertexColors = false; m.map = m.userData.map === "none" ? null : m.userData.map; m.color.set(w.item.kind === "design" ? m.userData.color : garmentTint); }
+        else { m.vertexColors = false; m.map = m.userData.map === "none" || (w.item.kind === "garment" && garmentPlain) ? null : m.userData.map; m.color.set(w.item.kind === "design" ? m.userData.color : garmentTint); }
         m.needsUpdate = true;
       }
     }
     invalidate();
-  }, [garmentTint, garmentColors, itemKeys, readyTick, invalidate]);
+  }, [garmentTint, garmentColors, garmentPlain, itemKeys, readyTick, invalidate]);
 
   // body faces hidden under what is worn, and the helper eyes replaced by the eye part
   useEffect(() => {
@@ -247,6 +278,12 @@ function Rig(p: HumanSceneProps) {
       }
       attr.needsUpdate = true;
       w.mesh.geometry.computeVertexNormals();
+      for (const d of w.decals) {
+        const da = d.mesh.geometry.attributes.position as THREE.BufferAttribute;
+        placeTrackedDecal(d.d, out, da.array as Float32Array);
+        da.needsUpdate = true;
+        d.mesh.geometry.computeVertexNormals();
+      }
     }
     dirty.current = false;
     frames.current++;
@@ -255,6 +292,7 @@ function Rig(p: HumanSceneProps) {
       el.dataset.frames = String(frames.current);
       el.dataset.clothParticles = String(particles);
       el.dataset.pushed = String(pushed);
+      el.dataset.artwork = String([...worn.current.values()].reduce((n, w) => n + w.decals.length, 0));
       el.dataset.ms = (performance.now() - t0).toFixed(1);
     }
     if (!animated) state.invalidate();
