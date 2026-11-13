@@ -12,6 +12,7 @@ import { copySelection, hasClipboard, insertLibraryItem, insertTypography, inser
 import { searchTypography, TYPOGRAPHY_CATEGORIES, TYPOGRAPHY_PRESETS, type TypographyCategory } from "@/lib/typography/presets";
 import { useCustomFonts } from "@/lib/typography/custom-fonts";
 import { CustomFontUpload } from "./properties";
+import { uploadArtwork } from "@/lib/client/upload";
 import { CategoryBrowser, filterQuery, GraphicsSearchBox, isDarkArt, STYLE_OPTIONS } from "@/components/library/GraphicsFinder";
 import { CATEGORY_BY_ID, CATEGORY_GROUPS, GRAPHIC_CATEGORIES } from "@/lib/library/taxonomy";
 import { COLLECTIONS } from "@/lib/library/collections";
@@ -377,11 +378,9 @@ export function UploadPanel() {
   async function onFile(f: File) {
     setBusy(true);
     try {
-      const form = new FormData();
-      form.append("file", f);
-      const r = await api<{ upload: UploadRow }>("/api/uploads", { form });
-      setUploads((u) => [r.upload, ...u]);
-      place(r.upload);
+      const upload = await uploadArtwork<UploadRow>(f);
+      setUploads((u) => [upload, ...u]);
+      place(upload);
       toast("Artwork uploaded and placed");
     } catch (e) {
       toast(errorMessage(e), "bad");

@@ -37,14 +37,14 @@ type Tab = "start" | "garment" | "construction" | "measurements" | "fabric" | "f
 const TAB_META: Record<Tab, { label: string; icon: typeof Shirt }> = {
   start: { label: "Start", icon: Wand2 }, garment: { label: "Garment", icon: Shirt }, construction: { label: "Construction", icon: Scissors }, measurements: { label: "Proportions", icon: Ruler },
   fabric: { label: "Colour & fabric", icon: Palette }, fabriclab: { label: "Fabric Lab", icon: FlaskConical }, panels: { label: "Panels", icon: LayoutGrid }, library: { label: "Library", icon: ImageIcon }, text: { label: "Text", icon: Type },
-  upload: { label: "Upload & AI", icon: Upload }, layers: { label: "Layers", icon: LayersIcon }, muse: { label: "AI Muse", icon: Sparkles }, fit: { label: "Fit & avatar", icon: User },
+  upload: { label: "Upload & AI", icon: Upload }, layers: { label: "Layers", icon: LayersIcon }, muse: { label: "AI Muse", icon: Sparkles }, fit: { label: "Fit", icon: User },
   check: { label: "Check & order", icon: CheckCircle2 }, versions: { label: "Versions", icon: History }, techpack: { label: "Tech pack", icon: FileText },
 };
 
 const MODE_TABS: Record<EditorMode, Tab[]> = {
   studio: ["start", "garment", "fabric", "library", "text", "upload", "muse", "check"],
   atelier: ["garment", "construction", "fabric", "panels", "library", "text", "upload", "layers", "muse", "fit", "check", "versions"],
-  pro: ["garment", "construction", "measurements", "fabric", "fabriclab", "panels", "library", "text", "upload", "layers", "muse", "fit", "check", "versions", "techpack"],
+  pro: ["garment", "construction", "measurements", "fabric", "panels", "library", "text", "upload", "layers", "muse", "fit", "check", "versions", "techpack"],
 };
 
 const MODE_INFO: Record<EditorMode, string> = { studio: "Design Studio", atelier: "Atelier", pro: "Atelier Pro" };
@@ -411,7 +411,7 @@ function EditorLayout(p: {
               <div className="ml-auto flex flex-wrap items-center gap-1.5">
                 <Segmented size="sm" label="3D view" value={p.view3d} onChange={p.setView3d} options={[{ value: "front", label: "Front" }, { value: "back", label: "Back" }, { value: "left", label: "Side" }, { value: "three-quarter", label: "¾" }]} />
                 <Select aria-label="Lighting" value={p.lighting} onChange={(e) => p.setLighting(e.target.value as LightingPreset)} className="!w-auto !py-0.5 !text-[0.68rem]"><option value="studio">Studio light</option><option value="daylight">Daylight</option><option value="evening">Evening</option></Select>
-                {p.mode === "pro" && <label className="flex items-center gap-1 text-[0.68rem] text-bone-2"><input type="checkbox" checked={p.avatar.on} onChange={(e) => p.setAvatar({ ...p.avatar, on: e.target.checked })} data-testid="toolbar-avatar" /> Avatar</label>}
+                {p.mode === "pro" && <a href="/design/human-studio" target="_blank" rel="noopener" className="mv-chip !border-champagne !px-2 !py-0.5 !text-[0.68rem] text-champagne" data-testid="toolbar-human-studio"><User className="mr-1 inline size-3" />Human Studio</a>}
                 <button type="button" className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" onClick={() => setExportOpen(true)} data-testid="open-export-3d"><Download className="mr-1 inline size-3" />Export 3D</button>
               </div>
             )}
@@ -420,14 +420,14 @@ function EditorLayout(p: {
             {p.view !== "3d" && <div className="min-h-0 border-line md:border-r"><Canvas2D /></div>}
             {p.view !== "2d" && (
               <div className="relative min-h-0">
-                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} showAvatar={p.mode === "pro" && p.avatar.on} avatar={{ body: p.avatar.body, appearance: p.avatar.appearance }} controls="details" production={production} guides={guides3d} />
+                <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} controls="details" production={production} guides={guides3d} />
                 <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
               </div>
             )}
           </div>
         </main>
         <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export the 3D garment" wide>
-          <p className="mb-3 text-xs text-bone-2">The garment exactly as shown in 3D, with your colours, panels and artwork{p.mode === "pro" && p.avatar.on ? " (worn shape; the avatar itself is not included)" : ""}. A visual model: not a graded production pattern.</p>
+          <p className="mb-3 text-xs text-bone-2">The garment exactly as shown in 3D, with your colours, panels and artwork. A visual model: not a graded production pattern.</p>
           <Export3DPanel getRoot={() => p.viewer.current?.exportRoot()} name={p.name || model.name} />
         </Modal>
 

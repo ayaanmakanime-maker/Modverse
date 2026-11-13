@@ -2,7 +2,7 @@ export const metadata = { title: "How we label prototypes" };
 export default function Page() {
   const rows = [
     ["Size recommendations", "Measurement-based estimates comparing garment dimensions with your body. Never verified fit."],
-    ["Avatars", "Atlas and Aura are rigged parametric bodies generated from measurements (stylised heads) — not exact body scans."],
+    ["Human Studio", "The fitting mannequin is a parametric body (MakeHuman CC0 base) shaped from your measurements — not an exact body scan."],
     ["3D garments", "Parametric visualisations of construction and proportions — not physics-simulated cloth or factory patterns."],
     ["Virtual trial room", "Pose-tracked overlays (Levels A/B) and experimental occlusion (Level C). Not physically accurate clothing."],
     ["Fabric properties", "Typical industry ranges for visualisation and rules — not lab-tested values of a specific mill."],

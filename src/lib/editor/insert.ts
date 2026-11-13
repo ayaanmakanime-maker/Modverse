@@ -4,6 +4,7 @@
  * Every insertion goes through the editor store (one undo step) and the same
  * layer factories used by AI Muse, so placement is consistent everywhere.
  */
+import { uploadArtwork } from "../client/upload";
 import { useEditor } from "./store";
 import { createGraphicLayer, createImageLayer, createTextLayer, newLayerId } from "../garment/design";
 import { computeMeasurements } from "../garment/sizing";
@@ -153,11 +154,9 @@ export const ACCEPTED_ARTWORK = ["image/png", "image/jpeg", "image/webp", "image
 
 /** Upload a dropped / pasted file and place it. Throws on API errors (caller shows a toast). */
 export async function uploadAndInsert(file: File, opts: InsertOpts = {}): Promise<UploadItem> {
-  const form = new FormData();
-  form.append("file", file);
-  const r = await api<{ upload: UploadItem }>("/api/uploads", { form });
-  insertUpload(r.upload, opts);
-  return r.upload;
+  const upload = await uploadArtwork<UploadItem>(file);
+  insertUpload(upload, opts);
+  return upload;
 }
 
 export function insertPayload(p: DragPayload, opts: InsertOpts, signedIn: boolean): string[] {

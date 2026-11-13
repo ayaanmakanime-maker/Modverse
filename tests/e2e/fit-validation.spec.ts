@@ -53,14 +53,13 @@ test("scan accuracy: a tape comparison is recorded with consent, shows up in the
   expect(await csv.text()).toContain("chest_scan,chest_tape");
 });
 
-test("3D avatars are Atelier Pro only: Atelier shows a note, Atelier Pro shows the avatar studio", async ({ page }) => {
+test("Human Studio is Atelier Pro only: Atelier shows a note, Atelier Pro shows the entry in the Fit tab and the toolbar", async ({ page }) => {
   await page.goto("/design/new?model=tee-classic-crew&audience=men&mode=atelier");
   await page.getByTestId("tab-fit").click();
   await expect(page.getByTestId("avatar-pro-only")).toContainText("Atelier Pro");
-  await expect(page.getByTestId("avatar-studio")).toHaveCount(0);
-  await expect(page.getByTestId("toolbar-avatar")).toHaveCount(0);
+  await expect(page.getByTestId("open-human-studio")).toHaveCount(0);
   await page.goto("/design/new?model=tee-classic-crew&audience=men&mode=pro");
   await page.getByTestId("tab-fit").click();
-  await expect(page.getByTestId("avatar-studio")).toBeVisible();
+  await expect(page.getByTestId("open-human-studio")).toBeVisible();
   await expect(page.getByTestId("avatar-pro-only")).toHaveCount(0);
 });
