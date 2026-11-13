@@ -122,8 +122,18 @@ async function checkLibraryLine(db: Db, user: SessionUser, garmentId: string, ra
     if (!mp) throw notFound("Measurement profile");
   }
   for (const a of options.artwork) {
-    const [up] = await db.select({ id: s.uploadedAssets.id }).from(s.uploadedAssets).where(and(eq(s.uploadedAssets.id, a.uploadId), eq(s.uploadedAssets.userId, user.id)));
-    if (!up) throw notFound("Artwork upload");
+    if (a.uploadId) {
+      const [up] = await db.select({ id: s.uploadedAssets.id }).from(s.uploadedAssets).where(and(eq(s.uploadedAssets.id, a.uploadId), eq(s.uploadedAssets.userId, user.id)));
+      if (!up) throw notFound("Artwork upload");
+    } else if (a.assetId) {
+      // Creative Library graphics: active, approved, and with a licence that needs no credit line on a garment
+      const [g] = await db.select({ id: s.creativeAssets.id, sourceId: s.creativeAssets.sourceId }).from(s.creativeAssets).where(and(eq(s.creativeAssets.id, a.assetId), eq(s.creativeAssets.active, true), eq(s.creativeAssets.approval, "approved")));
+      if (!g) throw notFound("Library graphic");
+      if (g.sourceId) {
+        const [src] = await db.select({ attributionRequired: s.graphicSources.attributionRequired }).from(s.graphicSources).where(eq(s.graphicSources.id, g.sourceId));
+        if (src?.attributionRequired) throw badRequest("That graphic's licence needs a credit line, so it cannot be printed on a garment.");
+      }
+    }
   }
   return { garment, options };
 }
@@ -274,7 +284,7 @@ export async function checkout(user: SessionUser, input: { addressId?: string; a
         const price = priceMto(garment, options, rules);
         await tx.insert(s.orderItems).values({
           orderId: o.id, kind: "library", projectId: null, version: 0, designName: garment.name, designSnapshot: { garment, options },
-          specSnapshot: { ...spec, validation: { status: "pass", counts: { errors: 0, warnings: 0 } }, price, pricingRulesVersion: rules.version, placements: options.artwork.map((a, index) => ({ index, zone: a.zone, method: a.method, widthCm: a.widthCm, heightCm: a.heightCm, reference: a.uploadId })) },
+          specSnapshot: { ...spec, validation: { status: "pass", counts: { errors: 0, warnings: 0 } }, price, pricingRulesVersion: rules.version, placements: options.artwork.map((a, index) => ({ index, zone: a.zone, method: a.method, widthCm: a.widthCm, heightCm: a.heightCm, offsetXCm: a.offsetXCm, offsetYCm: a.offsetYCm, rotation: a.rotation, reference: a.uploadId ?? (a.assetId ? `library:${a.assetId}` : `text:${a.text}`) })) },
           size: l.size, quantity: l.quantity, unitPrice: l.unitPrice,
         });
         continue;

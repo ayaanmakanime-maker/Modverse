@@ -19,11 +19,17 @@ export async function renderMtoSheetPdf(spec: Spec, ctx: { orderNumber: string; 
   head("Fabric"); line("Quality", `${spec.fabric.name} - ${spec.fabric.composition}, ${spec.fabric.gsm} GSM`); line("Colour", `${spec.fabric.colour} (${spec.fabric.hex})`); line("Care label", spec.fabric.care);
   head("Size and fit");
   line("Size", spec.sizing.madeToMeasure ? "Made to measure (body measurements below)" : spec.sizing.size); line("Fit", spec.sizing.fit);
-  line("Alterations", `length ${spec.sizing.lengthAdjustCm >= 0 ? "+" : ""}${spec.sizing.lengthAdjustCm} cm, sleeves ${spec.sizing.sleeveAdjustCm >= 0 ? "+" : ""}${spec.sizing.sleeveAdjustCm} cm`);
+  line("Alterations", `length ${spec.sizing.lengthAdjustCm >= 0 ? "+" : ""}${spec.sizing.lengthAdjustCm} cm, sleeves ${spec.sizing.sleeveAdjustCm >= 0 ? "+" : ""}${spec.sizing.sleeveAdjustCm} cm, width ${spec.sizing.widthAdjustCm >= 0 ? "+" : ""}${spec.sizing.widthAdjustCm} cm`);
   if (spec.sizing.body) line("Body (cm)", Object.entries(spec.sizing.body).map(([k, v]) => `${k} ${v}`).join(", "));
   if (spec.trims.length) { head("Trims"); for (const t of spec.trims) line(t.trim, t.choice); }
   if (spec.monogram) { head("Monogram"); line("Text", `"${spec.monogram.text}" - ${spec.monogram.placement}, ${spec.monogram.thread} thread`); }
-  if (spec.artwork.length) { head("Decoration"); for (const a of spec.artwork) line(a.zone, `${a.method.toUpperCase()} ${a.widthCm} x ${a.heightCm} cm - artwork file ${a.uploadId}`); }
+  if (spec.artwork.length) {
+    head("Decoration");
+    for (const a of spec.artwork) {
+      line(a.zone, `${a.method.toUpperCase()} ${a.widthCm} x ${a.heightCm} cm, offset ${a.offsetXCm}/${a.offsetYCm} cm from the zone centre, rotated ${a.rotation} deg`);
+      line("", a.text ? `Text "${a.text}" - font ${a.font ?? "studio default"}, colour ${a.color ?? "#111111"}` : a.assetId ? `ModVerse library graphic ${a.assetId}` : `Customer artwork file ${a.uploadId}`);
+    }
+  }
   head("Lead time"); line("Working days", `${spec.leadDays[0]}-${spec.leadDays[1]} from production approval`);
   head("Checks"); for (const c of spec.checks) { page.drawText(safe(`- ${c}`), { x: 40, y, size: 9, font }); y -= 14; }
   return doc.save();

@@ -408,7 +408,7 @@ export function UploadPanel() {
         <p className="mv-eyebrow !text-[0.6rem]">Your artwork</p>
         {user ? (
           <>
-            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" className="hidden" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} data-testid="upload-input" />
+            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/heic,.svg,.heic,.png,.jpg,.jpeg,.webp" className="hidden" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} data-testid="upload-input" />
             <Button size="sm" loading={busy} onClick={() => fileRef.current?.click()}><Upload className="size-3.5" /> Upload PNG, JPG, WebP or SVG</Button>
             <p className="text-[0.65rem] text-mute">Max 12 MB. SVGs are sanitised. 200–300 DPI at print size recommended. Uploads are private to your account. You can also drop files onto the garment or paste an image (⌘V).</p>
           </>

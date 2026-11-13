@@ -112,7 +112,7 @@ test("made to order: knitted pieces are graded sizes only; bottoms size by waist
   await page.getByTestId("shop-garment-card").first().click();
   await expect(page.getByTestId("mto")).toBeVisible();
   await expect(page.getByTestId("mto-mtm")).toBeVisible(); // skirts can be made to measure
-  await expect(page.getByTestId("mto-artwork")).toHaveCount(0); // no artwork placements on skirts
+  await expect(page.getByTestId("mto-artwork")).toContainText("Left hip up to 8 × 8 cm"); // skirts: a small embroidery at the hip only
   await page.goto("/shop/men/toigo-basic-tucked-t-shirt");
   await expect(page.getByText("Knitted garments are made in graded sizes only.")).toBeVisible();
   await expect(page.getByTestId("mto-artwork")).toBeVisible();

@@ -1,7 +1,7 @@
 "use client";
 /** Shared rendering of a made-to-order collection garment line (cart, orders, admin, partner portal). */
 import clsx from "clsx";
-import { describeMto, getMtoFabric, mtoProfileFor, parseLibraryLine } from "@/lib/garment/made-to-order";
+import { artworkLabel, describeMto, getMtoFabric, mtoProfileFor, parseLibraryLine } from "@/lib/garment/made-to-order";
 
 export function MtoThumb({ snapshot, className }: { snapshot: unknown; className?: string }) {
   const line = parseLibraryLine(snapshot);
@@ -26,10 +26,10 @@ export function MtoDetails({ snapshot, compact }: { snapshot: unknown; compact?:
     <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs" data-testid="mto-details">
       <dt className="text-mute">Style</dt><dd>{garment.name} · {p?.label ?? garment.category} · {garment.audience}</dd>
       <dt className="text-mute">Fabric</dt><dd>{fabric ? `${fabric.name} · ${fabric.composition} · ${fabric.gsm} GSM · ${fabric.colours.find((c) => c.id === o.colourId)?.name ?? o.colourId}` : o.fabricId}</dd>
-      <dt className="text-mute">Size</dt><dd>{o.measurementProfileId ? "Made to measure (customer's saved measurements)" : o.size} · {o.fit} fit{o.lengthAdjustCm ? ` · length ${o.lengthAdjustCm > 0 ? "+" : ""}${o.lengthAdjustCm} cm` : ""}{o.sleeveAdjustCm ? ` · sleeves ${o.sleeveAdjustCm > 0 ? "+" : ""}${o.sleeveAdjustCm} cm` : ""}</dd>
+      <dt className="text-mute">Size</dt><dd>{o.measurementProfileId ? "Made to measure (customer's saved measurements)" : o.size} · {o.fit} fit{o.lengthAdjustCm ? ` · length ${o.lengthAdjustCm > 0 ? "+" : ""}${o.lengthAdjustCm} cm` : ""}{o.sleeveAdjustCm ? ` · sleeves ${o.sleeveAdjustCm > 0 ? "+" : ""}${o.sleeveAdjustCm} cm` : ""}{o.widthAdjustCm ? ` · width ${o.widthAdjustCm > 0 ? "+" : ""}${o.widthAdjustCm} cm` : ""}</dd>
       {!!p?.trims.length && <><dt className="text-mute">Trims</dt><dd>{p.trims.map((t) => `${t.label}: ${t.options.find((x) => x.id === o.trims[t.id])?.label ?? t.options[0].label}`).join(" · ")}</dd></>}
       {o.monogram && <><dt className="text-mute">Monogram</dt><dd>&ldquo;{o.monogram.text}&rdquo; · {o.monogram.placement} · {o.monogram.thread} thread</dd></>}
-      {!!o.artwork.length && <><dt className="text-mute">Artwork</dt><dd>{o.artwork.map((a) => `${a.zone}: ${a.method.toUpperCase()} ${a.widthCm}×${a.heightCm} cm`).join(" · ")}</dd></>}
+      {!!o.artwork.length && <><dt className="text-mute">Artwork</dt><dd><ul>{o.artwork.map((a, i) => <li key={i}>{a.zone}: {a.method.toUpperCase()} {a.widthCm}×{a.heightCm} cm{a.offsetXCm || a.offsetYCm ? `, moved ${a.offsetXCm} / ${a.offsetYCm} cm` : ""}{a.rotation ? `, rotated ${a.rotation}°` : ""} — {artworkLabel(a)}</li>)}</ul></dd></>}
       {p && <><dt className="text-mute">Lead time</dt><dd>{p.leadDays[0]}–{p.leadDays[1]} working days after approval</dd></>}
     </dl>
   );
