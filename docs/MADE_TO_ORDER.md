@@ -1,10 +1,14 @@
-# Made to order: the 3D collection in the Men and Women ranges
+# Made to order: every collection style in the Men and Women ranges
 
 The downloaded 3D collection (`public/garment-library`, 120 garments) is sold made to order. Each piece is a **fixed style** — the creator's 3D model is the visual reference — cut by the workshop from a graded pattern of that style. Customers can only choose what a made-to-order shirt / tailoring workshop actually changes on a single piece; everything else is rejected on the client and again on the server.
 
 ## Where it appears
-* `/shop/men`, `/shop/women`: "Made to order · 3D collection" with type filters (T-shirts & polos, shirts, tops, blouses, hoodies, knitwear, suits & blazers, dresses, jumpsuits, trousers / jeans / shorts, skirts). Unisex pieces appear in both ranges. The measured design-your-own tees and shirts follow below.
-* `/collection/<id>`: 3D preview (fabric colour and artwork shown on the model; the creator's printed texture is switched off because the garment is made in a solid stocked colour), the customisation panel, live itemised price, **Add to cart**, and **Find my size on the mannequin** (Human Studio with that garment).
+* `/shop/men`, `/shop/women`: one catalogue. Made-to-order styles and the design-your-own models share the grid, type chips (`?cat=`), search, price filters and sort. Unisex pieces appear in both ranges. Site search and the wishlist include them.
+* `/shop/<range>/<id>`: the style's page — 3D preview (the creator's model), price from, lead time, what can be changed, wishlist, and **Customise in Design Studio / Atelier / Atelier Pro** plus **Try it on the mannequin**. There is no separate customisation panel on this page any more.
+* **The design studio for every style** (`/design/garment/new?garment=<id>&mode=studio|atelier|pro`, saved designs at `/design/garment/<id>`): the same three modes as the T-shirt and shirt editor, a tool rail (Colour, Size & fit, Artwork, Details, Order), undo / redo, the 3D view, the print areas in 2D (drag to move, corner to resize) or both side by side. Design Studio offers colour, size, fit and artwork; Atelier adds fabric, alterations and trims; Atelier Pro adds monogram, made to measure, the full price breakdown, 3D export and Human Studio. Designs save to the account (`garment_designs`, migration 0014, `/api/garment-designs`), are listed under My designs, and add to the cart from the studio. The link can carry `size`, `fabric`, `colour` and `fit` (Human Studio's "Customise & order" uses it).
+* `/design/new` lists every shop style next to the design-your-own T-shirts and shirts.
+* `/collection` and `/collection/<id>` permanently redirect to the shop (old links keep working).
+* The cart has **Try on** on every line.
 
 ## What can be chosen (`src/lib/garment/made-to-order.ts`)
 | Option | Rule |

@@ -17,7 +17,7 @@ import type { Audience } from "./types";
 
 export type MtoCategory = "tshirts" | "shirts" | "tops" | "blouses" | "knitwear" | "sweatwear" | "tailoring" | "dresses" | "jumpsuits" | "trousers" | "skirts";
 export type MtoMethod = "dtg" | "dtf" | "screen" | "embroidery";
-export type MtoZone = "front" | "back" | "chest-left" | "sleeve-left";
+export type MtoZone = "front" | "back" | "chest-left" | "sleeve-left" | "hip-left";
 export type MtoFit = "slim" | "regular" | "relaxed";
 
 export interface MtoColour { id: string; name: string; hex: string }
@@ -40,6 +40,8 @@ export interface MtoProfile {
   length: [number, number];
   /** Sleeve length alteration (cm); null when the style has no sleeves to alter. */
   sleeve: [number, number] | null;
+  /** Girth alteration at chest / waist (cm) for cut-and-sewn woven styles; null for knits (graded only). */
+  width: [number, number] | null;
   trims: MtoTrim[];
   /** Made-to-measure from a saved measurement profile (woven garments with a cut pattern only). */
   madeToMeasure: boolean;
@@ -84,17 +86,17 @@ const KNIT_ZONES = { front: { w: 30, h: 40 }, back: { w: 30, h: 40 }, "chest-lef
 const WOVEN_CHEST = { "chest-left": { w: 8, h: 8 } };
 
 export const MTO_PROFILES: Record<MtoCategory, MtoProfile> = {
-  tshirts: T("tshirts", { label: "T-shirt / polo", basePrice: 799, leadDays: [5, 7], hsn: { men: "6109", women: "6109", unisex: "6109" }, fabrics: ["jersey-180", "jersey-240", "pique-220"], fits: ["slim", "regular", "relaxed"], length: [-4, 4], sleeve: [-2, 2], trims: [], madeToMeasure: false, monogram: null, zones: KNIT_ZONES, sizeKeys: ["chest", "waist"] }),
-  tops: T("tops", { label: "Top / tank", basePrice: 899, leadDays: [5, 8], hsn: { men: "6109", women: "6106", unisex: "6109" }, fabrics: ["jersey-180", "rib-200", "crepe-160", "georgette-90"], fits: ["slim", "regular", "relaxed"], length: [-4, 4], sleeve: null, trims: [], madeToMeasure: false, monogram: null, zones: { front: { w: 25, h: 30 }, back: { w: 25, h: 30 }, "chest-left": { w: 8, h: 8 } }, sizeKeys: ["chest", "waist"] }),
-  blouses: T("blouses", { label: "Blouse / tunic", basePrice: 1299, leadDays: [7, 10], hsn: { men: "6205", women: "6206", unisex: "6206" }, fabrics: ["poplin-110", "crepe-160", "georgette-90", "linen-150"], fits: ["slim", "regular", "relaxed"], length: [-5, 5], sleeve: [-3, 3], trims: [buttons()], madeToMeasure: true, monogram: { placements: ["Inside neck label", "Left cuff"] }, zones: WOVEN_CHEST, sizeKeys: ["chest", "waist", "hip"] }),
-  shirts: T("shirts", { label: "Shirt", basePrice: 1699, leadDays: [7, 10], hsn: { men: "6205", women: "6206", unisex: "6205" }, fabrics: ["poplin-110", "oxford-140", "linen-150"], fits: ["slim", "regular", "relaxed"], length: [-4, 4], sleeve: [-3, 3], trims: [buttons(), { id: "collar-stays", label: "Collar stays", options: [{ id: "sewn", label: "Sewn-in", surcharge: 0 }, { id: "removable", label: "Removable brass", surcharge: 90 }] }], madeToMeasure: true, monogram: { placements: ["Left cuff", "Chest (left)", "Collar band"] }, zones: { ...WOVEN_CHEST, back: { w: 25, h: 30 } }, sizeKeys: ["chest", "waist"] }),
-  knitwear: T("knitwear", { label: "Sweater / cardigan", basePrice: 1999, leadDays: [10, 14], hsn: { men: "6110", women: "6110", unisex: "6110" }, fabrics: ["cotton-knit-12gg"], fits: ["regular", "relaxed"], length: [-3, 3], sleeve: [-2, 2], trims: [], madeToMeasure: false, monogram: null, zones: { "chest-left": { w: 8, h: 8 } }, sizeKeys: ["chest", "waist"] }),
-  sweatwear: T("sweatwear", { label: "Hoodie / sweatshirt", basePrice: 1899, leadDays: [6, 9], hsn: { men: "6110", women: "6110", unisex: "6110" }, fabrics: ["fleece-320", "french-terry-280"], fits: ["regular", "relaxed"], length: [-4, 4], sleeve: [-2, 2], trims: [{ id: "drawcord", label: "Drawcord", options: [{ id: "matching", label: "Colour-matched", surcharge: 0 }, { id: "white", label: "White", surcharge: 0 }, { id: "black", label: "Black", surcharge: 0 }, { id: "none", label: "None", surcharge: 0 }] }], madeToMeasure: false, monogram: null, zones: KNIT_ZONES, sizeKeys: ["chest", "waist"] }),
-  tailoring: T("tailoring", { label: "Suit / blazer", basePrice: 8999, leadDays: [18, 25], hsn: { men: "6203", women: "6204", unisex: "6203" }, fabrics: ["tr-suiting-260", "wool-blend-280", "linen-150"], fits: ["slim", "regular"], length: [-3, 3], sleeve: [-3, 3], trims: [{ id: "buttons", label: "Buttons", options: [{ id: "corozo", label: "Corozo (colour-matched)", surcharge: 0 }, { id: "horn", label: "Horn look", surcharge: 350 }, { id: "metal", label: "Brushed metal", surcharge: 450 }] }, { id: "lining", label: "Lining", options: [{ id: "matching", label: "Colour-matched viscose", surcharge: 0 }, { id: "burgundy", label: "Burgundy paisley", surcharge: 400 }, { id: "champagne", label: "Champagne", surcharge: 400 }, { id: "half", label: "Half-lined (summer)", surcharge: 0 }] }], madeToMeasure: true, monogram: { placements: ["Inside jacket (lining)"] }, zones: {}, sizeKeys: ["chest", "waist"] }),
-  dresses: T("dresses", { label: "Dress", basePrice: 2499, leadDays: [10, 14], hsn: { men: "6204", women: "6204", unisex: "6204" }, fabrics: ["crepe-160", "georgette-90", "poplin-110", "linen-150", "jersey-180"], fits: ["slim", "regular", "relaxed"], length: [-8, 8], sleeve: [-3, 3], trims: [{ id: "lining", label: "Lining", options: [{ id: "none", label: "Unlined", surcharge: 0 }, { id: "full", label: "Fully lined (cotton voile)", surcharge: 350 }] }], madeToMeasure: true, monogram: null, zones: WOVEN_CHEST, sizeKeys: ["chest", "waist", "hip"] }),
-  jumpsuits: T("jumpsuits", { label: "Jumpsuit", basePrice: 2799, leadDays: [10, 14], hsn: { men: "6204", women: "6204", unisex: "6204" }, fabrics: ["crepe-160", "twill-260", "linen-150"], fits: ["regular", "relaxed"], length: [-6, 6], sleeve: [-3, 3], trims: [], madeToMeasure: true, monogram: null, zones: WOVEN_CHEST, sizeKeys: ["chest", "waist", "hip"] }),
-  trousers: T("trousers", { label: "Trousers", basePrice: 1899, leadDays: [8, 12], hsn: { men: "6203", women: "6204", unisex: "6203" }, fabrics: ["twill-260", "tr-suiting-260", "linen-150", "denim-12oz"], fits: ["slim", "regular", "relaxed"], length: [-6, 6], sleeve: null, trims: [{ id: "waistband", label: "Waistband", options: [{ id: "belt-loops", label: "Belt loops", surcharge: 0 }, { id: "side-adjusters", label: "Side adjusters (no belt)", surcharge: 220 }] }], madeToMeasure: true, monogram: null, zones: {}, sizeKeys: ["waist", "hip"] }),
-  skirts: T("skirts", { label: "Skirt", basePrice: 1499, leadDays: [7, 10], hsn: { men: "6204", women: "6204", unisex: "6204" }, fabrics: ["crepe-160", "twill-260", "linen-150", "denim-12oz"], fits: ["slim", "regular", "relaxed"], length: [-6, 6], sleeve: null, trims: [{ id: "lining", label: "Lining", options: [{ id: "none", label: "Unlined", surcharge: 0 }, { id: "full", label: "Lined (cotton voile)", surcharge: 250 }] }], madeToMeasure: true, monogram: null, zones: {}, sizeKeys: ["waist", "hip"] }),
+  tshirts: T("tshirts", { label: "T-shirt / polo", basePrice: 799, leadDays: [5, 7], hsn: { men: "6109", women: "6109", unisex: "6109" }, fabrics: ["jersey-180", "jersey-240", "pique-220"], fits: ["slim", "regular", "relaxed"], length: [-4, 4], sleeve: [-2, 2], width: null, trims: [], madeToMeasure: false, monogram: null, zones: KNIT_ZONES, sizeKeys: ["chest", "waist"] }),
+  tops: T("tops", { label: "Top / tank", basePrice: 899, leadDays: [5, 8], hsn: { men: "6109", women: "6106", unisex: "6109" }, fabrics: ["jersey-180", "rib-200", "crepe-160", "georgette-90"], fits: ["slim", "regular", "relaxed"], length: [-4, 4], sleeve: null, width: null, trims: [], madeToMeasure: false, monogram: null, zones: { front: { w: 25, h: 30 }, back: { w: 25, h: 30 }, "chest-left": { w: 8, h: 8 } }, sizeKeys: ["chest", "waist"] }),
+  blouses: T("blouses", { label: "Blouse / tunic", basePrice: 1299, leadDays: [7, 10], hsn: { men: "6205", women: "6206", unisex: "6206" }, fabrics: ["poplin-110", "crepe-160", "georgette-90", "linen-150"], fits: ["slim", "regular", "relaxed"], length: [-5, 5], sleeve: [-3, 3], width: [-4, 4], trims: [buttons()], madeToMeasure: true, monogram: { placements: ["Inside neck label", "Left cuff"] }, zones: WOVEN_CHEST, sizeKeys: ["chest", "waist", "hip"] }),
+  shirts: T("shirts", { label: "Shirt", basePrice: 1699, leadDays: [7, 10], hsn: { men: "6205", women: "6206", unisex: "6205" }, fabrics: ["poplin-110", "oxford-140", "linen-150"], fits: ["slim", "regular", "relaxed"], length: [-4, 4], sleeve: [-3, 3], width: [-4, 4], trims: [buttons(), { id: "collar-stays", label: "Collar stays", options: [{ id: "sewn", label: "Sewn-in", surcharge: 0 }, { id: "removable", label: "Removable brass", surcharge: 90 }] }], madeToMeasure: true, monogram: { placements: ["Left cuff", "Chest (left)", "Collar band"] }, zones: { ...WOVEN_CHEST, back: { w: 25, h: 30 } }, sizeKeys: ["chest", "waist"] }),
+  knitwear: T("knitwear", { label: "Sweater / cardigan", basePrice: 1999, leadDays: [10, 14], hsn: { men: "6110", women: "6110", unisex: "6110" }, fabrics: ["cotton-knit-12gg"], fits: ["regular", "relaxed"], length: [-3, 3], sleeve: [-2, 2], width: null, trims: [], madeToMeasure: false, monogram: null, zones: { "chest-left": { w: 8, h: 8 } }, sizeKeys: ["chest", "waist"] }),
+  sweatwear: T("sweatwear", { label: "Hoodie / sweatshirt", basePrice: 1899, leadDays: [6, 9], hsn: { men: "6110", women: "6110", unisex: "6110" }, fabrics: ["fleece-320", "french-terry-280"], fits: ["regular", "relaxed"], length: [-4, 4], sleeve: [-2, 2], width: null, trims: [{ id: "drawcord", label: "Drawcord", options: [{ id: "matching", label: "Colour-matched", surcharge: 0 }, { id: "white", label: "White", surcharge: 0 }, { id: "black", label: "Black", surcharge: 0 }, { id: "none", label: "None", surcharge: 0 }] }], madeToMeasure: false, monogram: null, zones: KNIT_ZONES, sizeKeys: ["chest", "waist"] }),
+  tailoring: T("tailoring", { label: "Suit / blazer", basePrice: 8999, leadDays: [18, 25], hsn: { men: "6203", women: "6204", unisex: "6203" }, fabrics: ["tr-suiting-260", "wool-blend-280", "linen-150"], fits: ["slim", "regular"], length: [-3, 3], sleeve: [-3, 3], width: [-4, 4], trims: [{ id: "buttons", label: "Buttons", options: [{ id: "corozo", label: "Corozo (colour-matched)", surcharge: 0 }, { id: "horn", label: "Horn look", surcharge: 350 }, { id: "metal", label: "Brushed metal", surcharge: 450 }] }, { id: "lining", label: "Lining", options: [{ id: "matching", label: "Colour-matched viscose", surcharge: 0 }, { id: "burgundy", label: "Burgundy paisley", surcharge: 400 }, { id: "champagne", label: "Champagne", surcharge: 400 }, { id: "half", label: "Half-lined (summer)", surcharge: 0 }] }], madeToMeasure: true, monogram: { placements: ["Inside jacket (lining)"] }, zones: { "chest-left": { w: 7, h: 7 } }, sizeKeys: ["chest", "waist"] }),
+  dresses: T("dresses", { label: "Dress", basePrice: 2499, leadDays: [10, 14], hsn: { men: "6204", women: "6204", unisex: "6204" }, fabrics: ["crepe-160", "georgette-90", "poplin-110", "linen-150", "jersey-180"], fits: ["slim", "regular", "relaxed"], length: [-8, 8], sleeve: [-3, 3], width: [-4, 4], trims: [{ id: "lining", label: "Lining", options: [{ id: "none", label: "Unlined", surcharge: 0 }, { id: "full", label: "Fully lined (cotton voile)", surcharge: 350 }] }], madeToMeasure: true, monogram: null, zones: WOVEN_CHEST, sizeKeys: ["chest", "waist", "hip"] }),
+  jumpsuits: T("jumpsuits", { label: "Jumpsuit", basePrice: 2799, leadDays: [10, 14], hsn: { men: "6204", women: "6204", unisex: "6204" }, fabrics: ["crepe-160", "twill-260", "linen-150"], fits: ["regular", "relaxed"], length: [-6, 6], sleeve: [-3, 3], width: [-4, 4], trims: [], madeToMeasure: true, monogram: null, zones: WOVEN_CHEST, sizeKeys: ["chest", "waist", "hip"] }),
+  trousers: T("trousers", { label: "Trousers", basePrice: 1899, leadDays: [8, 12], hsn: { men: "6203", women: "6204", unisex: "6203" }, fabrics: ["twill-260", "tr-suiting-260", "linen-150", "denim-12oz"], fits: ["slim", "regular", "relaxed"], length: [-6, 6], sleeve: null, width: [-4, 4], trims: [{ id: "waistband", label: "Waistband", options: [{ id: "belt-loops", label: "Belt loops", surcharge: 0 }, { id: "side-adjusters", label: "Side adjusters (no belt)", surcharge: 220 }] }], madeToMeasure: true, monogram: null, zones: { "hip-left": { w: 8, h: 8 } }, sizeKeys: ["waist", "hip"] }),
+  skirts: T("skirts", { label: "Skirt", basePrice: 1499, leadDays: [7, 10], hsn: { men: "6204", women: "6204", unisex: "6204" }, fabrics: ["crepe-160", "twill-260", "linen-150", "denim-12oz"], fits: ["slim", "regular", "relaxed"], length: [-6, 6], sleeve: null, width: [-4, 4], trims: [{ id: "lining", label: "Lining", options: [{ id: "none", label: "Unlined", surcharge: 0 }, { id: "full", label: "Lined (cotton voile)", surcharge: 250 }] }], madeToMeasure: true, monogram: null, zones: { "hip-left": { w: 8, h: 8 } }, sizeKeys: ["waist", "hip"] }),
 };
 
 export function mtoProfileFor(category: string): MtoProfile | null {
@@ -108,11 +110,27 @@ export const mtoOptionsSchema = z.object({
   fit: z.enum(["slim", "regular", "relaxed"]),
   lengthAdjustCm: z.number().int().min(-10).max(10).default(0),
   sleeveAdjustCm: z.number().int().min(-5).max(5).default(0),
+  widthAdjustCm: z.number().int().min(-6).max(6).default(0),
   trims: z.record(z.string().max(30), z.string().max(30)).default({}),
   /** Made-to-measure from the customer's saved measurement profile (woven styles only). */
   measurementProfileId: z.string().uuid().nullable().default(null),
   monogram: z.object({ text: z.string().max(12), placement: z.string().max(40), thread: z.enum(["white", "navy", "black", "gold", "red", "tonal"]) }).nullable().default(null),
-  artwork: z.array(z.object({ uploadId: z.string().uuid(), zone: z.enum(["front", "back", "chest-left", "sleeve-left"]), widthCm: z.number().min(2).max(40), heightCm: z.number().min(2).max(40), method: z.enum(["dtg", "dtf", "screen", "embroidery"]) })).max(2).default([]),
+  /**
+   * Artwork placements: the customer's upload, a Creative Library graphic, or text — each placed within its zone
+   * (offset from the zone centre and rotation, like the design studio's layers).
+   */
+  artwork: z.array(z.object({
+    uploadId: z.string().uuid().optional(),
+    assetId: z.string().regex(/^[A-Za-z0-9_.-]{3,128}$/).optional(),
+    text: z.string().max(40).optional(),
+    font: z.string().max(60).optional(),
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    zone: z.enum(["front", "back", "chest-left", "sleeve-left", "hip-left"]),
+    widthCm: z.number().min(2).max(40), heightCm: z.number().min(1).max(40),
+    offsetXCm: z.number().min(-20).max(20).default(0), offsetYCm: z.number().min(-20).max(20).default(0),
+    rotation: z.number().min(-180).max(180).default(0),
+    method: z.enum(["dtg", "dtf", "screen", "embroidery"]),
+  })).max(4).default([]),
 });
 export type MtoOptions = z.infer<typeof mtoOptionsSchema>;
 
@@ -126,7 +144,7 @@ export function defaultMtoOptions(g: Pick<MtoGarmentRef, "category" | "audience"
   const p = mtoProfileFor(g.category);
   if (!p) return null;
   const fabric = FABRIC.get(p.fabrics[0])!;
-  return { fabricId: fabric.id, colourId: fabric.colours[0].id, size: "M", fit: p.fits.includes("regular") ? "regular" : p.fits[0], lengthAdjustCm: 0, sleeveAdjustCm: 0, trims: Object.fromEntries(p.trims.map((t) => [t.id, t.options[0].id])), measurementProfileId: null, monogram: null, artwork: [] };
+  return { fabricId: fabric.id, colourId: fabric.colours[0].id, size: "M", fit: p.fits.includes("regular") ? "regular" : p.fits[0], lengthAdjustCm: 0, sleeveAdjustCm: 0, widthAdjustCm: 0, trims: Object.fromEntries(p.trims.map((t) => [t.id, t.options[0].id])), measurementProfileId: null, monogram: null, artwork: [] };
 }
 
 /** Every reason the options cannot be manufactured (empty when they can). */
@@ -141,6 +159,7 @@ export function validateMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: 
   if (!p.fits.includes(o.fit)) errors.push(`A ${o.fit} fit is not made for this style.`);
   if (o.lengthAdjustCm < p.length[0] || o.lengthAdjustCm > p.length[1]) errors.push(`Length can be altered by ${p.length[0]} to +${p.length[1]} cm.`);
   if (o.sleeveAdjustCm !== 0 && (!p.sleeve || o.sleeveAdjustCm < p.sleeve[0] || o.sleeveAdjustCm > p.sleeve[1])) errors.push(p.sleeve ? `Sleeves can be altered by ${p.sleeve[0]} to +${p.sleeve[1]} cm.` : "This style has no sleeve alteration.");
+  if (o.widthAdjustCm !== 0 && (!p.width || o.widthAdjustCm < p.width[0] || o.widthAdjustCm > p.width[1])) errors.push(p.width ? `Width can be altered by ${p.width[0]} to +${p.width[1]} cm.` : "Knitted styles are made in graded sizes: no width alteration.");
   for (const [id, v] of Object.entries(o.trims)) {
     const t = p.trims.find((x) => x.id === id);
     if (!t || !t.options.some((x) => x.id === v)) errors.push(`Unknown trim option (${id}).`);
@@ -159,9 +178,18 @@ export function validateMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: 
     if (!z) { errors.push(`Artwork is not placed on the ${a.zone} of this style.`); continue; }
     if (zones.has(a.zone)) errors.push(`Only one artwork per placement (${a.zone}).`);
     zones.add(a.zone);
+    const sources = [a.uploadId, a.assetId, a.text?.trim()].filter(Boolean).length;
+    if (sources !== 1) errors.push("Each placement needs exactly one artwork: an upload, a library graphic or text.");
+    if (a.text !== undefined && !/^[\p{L}\p{N} .,&'!?#@+\-]{1,40}$/u.test(a.text.trim())) errors.push("Text: 1–40 letters, numbers, spaces and simple punctuation.");
     if (a.widthCm > z.w || a.heightCm > z.h) errors.push(`Artwork on the ${a.zone} can be at most ${z.w} × ${z.h} cm.`);
+    else {
+      // the rotated artwork, moved by its offset, must stay inside the printable area
+      const r = (Math.abs(a.rotation) * Math.PI) / 180, bw = Math.abs(a.widthCm * Math.cos(r)) + Math.abs(a.heightCm * Math.sin(r)), bh = Math.abs(a.widthCm * Math.sin(r)) + Math.abs(a.heightCm * Math.cos(r));
+      if (bw + 2 * Math.abs(a.offsetXCm) > z.w + 0.01 || bh + 2 * Math.abs(a.offsetYCm) > z.h + 0.01) errors.push(`Artwork on the ${a.zone} must stay inside its ${z.w} × ${z.h} cm area — move it inwards, make it smaller or rotate it less.`);
+    }
     if (fabric && !fabric.methods.includes(a.method)) errors.push(`${fabric.name} cannot take ${a.method.toUpperCase()} (${fabric.methods.map((m) => m.toUpperCase()).join(" / ")} only).`);
     if (a.method === "embroidery" && a.widthCm * a.heightCm > 150) errors.push("Embroidery is limited to 150 cm² per placement (about 12 × 12 cm).");
+    if (a.text !== undefined && a.method === "embroidery" && a.heightCm < 1.5) errors.push("Embroidered text needs letters at least 1.5 cm tall.");
   }
   return errors;
 }
@@ -178,6 +206,7 @@ export function priceMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: Mto
   push("material", fabric.name, fabric.surcharge, `${fabric.composition}, ${fabric.gsm} GSM`);
   if (["XXL", "3XL"].includes(o.size)) push("material", "Plus size", rules.plusSizeSurcharge, o.size);
   if (o.measurementProfileId) push("construction", "Made to measure", 450, "pattern cut to your measurements");
+  else if (o.widthAdjustCm) push("construction", "Width alteration", 150, `${o.widthAdjustCm > 0 ? "+" : ""}${o.widthAdjustCm} cm`);
   for (const t of p.trims) { const opt = t.options.find((x) => x.id === o.trims[t.id]); if (opt) push("construction", `${t.label}: ${opt.label}`, opt.surcharge); }
   if (o.monogram) push("decoration", "Monogram", rules.construction.monogram, `"${o.monogram.text.trim()}" · ${o.monogram.placement}`);
   const d = rules.decoration;
@@ -209,7 +238,7 @@ export function mtoTechSpec(g: MtoGarmentRef, o: MtoOptions, ctx: { body?: Recor
     kind: "made-to-order" as const,
     style: { id: g.id, name: g.name, category: p.label, audience: g.audience, hsn: p.hsn[g.audience], reference3d: `/garment-library (${g.id})`, licence: g.licence, attribution: g.attribution },
     fabric: { id: fabric.id, name: fabric.name, composition: fabric.composition, gsm: fabric.gsm, colour: colour.name, hex: colour.hex, care: fabric.care },
-    sizing: { size: o.size, fit: o.fit, madeToMeasure: !!o.measurementProfileId, body: o.measurementProfileId ? ctx.body ?? null : null, lengthAdjustCm: o.lengthAdjustCm, sleeveAdjustCm: o.sleeveAdjustCm },
+    sizing: { size: o.size, fit: o.fit, madeToMeasure: !!o.measurementProfileId, body: o.measurementProfileId ? ctx.body ?? null : null, lengthAdjustCm: o.lengthAdjustCm, sleeveAdjustCm: o.sleeveAdjustCm, widthAdjustCm: o.widthAdjustCm },
     trims: p.trims.map((t) => ({ trim: t.label, choice: t.options.find((x) => x.id === o.trims[t.id])?.label ?? t.options[0].label })),
     monogram: o.monogram,
     artwork: o.artwork,
@@ -218,12 +247,20 @@ export function mtoTechSpec(g: MtoGarmentRef, o: MtoOptions, ctx: { body?: Recor
   };
 }
 
+/** What a placement shows (for production sheets and order views). */
+export function artworkLabel(a: MtoOptions["artwork"][number]): string {
+  if (a.text) return `Text "${a.text.trim()}"${a.font ? ` in ${a.font}` : ""}${a.color ? ` ${a.color}` : ""}`;
+  if (a.assetId) return `Library graphic ${a.assetId}`;
+  return `Customer artwork ${a.uploadId}`;
+}
+
 export function describeMto(g: Pick<MtoGarmentRef, "category">, o: MtoOptions): string {
   const fabric = FABRIC.get(o.fabricId);
   const colour = fabric?.colours.find((x) => x.id === o.colourId);
   const bits = [`${colour?.name ?? o.colourId} ${fabric?.name ?? o.fabricId}`, `${o.fit} fit`, o.measurementProfileId ? "made to measure" : `size ${o.size}`];
   if (o.lengthAdjustCm) bits.push(`length ${o.lengthAdjustCm > 0 ? "+" : ""}${o.lengthAdjustCm} cm`);
   if (o.sleeveAdjustCm) bits.push(`sleeves ${o.sleeveAdjustCm > 0 ? "+" : ""}${o.sleeveAdjustCm} cm`);
+  if (o.widthAdjustCm) bits.push(`width ${o.widthAdjustCm > 0 ? "+" : ""}${o.widthAdjustCm} cm`);
   if (o.monogram) bits.push(`monogram "${o.monogram.text.trim()}"`);
   if (o.artwork.length) bits.push(`${o.artwork.length} artwork placement${o.artwork.length > 1 ? "s" : ""}`);
   void g;

@@ -37,7 +37,7 @@ export const LIMITS = {
   register: { limit: 6, windowMs: 60 * 60_000 },
   passwordReset: { limit: 5, windowMs: 60 * 60_000 },
   muse: { limit: 60, windowMs: 60_000 },
-  upload: { limit: 40, windowMs: 60 * 60_000 },
+  upload: { limit: 150, windowMs: 60 * 60_000 },
   write: { limit: 240, windowMs: 60_000 },
   techpack: { limit: 30, windowMs: 60_000 },
   integrationTest: { limit: 20, windowMs: 60 * 60_000 },

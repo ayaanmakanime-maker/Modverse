@@ -31,12 +31,12 @@ describe("made-to-order rules", () => {
     expect(validateMto(shirt, opts(shirt, { lengthAdjustCm: 8 }))[0]).toMatch(/Length can be altered/);
     expect(validateMto(tee, opts(tee, { measurementProfileId: "00000000-0000-4000-8000-000000000000" }))[0]).toMatch(/graded sizes only/);
     // DTG needs a cotton knit: not on poplin; linen takes embroidery only
-    const art = (method: "dtg" | "embroidery", zone: "back" | "chest-left" = "back", w = 20, h = 20) => [{ uploadId: "00000000-0000-4000-8000-000000000001", zone, widthCm: w, heightCm: h, method }];
+    const art = (method: "dtg" | "embroidery", zone: "back" | "chest-left" = "back", w = 20, h = 20) => [{ uploadId: "00000000-0000-4000-8000-000000000001", zone, widthCm: w, heightCm: h, method, offsetXCm: 0, offsetYCm: 0, rotation: 0 }];
     expect(validateMto(shirt, opts(shirt, { artwork: art("dtg") })).join(" ")).toMatch(/cannot take DTG/);
     expect(validateMto(shirt, opts(shirt, { fabricId: "linen-150", colourId: "white", artwork: art("embroidery", "chest-left", 8, 8) }))).toEqual([]);
     expect(validateMto(tee, opts(tee, { artwork: art("embroidery", "chest-left", 12, 12) })).join(" ")).toMatch(/at most 10 × 10/);
     expect(validateMto(tee, opts(tee, { artwork: art("dtg", "back", 30, 40) }))).toEqual([]);
-    expect(validateMto(suit, opts(suit, { artwork: art("embroidery", "chest-left", 5, 5) })).join(" ")).toMatch(/not placed/);
+    expect(validateMto(suit, opts(suit, { artwork: art("embroidery", "back", 5, 5) })).join(" ")).toMatch(/not placed/);
     expect(validateMto(shirt, opts(shirt, { monogram: { text: "AMK", placement: "Left cuff", thread: "navy" } }))).toEqual([]);
     expect(validateMto(shirt, opts(shirt, { monogram: { text: "<script>", placement: "Left cuff", thread: "navy" } }))[0]).toMatch(/Monogram/);
     expect(validateMto({ category: "socks", audience: "men" }, opts(shirt))[0]).toMatch(/not available/);
@@ -49,9 +49,28 @@ describe("made-to-order rules", () => {
     const rich = priceMto(shirt, opts(shirt, { fabricId: "linen-150", colourId: "white", size: "XXL", trims: { buttons: "horn", "collar-stays": "removable" }, measurementProfileId: "00000000-0000-4000-8000-000000000000", monogram: { text: "AK", placement: "Left cuff", thread: "gold" } }));
     expect(rich.unitPrice).toBe(1699 + 650 + DEFAULT_PRICING.plusSizeSurcharge + 450 + 160 + 90 + DEFAULT_PRICING.construction.monogram);
     expect(rich.gstRate).toBe(DEFAULT_PRICING.tax.gstHighRate); // above the threshold
-    const printed = priceMto(tee, opts(tee, { artwork: [{ uploadId: "00000000-0000-4000-8000-000000000001", zone: "front", widthCm: 25, heightCm: 30, method: "dtg" }] }));
+    const printed = priceMto(tee, opts(tee, { artwork: [{ uploadId: "00000000-0000-4000-8000-000000000001", zone: "front", widthCm: 25, heightCm: 30, method: "dtg", offsetXCm: 0, offsetYCm: 0, rotation: 0 }] }));
     expect(printed.categories.decoration).toBeGreaterThan(DEFAULT_PRICING.decoration.minimum.dtg - 1);
     expect(printed.lines.find((l) => l.category === "decoration")!.detail).toBe("25 × 30 cm");
+  });
+
+  it("places uploads, library graphics and text inside the printable area, rotated or moved", () => {
+    const bare = { zone: "front" as const, widthCm: 20, heightCm: 20, method: "dtg" as const, offsetXCm: 0, offsetYCm: 0, rotation: 0 };
+    const a = { ...bare, uploadId: "00000000-0000-4000-8000-000000000001" };
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...bare, assetId: "MVG_lotus-01" }] }))).toEqual([]);
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...bare, text: "CHAI & CO", font: "Inter", color: "#111111", heightCm: 6 }] }))).toEqual([]);
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...a, offsetXCm: 6 }] }))[0]).toMatch(/stay inside/); // 20 + 2·6 > 30 cm
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...a, offsetXCm: 4.5, rotation: 0 }] }))).toEqual([]);
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...a, widthCm: 30, heightCm: 10, rotation: 30 }] }))[0]).toMatch(/stay inside/);
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...bare }] }))[0]).toMatch(/exactly one artwork/);
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...a, assetId: "MVG_x" }] }))[0]).toMatch(/exactly one artwork/);
+    expect(validateMto(tee, opts(tee, { artwork: [{ ...bare, text: "<b>" }] }))[0]).toMatch(/Text: 1–40/);
+    // suits take a small embroidered crest; trousers and skirts a hip embroidery
+    expect(validateMto(suit, opts(suit, { artwork: [{ ...bare, zone: "chest-left", widthCm: 6, heightCm: 6, method: "embroidery", assetId: "MVG_crest" }] }))).toEqual([]);
+    // girth alteration on woven styles only
+    expect(validateMto(shirt, opts(shirt, { widthAdjustCm: 3 }))).toEqual([]);
+    expect(validateMto(tee, opts(tee, { widthAdjustCm: 2 }))[0]).toMatch(/graded sizes/);
+    expect(priceMto(shirt, opts(shirt, { widthAdjustCm: 2 })).unitPrice).toBe(1699 + 150);
   });
 
   it("writes a production sheet and a one-line summary", () => {

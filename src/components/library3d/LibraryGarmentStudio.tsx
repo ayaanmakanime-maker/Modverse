@@ -12,8 +12,47 @@ import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 export type Side = "front" | "back" | "left" | "right";
-/** `x`: horizontal offset across the front / back (−1 … 1 of the half width), e.g. a left-chest placement. */
-export interface DecalItem { id: number; kind: "image" | "text"; src: string; side: Side; size: number; up: number; label: string; x?: number; aspect?: number }
+/**
+ * `x`: horizontal offset across the front / back (−1 … 1 of the half width), e.g. a left-chest placement.
+ * `at`: an explicit centre in cm from the top centre of the garment (x to the wearer's left, y downwards), used by
+ * made-to-order placements; `rotation` in degrees.
+ */
+export interface DecalItem { id: number; kind: "image" | "text"; src: string; side: Side; size: number; up: number; label: string; x?: number; aspect?: number; at?: { x: number; y: number }; rotation?: number }
+
+/** Pattern alterations previewed on the 3D model (cm): body length, girth, sleeve length. */
+export interface Alteration { length: number; width: number; sleeve: number; bottoms: boolean }
+
+/**
+ * Preview of pattern alterations on the creator's mesh: the hem is lowered / raised below the waist, the torso is
+ * widened or narrowed around its vertical axis, and the sleeves are lengthened along their own direction. It is a
+ * visual approximation of the workshop's graded pattern change, not a re-simulation of the garment.
+ */
+export function alterPositions(src: Float32Array, out: Float32Array, box: THREE.Box3, a: Alteration) {
+  const top = box.max.y, bottom = box.min.y, H = top - bottom || 1, W = box.max.x - box.min.x || 1, D = box.max.z - box.min.z || 1;
+  const cz = (box.max.z + box.min.z) / 2;
+  const waist = top - (a.bottoms ? 0.3 : 0.38) * H;
+  const torsoHalf = a.bottoms ? W / 2 : Math.min(W / 2, Math.max(D * 0.75, W * 0.24));
+  const girth = Math.PI * (torsoHalf + D / 2);
+  const k = 1 + a.width / Math.max(40, girth);
+  const shoulderX = torsoHalf * 0.92, shoulderY = top - 0.1 * H;
+  for (let i = 0; i < src.length; i += 3) {
+    let x = src[i], y = src[i + 1], z = src[i + 2];
+    // sleeves: past the shoulder point, pushed out along the direction from the shoulder
+    if (!a.bottoms && a.sleeve && Math.abs(x) > shoulderX) {
+      const dx = Math.abs(x) - shoulderX, dy = y - shoulderY, l = Math.hypot(dx, dy) || 1;
+      const t = Math.min(1, dx / Math.max(1, W / 2 - shoulderX));
+      x += Math.sign(x) * (dx / l) * a.sleeve * t; y += (dy / l) * a.sleeve * t;
+    }
+    // girth: radial scale of the torso, sleeves move with the side seams
+    if (a.width) {
+      if (Math.abs(src[i]) <= torsoHalf) { x *= k; z = cz + (z - cz) * k; }
+      else x += Math.sign(x) * torsoHalf * (k - 1);
+    }
+    // length: below the waist, growing to the full alteration at the hem
+    if (a.length && src[i + 1] < waist) y -= a.length * Math.min(1, (waist - src[i + 1]) / Math.max(1, waist - bottom));
+    out[i] = x; out[i + 1] = y; out[i + 2] = z;
+  }
+}
 const SWATCHES = ["#FFFFFF", "#111111", "#C9A96A", "#B3261E", "#1F4E79", "#2E6B4F", "#6B4E9B", "#E7A5B4", "#F2C94C", "#7A7A7A"];
 const VIEWS: Record<string, [number, number, number]> = { Front: [0, 0.1, 1], Back: [0, 0.1, -1], Side: [1, 0.1, 0], "¾": [0.65, 0.2, 0.75] };
 
@@ -29,7 +68,7 @@ function textImage(text: string, color: string): string {
   return c.toDataURL("image/png");
 }
 
-function Model({ url, tint, useTexture, roughness, decals, onReady, onError }: { url: string; tint: string; useTexture: boolean; roughness: number; decals: DecalItem[]; onReady: (size: THREE.Vector3) => void; onError: (m: string) => void }) {
+function Model({ url, tint, useTexture, roughness, decals, alteration, onReady, onError }: { url: string; tint: string; useTexture: boolean; roughness: number; decals: DecalItem[]; alteration?: Alteration; onReady: (size: THREE.Vector3) => void; onError: (m: string) => void }) {
   const invalidate = useThree((s) => s.invalidate);
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
   const original = useRef<THREE.Texture | null>(null);
@@ -46,6 +85,8 @@ function Model({ url, tint, useTexture, roughness, decals, onReady, onError }: {
       const c = box.getCenter(new THREE.Vector3());
       m.geometry.translate(-c.x, -c.y, -c.z); // centre the garment at the origin
       m.geometry.computeBoundingBox();
+      m.geometry.userData.rest = (m.geometry.attributes.position.array as Float32Array).slice();
+      m.geometry.userData.restBox = m.geometry.boundingBox!.clone();
       original.current = (m.material as THREE.MeshStandardMaterial).map;
       m.castShadow = true;
       setMesh(m);
@@ -62,7 +103,19 @@ function Model({ url, tint, useTexture, roughness, decals, onReady, onError }: {
     mat.needsUpdate = true;
     invalidate();
   }, [mesh, tint, useTexture, roughness, invalidate]);
-  const box = mesh?.geometry.boundingBox;
+  // pattern alterations (length, width, sleeves) on the mesh itself
+  const alt = alteration ? `${alteration.length}|${alteration.width}|${alteration.sleeve}|${alteration.bottoms}` : "";
+  useEffect(() => {
+    if (!mesh) return;
+    const g = mesh.geometry, rest = g.userData.rest as Float32Array | undefined;
+    if (!rest) return;
+    const pos = g.attributes.position.array as Float32Array;
+    if (alteration) alterPositions(rest, pos, g.userData.restBox as THREE.Box3, alteration); else pos.set(rest);
+    g.attributes.position.needsUpdate = true;
+    g.computeVertexNormals();
+    invalidate();
+  }, [mesh, alt]); // eslint-disable-line react-hooks/exhaustive-deps
+  const box = (mesh?.geometry.userData.restBox as THREE.Box3 | undefined) ?? mesh?.geometry.boundingBox;
   const textures = useMemo(() => new Map<string, THREE.Texture>(), []);
   const tex = (src: string) => {
     let t = textures.get(src);
@@ -74,13 +127,14 @@ function Model({ url, tint, useTexture, roughness, decals, onReady, onError }: {
   return (
     <mesh geometry={mesh.geometry} material={mesh.material} castShadow name="library-garment">
       {decals.map((d) => {
-        const y = size.y * (0.18 + d.up * 0.3);
-        const dx = (d.x ?? 0) * size.x * 0.5;
-        const pos: [number, number, number] = d.side === "front" ? [dx, y, box.max.z] : d.side === "back" ? [-dx, y, box.min.z] : d.side === "left" ? [box.max.x * 0.82, size.y * 0.3, 0] : [box.min.x * 0.82, size.y * 0.3, 0];
-        const rot: [number, number, number] = d.side === "front" ? [0, 0, 0] : d.side === "back" ? [0, Math.PI, 0] : d.side === "left" ? [0, Math.PI / 2, 0] : [0, -Math.PI / 2, 0];
+        const y = d.at ? box.max.y - d.at.y : size.y * (0.18 + d.up * 0.3);
+        const dx = d.at ? d.at.x : (d.x ?? 0) * size.x * 0.5;
+        const pos: [number, number, number] = d.side === "front" ? [dx, y, box.max.z] : d.side === "back" ? [-dx, y, box.min.z] : d.side === "left" ? [box.max.x * 0.82, d.at ? y : size.y * 0.3, 0] : [box.min.x * 0.82, d.at ? y : size.y * 0.3, 0];
+        const roll = ((d.rotation ?? 0) * Math.PI) / 180;
+        const rot: [number, number, number] = d.side === "front" ? [0, 0, -roll] : d.side === "back" ? [0, Math.PI, -roll] : d.side === "left" ? [0, Math.PI / 2, -roll] : [0, -Math.PI / 2, -roll];
         const depth = (d.side === "front" || d.side === "back" ? size.z : size.x) * 0.9;
         return (
-          <Decal key={d.id} position={pos} rotation={rot} scale={[d.size, d.kind === "text" ? d.size / 2 : d.size * (d.aspect ?? 1), depth]}>
+          <Decal key={`${d.id}:${alt}`} position={pos} rotation={rot} scale={[d.size, d.kind === "text" ? d.size / 2 : d.size * (d.aspect ?? 1), depth]}>
             <meshStandardMaterial map={tex(d.src)} transparent polygonOffset polygonOffsetFactor={-4} roughness={0.8} depthWrite={false} />
           </Decal>
         );
@@ -139,7 +193,11 @@ async function exportGarment(root: THREE.Object3D, format: ExportFormat, meta: {
  * order options (a solid fabric colour, so the creator's printed texture is switched off), and the free-form
  * colour / decal tools are hidden.
  */
-export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence, order }: { url: string; name: string; heightCm: number; attribution: string; licence: string; order?: { tint: string; decals: DecalItem[] } }) {
+/**
+ * `bare`: only the 3D view, filling its container (the design studio and product pages put their own tools around
+ * it); `onScene` receives the scene for exports.
+ */
+export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence, order, bare, onScene }: { url: string; name: string; heightCm: number; attribution: string; licence: string; order?: { tint: string; decals: DecalItem[]; alteration?: Alteration }; bare?: boolean; onScene?: (s: THREE.Scene) => void }) {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const [exporting, setExporting] = useState("");
   const doExport = async (format: ExportFormat) => {
@@ -173,10 +231,10 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
   const patch = (id: number, p: Partial<DecalItem>) => setDecals((d) => d.map((x) => (x.id === id ? { ...x, ...p } : x)));
   const chip = "mv-chip !px-2 !py-0.5 !text-[0.68rem]";
   return (
-    <div className={order ? "space-y-3" : "mt-4 grid gap-4 lg:grid-cols-[1fr_320px]"} data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
-      <div className="relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-line">
+    <div className={bare ? "h-full" : order ? "space-y-3" : "mt-4 grid gap-4 lg:grid-cols-[1fr_320px]"} data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
+      <div className={bare ? "relative h-full min-h-[240px] overflow-hidden" : "relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-line"}>
         {error ? <p className="p-6 text-sm text-mute">{error}</p> : (
-          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
+          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; onScene?.(scene); gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
             <hemisphereLight args={["#ffffff", "#3a3a3d", 0.5]} />
             <directionalLight position={[70, 130, 150]} intensity={2.2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-150} shadow-camera-right={150} shadow-camera-top={150} shadow-camera-bottom={-150} shadow-camera-far={600} />
             <directionalLight position={[-110, 60, -120]} intensity={1.4} />
@@ -184,7 +242,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
               <Lightformer form="rect" intensity={1.1} position={[0, 4, 7]} scale={[10, 6, 1]} />
               <Lightformer form="rect" intensity={0.5} position={[-7, 2, 1]} rotation-y={Math.PI / 2} scale={[8, 6, 1]} />
             </Environment>
-            <Model url={url} tint={tint} useTexture={useTexture} roughness={roughness} decals={decals} onReady={setSize} onError={setError} />
+            <Model url={url} tint={tint} useTexture={useTexture} roughness={roughness} decals={decals} alteration={order?.alteration} onReady={setSize} onError={setError} />
             {size && <ContactShadows position={[0, -size.y / 2 - 1, 0]} opacity={0.45} scale={span * 3} blur={2.4} far={span} />}
             <OrbitControls makeDefault enableDamping minDistance={span * 0.5} maxDistance={span * 6} />
             <Rig view={view} dist={span * 2.6} />
@@ -194,7 +252,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
           {Object.keys(VIEWS).map((v) => <button key={v} className="rounded-full px-2.5 py-1 text-[0.66rem] text-bone-2 hover:bg-surface-3" onClick={() => setView(v)} data-testid={`libview-${v}`}>{v}</button>)}
         </div>
       </div>
-      <div className={order ? "space-y-3 text-sm" : "space-y-4 text-sm"}>
+      {!bare && <div className={order ? "space-y-3 text-sm" : "space-y-4 text-sm"}>
         {!order && <>
         <section className="mv-card p-4">
           <h2 className="text-bone">Colour</h2>
@@ -243,7 +301,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
           </div>
         </div>
         <p className="text-xs text-mute">{order ? "Preview: the fabric colour and artwork are shown on the creator's 3D model. The workshop cuts the style from its graded pattern in the fabric you choose." : "Artwork is projected onto the model for preview."}</p>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -14,6 +14,8 @@ export interface GarmentFit {
   /** Base-mesh vertex ranges hidden under the garment. */
   hideBody: [number, number][];
   vertices: number;
+  /** body vertices per garment vertex in refs / weights (3 for .mhclo bindings; designs use more, for smoothness) */
+  k?: number;
 }
 
 export function parseGarmentFit(meta: { vertices: number; scales: GarmentFit["scales"]; hideBody: [number, number][] }, buf: ArrayBuffer): GarmentFit {
@@ -44,6 +46,16 @@ export function fitGarment(fit: GarmentFit, body: Float32Array, out: Float32Arra
   const sx = axis(0, "x") * 1e-3, sy = axis(1, "y") * 1e-3, sz = axis(2, "z") * 1e-3; // 1e-4 dm → cm (× 10 × 1e-4)
   const { refs, weights, offsets } = fit;
   const ws = fit.weightScale;
+  const K = fit.k ?? 3;
+  if (K !== 3) {
+    for (let v = 0; v < fit.vertices; v++) {
+      const o = v * 3, r = v * K;
+      let x = 0, y = 0, z = 0;
+      for (let k = 0; k < K; k++) { const b = refs[r + k] * 3, w = weights[r + k] * ws; x += body[b] * w; y += body[b + 1] * w; z += body[b + 2] * w; }
+      out[o] = x + offsets[o] * sx; out[o + 1] = y + offsets[o + 1] * sy; out[o + 2] = z + offsets[o + 2] * sz;
+    }
+    return out;
+  }
   for (let v = 0; v < fit.vertices; v++) {
     const o = v * 3;
     const a = refs[o] * 3, b = refs[o + 1] * 3, c = refs[o + 2] * 3;

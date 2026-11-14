@@ -8,21 +8,33 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
+import { buildTrackedDecal, garmentProjector, placeTrackedDecal, type TrackedDecal } from "@/lib/three/tracked-decal";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { HumanAsset } from "@/lib/human/model";
 import { buildSkeleton, poseAt, skin, type PoseId } from "@/lib/human/pose";
 import { fitGarment, type GarmentFit } from "@/lib/human/fit-garment";
-import { CLOTH_DEFAULTS, GarmentCloth, limbCapsules, limbRadii } from "@/lib/human/garment-cloth";
+import { BodyCollider, bodyTriangles, CLOTH_DEFAULTS, FABRIC_CLOTH, GarmentCloth, limbCapsules, limbRadii } from "@/lib/human/garment-cloth";
+
+/** Phones and low-core devices: fewer substeps keep the frame rate (XPBD stays stable with fewer, it just stiffens). */
+const LIGHT = typeof navigator !== "undefined" && ((navigator.hardwareConcurrency ?? 8) <= 4 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
 
 export interface WornItem {
   key: string;
-  kind: "garment" | "eyes" | "eyebrows" | "eyelashes" | "hair" | "bottoms" | "shoes" | "outfits";
+  kind: "garment" | "design" | "eyes" | "eyebrows" | "eyelashes" | "hair" | "bottoms" | "shoes" | "outfits";
   fit: GarmentFit;
   /** parts carry their own mesh; garments load it from the GLB */
   index?: Uint32Array; uv?: Float32Array; glbUrl?: string;
   textureUrl?: string | null; color?: [number, number, number]; alpha?: boolean; twoSided?: boolean;
   /** per-vertex colours (fit map); replaces the garment's texture while set */
   colors?: Float32Array | null;
+  /** fabric family for the cloth engine */
+  fabric?: keyof typeof FABRIC_CLOTH;
+  /** a design from the editor: its merged panels (one geometry group per material) */
+  object?: { geometry: THREE.BufferGeometry; materials: THREE.Material[] };
+  /** a stocked fabric colour is chosen: the creator's printed texture is switched off (solid colour, as made) */
+  plain?: boolean;
+  /** artwork on a shop garment, placed as in the design studio (cm from the garment's top centre) */
+  decals?: { url: string; side: "front" | "back" | "left"; at: { x: number; y: number }; width: number; height: number; roll: number }[];
 }
 export type MannequinStyle = "wire" | "solid";
 export interface SceneLook { style: MannequinStyle; garmentTint: string }
@@ -59,7 +71,7 @@ export function garmentMesh(url: string): Promise<THREE.Mesh> {
   return p;
 }
 
-interface Worn { item: WornItem; mesh: THREE.Mesh; target: Float32Array; cloth: GarmentCloth | null; clothFor: Float32Array | null }
+interface Worn { item: WornItem; mesh: THREE.Mesh; target: Float32Array; cloth: GarmentCloth | null; clothFor: Float32Array | null; decals: { mesh: THREE.Mesh; d: TrackedDecal }[] }
 
 function materialFor(it: WornItem): THREE.Material {
   const map = it.textureUrl ? texture(it.textureUrl) : null;
@@ -116,20 +128,47 @@ function Rig(p: HumanSceneProps) {
   useEffect(() => {
     const gr = group.current!, map = worn.current;
     let live = true;
-    for (const [k, w] of map) if (!p.items.some((i) => i.key === k)) { gr.remove(w.mesh); w.mesh.geometry.dispose(); (w.mesh.material as THREE.Material).dispose(); map.delete(k); }
+    for (const [k, w] of map) if (!p.items.some((i) => i.key === k)) {
+      gr.remove(w.mesh); w.mesh.geometry.dispose(); ([] as THREE.Material[]).concat(w.mesh.material).forEach((m) => m.dispose());
+      for (const d of w.decals) { d.mesh.geometry.dispose(); (d.mesh.material as THREE.Material).dispose(); }
+      map.delete(k);
+    }
     const report = () => { if (live) { p.onItemsReady([...map.keys()]); setReadyTick((t) => t + 1); } dirty.current = true; invalidate(); };
     for (const it of p.items) {
       if (map.has(it.key)) continue;
-      const add = (geo: THREE.BufferGeometry, mat: THREE.Material) => {
+      const add = (geo: THREE.BufferGeometry, mat: THREE.Material | THREE.Material[]) => {
         if (!live || map.has(it.key)) return;
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.name = it.kind === "garment" ? "garment" : `${it.kind}-${it.key}`; mesh.castShadow = true; mesh.frustumCulled = false;
+        mesh.name = it.kind === "garment" || it.kind === "design" ? "garment" : `${it.kind}-${it.key}`; mesh.castShadow = true; mesh.frustumCulled = false;
         mesh.renderOrder = 5;
         gr.add(mesh);
-        map.set(it.key, { item: it, mesh, target: new Float32Array(it.fit.vertices * 3), cloth: null, clothFor: null });
+        // artwork: projected once onto the garment at rest, then carried by its triangles in every frame
+        const decals: Worn["decals"] = [];
+        if (it.decals?.length && geo.index) {
+          const rest = geo.attributes.position.array as Float32Array;
+          geo.computeBoundingBox();
+          const b = geo.boundingBox!;
+          const box = { min: [b.min.x, b.min.y, b.min.z] as [number, number, number], max: [b.max.x, b.max.y, b.max.z] as [number, number, number] };
+          for (const a of it.decals) {
+            const d = buildTrackedDecal(rest, geo.index.array, garmentProjector(box, a.side, a.at, a.width, a.height, a.roll));
+            if (!d) continue;
+            const g = new THREE.BufferGeometry();
+            g.setAttribute("position", new THREE.BufferAttribute(placeTrackedDecal(d, rest), 3));
+            g.setAttribute("uv", new THREE.BufferAttribute(d.uv, 2));
+            g.setIndex(new THREE.BufferAttribute(d.index, 1));
+            g.computeVertexNormals();
+            const dm = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: texture(a.url), transparent: true, depthWrite: false, side: THREE.DoubleSide, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+            dm.name = "garment-artwork"; dm.frustumCulled = false; dm.renderOrder = 6;
+            mesh.add(dm);
+            decals.push({ mesh: dm, d });
+          }
+        }
+        map.set(it.key, { item: it, mesh, target: new Float32Array(it.fit.vertices * 3), cloth: null, clothFor: null, decals });
         report();
       };
-      if (it.kind === "garment" && it.glbUrl) {
+      if (it.object) {
+        if (it.object.geometry.attributes.position.count === it.fit.vertices) add(it.object.geometry.clone(), it.object.materials.map((m) => m.clone()));
+      } else if (it.kind === "garment" && it.glbUrl) {
         garmentMesh(it.glbUrl).then((src) => {
           const geo = src.geometry.clone();
           if (geo.attributes.position.count !== it.fit.vertices) return;
@@ -149,26 +188,27 @@ function Rig(p: HumanSceneProps) {
     return () => { live = false; };
   }, [itemKeys]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // garment colour, or the fit map's vertex colours, without rebuilding meshes
+  // garment colour, or the fit map's vertex colours, without rebuilding meshes (a design keeps its own colours)
   const { garmentTint } = p.look;
-  const garmentColors = p.items.find((i) => i.kind === "garment")?.colors ?? null;
+  const garmentColors = p.items.find((i) => i.kind === "garment" || i.kind === "design")?.colors ?? null;
+  const garmentPlain = !!p.items.find((i) => i.kind === "garment")?.plain;
   const [readyTick, setReadyTick] = useState(0);
   useEffect(() => {
     for (const w of worn.current.values()) {
-      if (w.item.kind !== "garment") continue;
-      const m = w.mesh.material as THREE.MeshStandardMaterial, geo = w.mesh.geometry;
-      m.userData.map ??= m.map ?? "none";
-      if (garmentColors && garmentColors.length === w.item.fit.vertices * 3) {
-        geo.setAttribute("color", new THREE.BufferAttribute(garmentColors, 3));
-        m.vertexColors = true; m.map = null; m.color.set("#ffffff");
-      } else {
-        geo.deleteAttribute("color");
-        m.vertexColors = false; m.map = m.userData.map === "none" ? null : m.userData.map; m.color.set(garmentTint);
+      if (w.item.kind !== "garment" && w.item.kind !== "design") continue;
+      const geo = w.mesh.geometry;
+      const on = !!garmentColors && garmentColors.length === w.item.fit.vertices * 3;
+      if (on) geo.setAttribute("color", new THREE.BufferAttribute(garmentColors, 3)); else geo.deleteAttribute("color");
+      for (const m of ([] as THREE.Material[]).concat(w.mesh.material) as THREE.MeshStandardMaterial[]) {
+        m.userData.map ??= m.map ?? "none";
+        m.userData.color ??= "#" + m.color.getHexString();
+        if (on) { m.vertexColors = true; m.map = null; m.color.set("#ffffff"); }
+        else { m.vertexColors = false; m.map = m.userData.map === "none" || (w.item.kind === "garment" && garmentPlain) ? null : m.userData.map; m.color.set(w.item.kind === "design" ? m.userData.color : garmentTint); }
+        m.needsUpdate = true;
       }
-      m.needsUpdate = true;
     }
     invalidate();
-  }, [garmentTint, garmentColors, itemKeys, readyTick, invalidate]);
+  }, [garmentTint, garmentColors, garmentPlain, itemKeys, readyTick, invalidate]);
 
   // body faces hidden under what is worn, and the helper eyes replaced by the eye part
   useEffect(() => {
@@ -181,6 +221,8 @@ function Rig(p: HumanSceneProps) {
   }, [asset, body, itemKeys, invalidate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sk = useMemo(() => buildSkeleton(asset, rest), [asset, rest]);
+  // the posed body as a collision surface for every garment (rebuilt each frame something is worn)
+  const collider = useMemo(() => new BodyCollider(bodyTriangles(asset.bodyIndex, asset.orig), asset.isBody), [asset]);
   const radii = useMemo(() => limbRadii(sk.names, sk.head, rest, asset.joints, asset.isBody), [asset, sk, rest]);
   const posedBuf = useMemo(() => new Float32Array(rest.length), [rest]);
   useEffect(() => { dirty.current = true; invalidate(); }, [rest, p.pose, p.life, p.cloth, invalidate]);
@@ -213,7 +255,8 @@ function Rig(p: HumanSceneProps) {
     body.g.attributes.position.needsUpdate = true; body.g.attributes.normal.needsUpdate = true;
     // everything worn
     const caps = cur.cloth ? limbCapsules(sk.names, posed.heads, radii) : [];
-    let particles = 0;
+    if (worn.current.size) collider.update(P);
+    let particles = 0, pushed = 0;
     for (const w of worn.current.values()) {
       const attr = w.mesh.geometry.attributes.position as THREE.BufferAttribute;
       const out = attr.array as Float32Array;
@@ -221,18 +264,26 @@ function Rig(p: HumanSceneProps) {
       if (sim) {
         if (!w.cloth || w.clothFor !== rest) {
           const index = w.mesh.geometry.index!.array as ArrayLike<number>;
-          w.cloth = new GarmentCloth(fitGarment(w.item.fit, rest), index, rest, asset.isBody, CLOTH_DEFAULTS, cur.crotchY);
+          w.cloth = new GarmentCloth(fitGarment(w.item.fit, rest), index, rest, asset.isBody, { ...CLOTH_DEFAULTS, ...(w.item.fabric ? FABRIC_CLOTH[w.item.fabric] : {}), substeps: LIGHT ? 4 : 8 }, cur.crotchY);
           w.clothFor = rest;
         }
         fitGarment(w.item.fit, P, w.target, rest);
-        w.cloth.step(w.target, dt, caps, out);
+        w.cloth.step(w.target, dt, caps, out, collider);
         particles += w.cloth.particles;
       } else {
         fitGarment(w.item.fit, P, out as unknown as Float32Array<ArrayBuffer>, rest);
         if (w.cloth) { w.cloth = null; w.clothFor = null; }
+        // whatever the body's proportions, the skin never pokes through what is worn
+        pushed += collider.pushOut(out, w.item.kind === "shoes" ? 0.1 : 0.25);
       }
       attr.needsUpdate = true;
       w.mesh.geometry.computeVertexNormals();
+      for (const d of w.decals) {
+        const da = d.mesh.geometry.attributes.position as THREE.BufferAttribute;
+        placeTrackedDecal(d.d, out, da.array as Float32Array);
+        da.needsUpdate = true;
+        d.mesh.geometry.computeVertexNormals();
+      }
     }
     dirty.current = false;
     frames.current++;
@@ -240,6 +291,8 @@ function Rig(p: HumanSceneProps) {
     if (el && (frames.current % 10 === 0 || !animated)) {
       el.dataset.frames = String(frames.current);
       el.dataset.clothParticles = String(particles);
+      el.dataset.pushed = String(pushed);
+      el.dataset.artwork = String([...worn.current.values()].reduce((n, w) => n + w.decals.length, 0));
       el.dataset.ms = (performance.now() - t0).toFixed(1);
     }
     if (!animated) state.invalidate();
@@ -264,11 +317,11 @@ export function HumanScene(p: HumanSceneProps) {
   const height = useMemo(() => { let m = 0; for (let k = 0; k < p.asset.bodyVerts.length; k++) m = Math.max(m, p.rest[p.asset.bodyVerts[k] * 3 + 1]); return m; }, [p.asset, p.rest]);
   const st = STYLE[p.look.style];
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 105, 340], fov: 30, near: 1, far: 3000 }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ scene, gl }) => { p.sceneRef.current = scene; p.glRef.current = gl; gl.toneMapping = THREE.NeutralToneMapping; }}>
+    <Canvas shadows dpr={[1, LIGHT ? 1.5 : 2]} camera={{ position: [0, 105, 340], fov: 30, near: 1, far: 3000 }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ scene, gl }) => { p.sceneRef.current = scene; p.glRef.current = gl; gl.toneMapping = THREE.NeutralToneMapping; }}>
       <color attach="background" args={[st.bg]} />
       <hemisphereLight args={[st.hemi[0], st.hemi[1], st.hemi[2]]} />
       <directionalLight position={[40, 120, 300]} intensity={0.55} />
-      <directionalLight position={[110, 240, 230]} intensity={1.15} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-130} shadow-camera-right={130} shadow-camera-top={230} shadow-camera-bottom={-20} shadow-bias={-0.0004} />
+      <directionalLight position={[110, 240, 230]} intensity={1.15} castShadow shadow-mapSize={LIGHT ? [1024, 1024] : [2048, 2048]} shadow-camera-left={-130} shadow-camera-right={130} shadow-camera-top={230} shadow-camera-bottom={-20} shadow-bias={-0.0004} />
       <directionalLight position={[-160, 120, -140]} intensity={0.5} />
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={1.1} position={[0, 4, 7]} scale={[10, 6, 1]} />

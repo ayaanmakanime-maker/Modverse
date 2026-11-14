@@ -314,6 +314,7 @@ function EditorLayout(p: {
   const [exportOpen, setExportOpen] = useState(false);
   const production = useEditor((s) => s.production);
   const guides3d = useEditor((s) => s.guides3d);
+  const projectId = useEditor((s) => s.projectId);
   const config = useEditor((s) => s.config);
   const report = useLiveValidation();
   const price = useDesignPrice(config);
@@ -380,7 +381,7 @@ function EditorLayout(p: {
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Tool rail + panel */}
-        <aside className={clsx("order-2 flex min-h-0 border-line lg:order-1 lg:w-[22rem] lg:border-r", p.mobilePanel ? "h-[46dvh] lg:h-auto" : "h-12 lg:h-auto")}>
+        <aside className={clsx("order-2 flex min-h-0 border-line lg:order-1 lg:w-[22rem] lg:border-r", p.mobilePanel ? "h-[40dvh] lg:h-auto" : "h-12 lg:h-auto")}>
           <nav aria-label="Design tools" className="flex w-14 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line py-2 mv-scroll">
             {tabs.map((t) => {
               const I = TAB_META[t].icon;
@@ -403,15 +404,16 @@ function EditorLayout(p: {
 
         {/* Canvas */}
         <main className="order-1 flex min-h-0 min-w-0 flex-1 flex-col lg:order-2">
-          <div className="flex flex-wrap items-center gap-2 border-b border-line px-2 py-1.5">
+          {/* phones: one scrollable row, so the canvas keeps its height */}
+          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto border-b border-line px-2 py-1.5 [scrollbar-width:none] [&>*]:shrink-0 sm:flex-wrap">
             <Segmented size="sm" label="Canvas view" value={p.view} onChange={p.setView} options={[{ value: "2d", label: "2D" }, { value: "split", label: "Split" }, { value: "3d", label: "3D" }]} />
-            <span className="text-[0.68rem] text-mute">{model.name} · {config.fit} · {config.size} · {MODE_INFO[p.mode]}</span>
+            <span className="hidden text-[0.68rem] text-mute sm:inline">{model.name} · {config.fit} · {config.size} · {MODE_INFO[p.mode]}</span>
             {p.mode !== "studio" && <ProductionToggles />}
             {p.view !== "2d" && (
-              <div className="ml-auto flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-nowrap items-center gap-1.5 sm:ml-auto sm:flex-wrap [&>*]:shrink-0">
                 <Segmented size="sm" label="3D view" value={p.view3d} onChange={p.setView3d} options={[{ value: "front", label: "Front" }, { value: "back", label: "Back" }, { value: "left", label: "Side" }, { value: "three-quarter", label: "¾" }]} />
                 <Select aria-label="Lighting" value={p.lighting} onChange={(e) => p.setLighting(e.target.value as LightingPreset)} className="!w-auto !py-0.5 !text-[0.68rem]"><option value="studio">Studio light</option><option value="daylight">Daylight</option><option value="evening">Evening</option></Select>
-                {p.mode === "pro" && <a href="/design/human-studio" target="_blank" rel="noopener" className="mv-chip !border-champagne !px-2 !py-0.5 !text-[0.68rem] text-champagne" data-testid="toolbar-human-studio"><User className="mr-1 inline size-3" />Human Studio</a>}
+                {p.mode === "pro" && <a href={projectId ? `/design/human-studio?design=${projectId}&size=${config.size}` : "/design/human-studio"} target="_blank" rel="noopener" className="mv-chip !border-champagne !px-2 !py-0.5 !text-[0.68rem] text-champagne" data-testid="toolbar-human-studio"><User className="mr-1 inline size-3" />Human Studio</a>}
                 <button type="button" className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" onClick={() => setExportOpen(true)} data-testid="open-export-3d"><Download className="mr-1 inline size-3" />Export 3D</button>
               </div>
             )}
@@ -421,7 +423,7 @@ function EditorLayout(p: {
             {p.view !== "2d" && (
               <div className="relative min-h-0">
                 <GarmentViewer ref={p.viewer} config={config} view={p.view3d} lighting={p.lighting} controls="details" production={production} guides={guides3d} />
-                <p className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
+                <p className="pointer-events-none absolute bottom-2 left-2 hidden rounded-full bg-ink/70 px-2.5 py-1 text-[0.62rem] text-mute sm:block"><Box className="mr-1 inline size-3" />Drag to rotate · scroll to zoom · right-drag to pan</p>
               </div>
             )}
           </div>

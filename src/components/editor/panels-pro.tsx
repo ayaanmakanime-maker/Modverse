@@ -1,4 +1,5 @@
 "use client";
+import { prepareArtworkFile } from "@/lib/client/upload";
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { AlertTriangle, CheckCircle2, Info, Download, History, RotateCcw, Send, Sparkles, FileJson, FileText, Image as ImageIcon, Box } from "lucide-react";
@@ -542,7 +543,7 @@ export function MusePanel() {
           {puterOn ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-ok">Puter AI on{puterModelCount ? ` · ${puterModelCount} models available` : ""}. Your Puter account pays for these requests.</span>
-              <label className="mv-chip cursor-pointer !py-0 !text-[0.62rem]">{refImage ? "Reference attached" : "Attach reference image"}<input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f && f.size <= 4 * 1024 * 1024) { const fr = new FileReader(); fr.onload = () => setRefImage(String(fr.result)); fr.readAsDataURL(f); } e.target.value = ""; }} /></label>
+              <label className="mv-chip cursor-pointer !py-0 !text-[0.62rem]">{refImage ? "Reference attached" : "Attach reference image"}<input type="file" accept="image/png,image/jpeg,image/webp,image/heic,.heic" className="sr-only" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; try { const ready = await prepareArtworkFile(f); if (ready.size > 4 * 1024 * 1024) return toast("The reference image is over 4 MB even after optimising — use a smaller image.", "bad"); const fr = new FileReader(); fr.onload = () => setRefImage(String(fr.result)); fr.readAsDataURL(ready); } catch (err) { toast(errorMessage(err), "bad"); } }} data-testid="pro-ref-image" /></label>
               <button type="button" className="mv-chip !py-0 !text-[0.62rem]" onClick={conceptImage} disabled={busy} data-testid="muse-puter-image">Concept image</button>
               <button type="button" className="underline" onClick={() => savePrefs({ ...prefs, puter: false })} data-testid="muse-puter-off">Turn off</button>
             </div>

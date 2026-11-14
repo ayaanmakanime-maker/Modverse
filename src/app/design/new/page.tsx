@@ -12,6 +12,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { creativeAssets, uploadedAssets } from "@/lib/db/schema";
+import { visibleGarments } from "@/lib/garment-library";
+import { garmentTypeFor, GARMENT_TYPE_LABELS, MTO_GARMENT_TYPES, mtoProfileFor } from "@/lib/garment/made-to-order";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +54,7 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
     return <EditorClient initial={{ projectId: null, name: `${m.name} design`, mode, version: 0, config, savedAt: null, loadDraft: !!sp.draft }} />;
   }
 
+  const styles = (await visibleGarments()).filter((g) => mtoProfileFor(g.category) && (g.audience === audience || g.audience === "unisex"));
   return (
     <div className="min-h-dvh">
       <header className="flex h-16 items-center gap-4 border-b border-line px-4 md:px-6">
@@ -71,7 +74,7 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
         </div>
         {(["tshirt", "shirt"] as const).map((type) => (
           <section key={type} className="mt-10">
-            <h2 className="mv-eyebrow">{type === "tshirt" ? "T-shirts" : "Shirts"}</h2>
+            <h2 className="mv-eyebrow">{type === "tshirt" ? "T-shirts · design your own pattern" : "Shirts · design your own pattern"}</h2>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {GARMENT_MODELS.filter((m) => m.garmentType === type && m.audiences.includes(audience)).map((m) => (
                 <Link key={m.id} href={`/design/new?model=${m.id}&audience=${audience}&mode=${mode}${typoQ}`} className="mv-card group flex flex-col items-center gap-2 p-3 transition hover:border-line-2" data-testid={`pick-${m.id}`}>
@@ -82,6 +85,25 @@ export default async function NewDesign({ searchParams }: { searchParams: Promis
             </div>
           </section>
         ))}
+        <h2 className="mv-display mt-14 text-3xl">Every style in the shop</h2>
+        <p className="mt-1 text-sm text-bone-2">Dresses, suits, trousers, skirts, knitwear and more — made to order. Choose the colour, size, fit and artwork in the same studio.</p>
+        {MTO_GARMENT_TYPES.map((type) => {
+          const list = styles.filter((g) => garmentTypeFor(g.category) === type);
+          if (!list.length) return null;
+          return (
+            <section key={type} className="mt-8" data-testid={`styles-${type}`}>
+              <h3 className="mv-eyebrow">{GARMENT_TYPE_LABELS[type]}</h3>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {list.map((g) => (
+                  <Link key={g.id} href={`/design/garment/new?garment=${g.id}&mode=${mode}`} className="mv-card group flex flex-col items-center gap-2 p-3 transition hover:border-line-2" data-testid={`pick-style-${g.id}`}>
+                    {g.thumbnail ? <img src={`/garment-library/${g.path}/${g.thumbnail}`} alt="" className="h-32 w-full object-contain transition group-hover:scale-105" loading="lazy" /> : <div className="h-32 w-full" />}
+                    <span className="line-clamp-2 text-center text-sm">{g.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

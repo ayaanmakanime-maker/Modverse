@@ -296,6 +296,7 @@ interface MeasurementProfile { id: string; name: string; audience: string; measu
 
 export function FitPanel({ avatar, setAvatar, pro }: { avatar: AvatarState; setAvatar: (a: AvatarState) => void; pro: boolean }) {
   const config = useEditor((s) => s.config);
+  const projectId = useEditor((s) => s.projectId);
   const commit = useEditor((s) => s.commit);
   const { user } = useSession();
   const [profiles, setProfiles] = useState<MeasurementProfile[]>([]);
@@ -366,10 +367,10 @@ export function FitPanel({ avatar, setAvatar, pro }: { avatar: AvatarState; setA
       )}
       {/* The fitting mannequin (Human Studio) is an Atelier Pro feature */}
       {pro ? (
-        <a href="/design/human-studio" target="_blank" rel="noopener" className="block rounded-xl border border-champagne bg-surface-2 p-4 transition hover:bg-surface-3" data-testid="open-human-studio">
+        <a href={projectId && (config.garmentType === "tshirt" || config.garmentType === "shirt") ? `/design/human-studio?design=${projectId}&size=${config.size}` : "/design/human-studio"} target="_blank" rel="noopener" className="block rounded-xl border border-champagne bg-surface-2 p-4 transition hover:bg-surface-3" data-testid="open-human-studio">
           <span className="mv-eyebrow !text-[0.6rem]">Atelier Pro</span>
           <span className="mt-1 block font-medium text-bone">Human Studio →</span>
-          <span className="mt-1 block text-[0.7rem] text-bone-2">A 3D fitting mannequin shaped to your own measurements. Try garments on it, see them move, and check the fit before you order.</span>
+          <span className="mt-1 block text-[0.7rem] text-bone-2">A 3D fitting mannequin shaped to your own measurements. Wear this design on it (once saved), see it move, and check the fit before you order.</span>
         </a>
       ) : (
         <p className="rounded-lg border border-line p-3 text-[0.68rem] text-mute" data-testid="avatar-pro-only">The 3D fitting mannequin (Human Studio) is part of <b className="text-bone-2">Atelier Pro</b>. Switch the mode at the top to use it.</p>

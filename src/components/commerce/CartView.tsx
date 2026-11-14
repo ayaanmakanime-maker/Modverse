@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Ruler, Trash2 } from "lucide-react";
 import { api, errorMessage } from "@/lib/client/api";
 import { formatINR, type PriceLine } from "@/lib/garment/pricing";
 import { DesignFlat } from "@/components/garment/DesignFlat";
@@ -10,7 +10,7 @@ import { useSession } from "@/components/session";
 import { Badge, Button, EmptyState, Select, toast } from "@/components/ui";
 import { MtoThumb } from "./MtoLine";
 
-interface Line { id: string; kind?: "design" | "library"; library?: { garment: { id: string } } | null; projectId: string | null; name: string; version: number; size: string; quantity: number; sizes: string[]; unitPrice: number; unitGst: number; lineTotal: number; summary: string; validationStatus: string; config: DesignConfig | null; priceLines?: PriceLine[]; priceChanged?: boolean }
+interface Line { id: string; kind?: "design" | "library"; library?: { garment: { id: string; audience?: string }; options?: { fabricId: string; colourId: string; fit: string } } | null; projectId: string | null; name: string; version: number; size: string; quantity: number; sizes: string[]; unitPrice: number; unitGst: number; lineTotal: number; summary: string; validationStatus: string; config: DesignConfig | null; priceLines?: PriceLine[]; priceChanged?: boolean }
 interface Cart { lines: Line[]; subtotal: number; discount?: number; discountCode?: string | null; discountError?: string | null; gst: number; shipping: number; total: number; illustrative?: boolean; shippingRule?: { flatRate: number; freeAbove: number } }
 
 export function CartView({ initial }: { initial: Cart }) {
@@ -34,7 +34,7 @@ export function CartView({ initial }: { initial: Cart }) {
         {cart.lines.map((l) => (
           <div key={l.id} className="mv-card flex gap-4 p-3">
             {l.kind === "library" && l.library
-              ? <Link href={`/collection/${l.library.garment.id}`} className="w-24"><MtoThumb snapshot={l.library} className="h-24 w-24" /></Link>
+              ? <Link href={`/shop/${l.library.garment.audience === "women" ? "women" : "men"}/${l.library.garment.id}`} className="w-24"><MtoThumb snapshot={l.library} className="h-24 w-24" /></Link>
               : <Link href={`/design/${l.projectId}`} className="flex w-24 shrink-0 items-center justify-center rounded-lg bg-surface-2">{l.config && <DesignFlat config={l.config} view="front" className="h-24 w-full" />}</Link>}
             <div className="min-w-0 flex-1 space-y-1" data-testid={l.kind === "library" ? "cart-line-mto" : "cart-line"}>
               <p className="font-medium">{l.name} {l.kind === "library" ? <Badge>made to order</Badge> : <span className="text-xs text-mute">v{l.version}</span>}</p>
@@ -50,6 +50,7 @@ export function CartView({ initial }: { initial: Cart }) {
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <Select aria-label="Size" value={l.size} onChange={(e) => update(() => api(`/api/cart/${l.id}`, { method: "PATCH", body: { size: e.target.value } }))} className="!w-24 !py-1 !text-xs">{l.sizes.map((s) => <option key={s} value={s}>{s}</option>)}</Select>
                 <Select aria-label="Quantity" value={l.quantity} onChange={(e) => update(() => api(`/api/cart/${l.id}`, { method: "PATCH", body: { quantity: Number(e.target.value) } }))} className="!w-20 !py-1 !text-xs">{Array.from({ length: 10 }).map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</Select>
+                <Link href={l.kind === "library" && l.library ? `/design/human-studio?${new URLSearchParams({ garment: l.library.garment.id, size: l.size, ...(l.library.options ? { fabric: l.library.options.fabricId, colour: l.library.options.colourId, fit: l.library.options.fit } : {}) })}` : `/design/human-studio?${new URLSearchParams({ design: l.projectId ?? "", size: l.size })}`} className="inline-flex items-center gap-1 text-xs text-bone-2 underline" data-testid="cart-try-on"><Ruler className="size-3" />Try on</Link>
                 <button className="text-mute hover:text-bad" aria-label="Remove" onClick={() => update(() => api(`/api/cart/${l.id}`, { method: "DELETE" }))}><Trash2 className="size-4" /></button>
               </div>
             </div>

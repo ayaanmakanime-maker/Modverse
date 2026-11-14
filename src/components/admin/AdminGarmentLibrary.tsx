@@ -34,7 +34,7 @@ export function AdminGarmentLibrary() {
           <tbody>
             {shown.map((r) => (
               <tr key={r.id} className="border-t border-line" data-testid="admin-garment-row">
-                <td className="p-2"><Link href={`/collection/${r.id}`} className="flex items-center gap-2 underline-offset-2 hover:underline">{r.thumbnail && <Image src={`/garment-library/${r.path}/${r.thumbnail}`} alt="" width={36} height={36} unoptimized className="rounded bg-surface-2" />}{r.name}</Link></td>
+                <td className="p-2"><Link href={`/shop/${r.audience === "women" ? "women" : "men"}/${r.id}`} className="flex items-center gap-2 underline-offset-2 hover:underline">{r.thumbnail && <Image src={`/garment-library/${r.path}/${r.thumbnail}`} alt="" width={36} height={36} unoptimized className="rounded bg-surface-2" />}{r.name}</Link></td>
                 <td className="p-2 text-bone-2">{r.audience} · {r.collection}</td>
                 <td className="p-2 text-bone-2">{r.creator}</td>
                 <td className="p-2 text-bone-2">{r.licence}</td>
