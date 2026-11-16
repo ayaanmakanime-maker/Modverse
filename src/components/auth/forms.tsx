@@ -62,7 +62,7 @@ function GuestButton({ next }: { next: string }) {
         try {
           const r = await api<{ user: ClientUser }>("/api/auth/guest", { method: "POST" });
           setUser(r.user);
-          router.push(next);
+          window.location.assign(next); // a full load: the signed-out redirect of this page may be cached by the router
           router.refresh();
         } catch (e) {
           setError(errorMessage(e));
@@ -91,7 +91,7 @@ export function LoginForm() {
     try {
       const r = await api<{ user: ClientUser }>("/api/auth/login", { body: { email, password } });
       setUser(r.user);
-      router.push(next);
+      window.location.assign(next); // a full load: the signed-out redirect of this page may be cached by the router
       router.refresh();
     } catch (err) {
       setError(errorMessage(err));
@@ -137,7 +137,7 @@ export function RegisterForm() {
     try {
       const r = await api<{ user: ClientUser }>("/api/auth/register", { body: f });
       setUser(r.user);
-      router.push(next);
+      window.location.assign(next); // a full load: the signed-out redirect of this page may be cached by the router
       router.refresh();
     } catch (err) {
       setError(errorMessage(err));
