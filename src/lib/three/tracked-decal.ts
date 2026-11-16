@@ -102,11 +102,12 @@ export function placeTrackedDecal(d: TrackedDecal, positions: ArrayLike<number>,
  * The projector of a made-to-order placement on a garment at rest, exactly as the design studio's 3D view places it:
  * `at` is the artwork centre in cm from the top centre of the garment (x to the wearer's left, y down).
  */
-export function garmentProjector(box: { min: V3; max: V3 }, side: "front" | "back" | "left", at: { x: number; y: number }, width: number, height: number, roll: number): DecalProjector {
+export function garmentProjector(box: { min: V3; max: V3 }, side: "front" | "back" | "left" | "right", at: { x: number; y: number }, width: number, height: number, roll: number): DecalProjector {
   const c: V3 = [(box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2, (box.min[2] + box.max[2]) / 2];
   const size: V3 = [box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]];
   const y = box.max[1] - at.y;
   if (side === "front") return { center: [c[0] + at.x, y, box.max[2]], normal: [0, 0, 1], up: [0, 1, 0], width, height, depth: size[2] * 0.9, roll };
   if (side === "back") return { center: [c[0] - at.x, y, box.min[2]], normal: [0, 0, -1], up: [0, 1, 0], width, height, depth: size[2] * 0.9, roll };
-  return { center: [c[0] + (box.max[0] - c[0]) * 0.82, y, c[2]], normal: [1, 0, 0], up: [0, 1, 0], width, height, depth: size[0] * 0.9, roll };
+  const sx = side === "left" ? 1 : -1;
+  return { center: [c[0] + sx * (box.max[0] - c[0]) * 0.82, y, c[2]], normal: [sx, 0, 0], up: [0, 1, 0], width, height, depth: size[0] * 0.45, roll };
 }

@@ -43,3 +43,27 @@ test("guest mode: one click, every signed-in feature, then save as a real accoun
   await expect(page.getByText("Classic Crew Neck design").first()).toBeVisible();
   expect((await page.request.get(`/api/designs/${id}`)).status()).toBe(200);
 });
+
+test.describe("sign-in gate", () => {
+  test.use({ extraHTTPHeaders: { "x-mv-gate": "on" } });
+  test("visitors sign in (or continue as a guest) before browsing, and land where they were going", async ({ page }) => {
+    await page.goto("/shop/women?cat=dresses");
+    await expect(page).toHaveURL(/\/login\?next=%2Fshop%2Fwomen%3Fcat%3Ddresses/);
+    // sign-in pages and the API stay open
+    await page.goto("/register");
+    await expect(page).toHaveURL(/\/register$/);
+    expect((await page.request.get("/api/health")).ok()).toBe(true);
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/login\?next=%2F$/);
+    await page.getByTestId("continue-as-guest").click();
+    await expect(page.getByTestId("home")).toBeVisible();
+    // the shop front shows the whole range for women and men, with prices
+    for (const c of ["dresses", "tailoring", "trousers", "skirts", "knitwear"]) await expect(page.getByTestId(`home-cat-women-${c}`)).toBeVisible();
+    for (const c of ["tailoring", "trousers", "shirts", "sweatwear"]) await expect(page.getByTestId(`home-cat-men-${c}`)).toBeVisible();
+    await expect(page.getByTestId("home-rail-women").getByTestId("home-product")).toHaveCount(8);
+    await expect(page.getByTestId("home-rail-men").getByTestId("home-product").first()).toContainText("from ₹");
+    await page.getByTestId("home-cat-women-dresses").click();
+    await expect(page).toHaveURL(/\/shop\/women\?cat=dresses/);
+    await expect(page.getByTestId("shop-garment-card").first()).toBeVisible();
+  });
+});

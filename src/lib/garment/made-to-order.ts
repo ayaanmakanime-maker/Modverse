@@ -17,7 +17,11 @@ import type { Audience } from "./types";
 
 export type MtoCategory = "tshirts" | "shirts" | "tops" | "blouses" | "knitwear" | "sweatwear" | "tailoring" | "dresses" | "jumpsuits" | "trousers" | "skirts";
 export type MtoMethod = "dtg" | "dtf" | "screen" | "embroidery";
-export type MtoZone = "front" | "back" | "chest-left" | "sleeve-left" | "hip-left";
+export type MtoZone = "front" | "back" | "chest-left" | "chest-right" | "sleeve-left" | "sleeve-right" | "back-neck" | "hip-left";
+/** Artwork layers per print area and per garment. */
+export const MAX_ART_PER_ZONE = 3, MAX_ART = 12;
+/** Dyed to order: any colour, matched to the hex by the dye house (surcharge, extra days). */
+export const CUSTOM_DYE = { surcharge: 250, extraDays: 3 };
 export type MtoFit = "slim" | "regular" | "relaxed";
 
 export interface MtoColour { id: string; name: string; hex: string }
@@ -99,6 +103,25 @@ export const MTO_PROFILES: Record<MtoCategory, MtoProfile> = {
   skirts: T("skirts", { label: "Skirt", basePrice: 1499, leadDays: [7, 10], hsn: { men: "6204", women: "6204", unisex: "6204" }, fabrics: ["crepe-160", "twill-260", "linen-150", "denim-12oz"], fits: ["slim", "regular", "relaxed"], length: [-6, 6], sleeve: null, width: [-4, 4], trims: [{ id: "lining", label: "Lining", options: [{ id: "none", label: "Unlined", surcharge: 0 }, { id: "full", label: "Lined (cotton voile)", surcharge: 250 }] }], madeToMeasure: true, monogram: null, zones: { "hip-left": { w: 8, h: 8 } }, sizeKeys: ["waist", "hip"] }),
 };
 
+// Print areas shared by every style that has the garment part: both chest sides, both sleeves, the back neck, and a
+// front / back panel on tops, shirts and dresses (the fabric decides the method: e.g. Oxford takes embroidery only).
+for (const p of Object.values(MTO_PROFILES)) {
+  const z = p.zones;
+  if (z["chest-left"] && !z["chest-right"]) z["chest-right"] = { ...z["chest-left"] };
+  if (z["sleeve-left"] && !z["sleeve-right"]) z["sleeve-right"] = { ...z["sleeve-left"] };
+  const upper = !["trousers", "skirts"].includes(p.category);
+  if (upper && p.sleeve && !z["sleeve-left"]) { z["sleeve-left"] = { w: 8, h: 10 }; z["sleeve-right"] = { w: 8, h: 10 }; }
+  if (upper && !z["back-neck"]) z["back-neck"] = { w: 10, h: 5 };
+  if (upper && p.category !== "tailoring" && p.category !== "knitwear") { z.front ??= { w: 25, h: 30 }; z.back ??= { w: 25, h: 30 }; }
+}
+
+/** The fabric colour of an order: a stocked colour, or the customer's own colour dyed to order. */
+export function mtoColour(o: Pick<MtoOptions, "fabricId" | "colourId" | "customColour">): MtoColour {
+  if (o.customColour) return { id: "custom", name: `Dyed to order ${o.customColour.toUpperCase()}`, hex: o.customColour };
+  const f = FABRIC.get(o.fabricId);
+  return f?.colours.find((x) => x.id === o.colourId) ?? f?.colours[0] ?? { id: o.colourId, name: o.colourId, hex: "#888888" };
+}
+
 export function mtoProfileFor(category: string): MtoProfile | null {
   return (MTO_PROFILES as Record<string, MtoProfile>)[category] ?? null;
 }
@@ -106,6 +129,8 @@ export function mtoProfileFor(category: string): MtoProfile | null {
 export const mtoOptionsSchema = z.object({
   fabricId: z.string().max(40),
   colourId: z.string().max(40),
+  /** Any colour, dyed to order (overrides the stocked colour). */
+  customColour: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().default(null),
   size: z.string().max(8),
   fit: z.enum(["slim", "regular", "relaxed"]),
   lengthAdjustCm: z.number().int().min(-10).max(10).default(0),
@@ -125,12 +150,19 @@ export const mtoOptionsSchema = z.object({
     text: z.string().max(40).optional(),
     font: z.string().max(60).optional(),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-    zone: z.enum(["front", "back", "chest-left", "sleeve-left", "hip-left"]),
+    /** text styling */
+    bold: z.boolean().optional(), italic: z.boolean().optional(),
+    outline: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    spacing: z.number().min(0).max(0.5).optional(),
+    arc: z.number().min(-180).max(180).optional(),
+    /** mirrored left ↔ right */
+    flipX: z.boolean().optional(),
+    zone: z.enum(["front", "back", "chest-left", "chest-right", "sleeve-left", "sleeve-right", "back-neck", "hip-left"]),
     widthCm: z.number().min(2).max(40), heightCm: z.number().min(1).max(40),
     offsetXCm: z.number().min(-20).max(20).default(0), offsetYCm: z.number().min(-20).max(20).default(0),
     rotation: z.number().min(-180).max(180).default(0),
     method: z.enum(["dtg", "dtf", "screen", "embroidery"]),
-  })).max(4).default([]),
+  })).max(MAX_ART).default([]),
 });
 export type MtoOptions = z.infer<typeof mtoOptionsSchema>;
 
@@ -144,7 +176,7 @@ export function defaultMtoOptions(g: Pick<MtoGarmentRef, "category" | "audience"
   const p = mtoProfileFor(g.category);
   if (!p) return null;
   const fabric = FABRIC.get(p.fabrics[0])!;
-  return { fabricId: fabric.id, colourId: fabric.colours[0].id, size: "M", fit: p.fits.includes("regular") ? "regular" : p.fits[0], lengthAdjustCm: 0, sleeveAdjustCm: 0, widthAdjustCm: 0, trims: Object.fromEntries(p.trims.map((t) => [t.id, t.options[0].id])), measurementProfileId: null, monogram: null, artwork: [] };
+  return { fabricId: fabric.id, colourId: fabric.colours[0].id, customColour: null, size: "M", fit: p.fits.includes("regular") ? "regular" : p.fits[0], lengthAdjustCm: 0, sleeveAdjustCm: 0, widthAdjustCm: 0, trims: Object.fromEntries(p.trims.map((t) => [t.id, t.options[0].id])), measurementProfileId: null, monogram: null, artwork: [] };
 }
 
 /** Every reason the options cannot be manufactured (empty when they can). */
@@ -154,7 +186,7 @@ export function validateMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: 
   const errors: string[] = [];
   const fabric = FABRIC.get(o.fabricId);
   if (!fabric || !p.fabrics.includes(o.fabricId)) errors.push("Choose one of the fabrics offered for this garment.");
-  else if (!fabric.colours.some((x) => x.id === o.colourId)) errors.push(`${fabric.name} is not stocked in that colour.`);
+  else if (!o.customColour && !fabric.colours.some((x) => x.id === o.colourId)) errors.push(`${fabric.name} is not stocked in that colour.`);
   if (!sizesFor(sizeAudience(g.audience)).includes(o.size)) errors.push(`Size ${o.size} is not on the size chart.`);
   if (!p.fits.includes(o.fit)) errors.push(`A ${o.fit} fit is not made for this style.`);
   if (o.lengthAdjustCm < p.length[0] || o.lengthAdjustCm > p.length[1]) errors.push(`Length can be altered by ${p.length[0]} to +${p.length[1]} cm.`);
@@ -172,12 +204,12 @@ export function validateMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: 
       if (!p.monogram.placements.includes(o.monogram.placement)) errors.push("Choose a monogram placement offered for this style.");
     }
   }
-  const zones = new Set<string>();
+  const zones = new Map<string, number>();
   for (const a of o.artwork) {
     const z = p.zones[a.zone];
     if (!z) { errors.push(`Artwork is not placed on the ${a.zone} of this style.`); continue; }
-    if (zones.has(a.zone)) errors.push(`Only one artwork per placement (${a.zone}).`);
-    zones.add(a.zone);
+    zones.set(a.zone, (zones.get(a.zone) ?? 0) + 1);
+    if (zones.get(a.zone) === MAX_ART_PER_ZONE + 1) errors.push(`Up to ${MAX_ART_PER_ZONE} artworks per print area (${a.zone}).`);
     const sources = [a.uploadId, a.assetId, a.text?.trim()].filter(Boolean).length;
     if (sources !== 1) errors.push("Each placement needs exactly one artwork: an upload, a library graphic or text.");
     if (a.text !== undefined && !/^[\p{L}\p{N} .,&'!?#@+\-]{1,40}$/u.test(a.text.trim())) errors.push("Text: 1–40 letters, numbers, spaces and simple punctuation.");
@@ -204,6 +236,7 @@ export function priceMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: Mto
   const push = (category: PriceCategory, label: string, amount: number, detail?: string, cost?: number) => { if (amount) lines.push({ category, label, amount: round(amount), detail, cost }); };
   lines.push({ category: "base", label: `${p.label} · made to order`, amount: p.basePrice });
   push("material", fabric.name, fabric.surcharge, `${fabric.composition}, ${fabric.gsm} GSM`);
+  if (o.customColour) push("material", "Dyed to order", CUSTOM_DYE.surcharge, o.customColour.toUpperCase());
   if (["XXL", "3XL"].includes(o.size)) push("material", "Plus size", rules.plusSizeSurcharge, o.size);
   if (o.measurementProfileId) push("construction", "Made to measure", 450, "pattern cut to your measurements");
   else if (o.widthAdjustCm) push("construction", "Width alteration", 150, `${o.widthAdjustCm > 0 ? "+" : ""}${o.widthAdjustCm} cm`);
@@ -233,7 +266,7 @@ export function priceMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: Mto
 export function mtoTechSpec(g: MtoGarmentRef, o: MtoOptions, ctx: { body?: Record<string, number> | null } = {}) {
   const p = mtoProfileFor(g.category)!;
   const fabric = FABRIC.get(o.fabricId)!;
-  const colour = fabric.colours.find((x) => x.id === o.colourId)!;
+  const colour = mtoColour(o);
   return {
     kind: "made-to-order" as const,
     style: { id: g.id, name: g.name, category: p.label, audience: g.audience, hsn: p.hsn[g.audience], reference3d: `/garment-library (${g.id})`, licence: g.licence, attribution: g.attribution },
@@ -242,22 +275,25 @@ export function mtoTechSpec(g: MtoGarmentRef, o: MtoOptions, ctx: { body?: Recor
     trims: p.trims.map((t) => ({ trim: t.label, choice: t.options.find((x) => x.id === o.trims[t.id])?.label ?? t.options[0].label })),
     monogram: o.monogram,
     artwork: o.artwork,
-    leadDays: p.leadDays,
+    leadDays: (o.customColour ? [p.leadDays[0] + CUSTOM_DYE.extraDays, p.leadDays[1] + CUSTOM_DYE.extraDays] : p.leadDays) as [number, number],
     checks: ["Cut from the graded pattern of the style (or the made-to-measure pattern)", "Shade-match fabric and thread to the colour card", "Measure the finished garment against the size / measurements ± 1 cm before packing"],
   };
 }
 
 /** What a placement shows (for production sheets and order views). */
 export function artworkLabel(a: MtoOptions["artwork"][number]): string {
-  if (a.text) return `Text "${a.text.trim()}"${a.font ? ` in ${a.font}` : ""}${a.color ? ` ${a.color}` : ""}`;
+  const extra = `${a.flipX ? " · mirrored" : ""}`;
+  if (a.text) return `Text "${a.text.trim()}"${a.font ? ` in ${a.font}` : ""}${a.bold ? " bold" : ""}${a.italic ? " italic" : ""}${a.color ? ` ${a.color}` : ""}${a.outline ? ` outline ${a.outline}` : ""}${a.spacing ? ` spacing ${a.spacing}em` : ""}${a.arc ? ` arc ${a.arc}°` : ""}${extra}`;
+  if (a.assetId) return `Library graphic ${a.assetId}${extra}`;
+  if (a.uploadId) return `Customer artwork ${a.uploadId}${extra}`;
   if (a.assetId) return `Library graphic ${a.assetId}`;
   return `Customer artwork ${a.uploadId}`;
 }
 
 export function describeMto(g: Pick<MtoGarmentRef, "category">, o: MtoOptions): string {
   const fabric = FABRIC.get(o.fabricId);
-  const colour = fabric?.colours.find((x) => x.id === o.colourId);
-  const bits = [`${colour?.name ?? o.colourId} ${fabric?.name ?? o.fabricId}`, `${o.fit} fit`, o.measurementProfileId ? "made to measure" : `size ${o.size}`];
+  const colour = mtoColour(o);
+  const bits = [`${colour.name} ${fabric?.name ?? o.fabricId}`, `${o.fit} fit`, o.measurementProfileId ? "made to measure" : `size ${o.size}`];
   if (o.lengthAdjustCm) bits.push(`length ${o.lengthAdjustCm > 0 ? "+" : ""}${o.lengthAdjustCm} cm`);
   if (o.sleeveAdjustCm) bits.push(`sleeves ${o.sleeveAdjustCm > 0 ? "+" : ""}${o.sleeveAdjustCm} cm`);
   if (o.widthAdjustCm) bits.push(`width ${o.widthAdjustCm > 0 ? "+" : ""}${o.widthAdjustCm} cm`);

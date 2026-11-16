@@ -204,3 +204,7 @@ body {
 input[type="range"] {
   accent-color: var(--color-bone);
 }
+
+/* Product photography backdrop: a neutral mid-tone studio sweep, so black, white and coloured garments all stand out
+   (the same in the dark and the light theme, like product photos). */
+.mv-product-stage { background: radial-gradient(120% 90% at 50% 35%, #cfccc6 0%, #b3b0aa 70%, #a19e98 100%); }

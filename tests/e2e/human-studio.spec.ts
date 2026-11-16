@@ -9,6 +9,8 @@ test("Human Studio: the mannequin is shaped to tape measurements, tries a garmen
   const canvas = page.getByTestId("human-canvas");
   await expect(canvas).toHaveAttribute("data-ready", "1", { timeout: 120_000 });
   // a fitting mannequin, not a person: no face, skin or hair controls
+  await expect(canvas).toHaveAttribute("data-style", "solid");
+  await page.getByTestId("hm-style-wire").click();
   await expect(canvas).toHaveAttribute("data-style", "wire");
   await expect(page.getByRole("tab", { name: "Face" })).toHaveCount(0);
   await expect(page.getByTestId("hm-hair")).toHaveCount(0);

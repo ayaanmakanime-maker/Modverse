@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { bodyPositions, cupLetter, joints, measureBody, MEASURES, measuresFor, parseHumanAsset, type HumanMeta } from "@/lib/human/model";
 import { fitBody, fitControls, solveLinear } from "@/lib/human/solve";
-import { fitGarment, hiddenMask, parseGarmentFit } from "@/lib/human/fit-garment";
+import { fitGarment, hiddenMask, parseGarmentFit, repairGarmentFit } from "@/lib/human/fit-garment";
 import { bindDesign, bindToBody, designParts } from "@/lib/human/design-bind";
 import { BodyCollider, bodyTriangles } from "@/lib/human/garment-cloth";
 import { buildGarmentGeometry } from "@/lib/three/garment-geometry";
@@ -182,4 +182,36 @@ describe("Human Studio: every shop style can be worn", () => {
     const depth = (a: Float32Array) => { let lo = Infinity, hi = -Infinity; for (let i = 2; i < a.length; i += 3) { lo = Math.min(lo, a[i]); hi = Math.max(hi, a[i]); } return hi - lo; };
     expect(depth(big)).toBeGreaterThan(depth(P) + 2);
   });
+});
+
+describe("Human Studio: garment bindings are repaired", () => {
+  const glbMesh = (file: string) => {
+    const glb = readFileSync(path.join(root, file));
+    const jl = glb.readUInt32LE(12); const j = JSON.parse(glb.subarray(20, 20 + jl).toString());
+    const pr = j.meshes[0].primitives[0];
+    const rd = (ai: number, bytes: number) => { const a = j.accessors[ai], bv = j.bufferViews[a.bufferView]; const st = glb.byteOffset + 28 + jl + (bv.byteOffset ?? 0) + (a.byteOffset ?? 0); return { a, buf: glb.buffer.slice(st, st + a.count * bytes) }; };
+    const P = new Float32Array(rd(pr.attributes.POSITION, 12).buf);
+    const ct = j.accessors[pr.indices].componentType;
+    const I = ct === 5125 ? new Uint32Array(rd(pr.indices, 4).buf) : new Uint16Array(rd(pr.indices, 2).buf);
+    return { P, I };
+  };
+  it("vertices that tear away on other bodies are re-bound (no spikes), sound garments are left alone", () => {
+    for (const [dir, id, sex, repairs] of [
+      ["women/shirts", "punkduck-off-shoulder-long-sleeve-top", "female", true],
+      ["men/trousers", "elvs-male-trouser", "male", true],
+      ["men/shirts", "elvs-male-shirt-untucked-bd1", "male", false],
+    ] as const) {
+      const base = `public/garment-library/${dir}/${id}`;
+      const fit = parseGarmentFit(JSON.parse(readFileSync(path.join(root, base, "fit.json"), "utf8")), ab(`${base}/fit.bin`));
+      const { P, I } = glbMesh(`${base}/${id}.glb`);
+      const probe = { body: bodyPositions(asset, { sex, controls: { weight: 0.7, proportions: 0.7, cup: 0.6, muscle: 0.4 }, scale: 1 }), index: I };
+      const r = repairGarmentFit(fit, asset.base[sex], P, asset.bodyVerts, probe);
+      expect(r.repaired > 0, id).toBe(repairs);
+      // on a third, different body no edge of the garment stretches by more than a few centimetres
+      const third = bodyPositions(asset, { sex, controls: { weight: -0.5, proportions: 0.4, bust: 0.8, hips: 0.8 }, scale: 1.05 });
+      const stretch = (f: typeof fit) => { const q = fitGarment(f, third); let w = 0; for (let t = 0; t < I.length; t += 3) for (let e = 0; e < 3; e++) { const a = I[t + e], b = I[t + ((e + 1) % 3)]; w = Math.max(w, Math.hypot(q[a * 3] - q[b * 3], q[a * 3 + 1] - q[b * 3 + 1], q[a * 3 + 2] - q[b * 3 + 2]) - Math.hypot(P[a * 3] - P[b * 3], P[a * 3 + 1] - P[b * 3 + 1], P[a * 3 + 2] - P[b * 3 + 2])); } return w; };
+      if (repairs) expect(stretch(fit), `${id} before`).toBeGreaterThan(40);
+      expect(stretch(r.fit), `${id} after`).toBeLessThan(4);
+    }
+  }, 60_000);
 });

@@ -143,3 +143,15 @@ export function pbrAlbedo(hex: string): string {
   };
   return rgbToHex(f(r), f(g), f(b));
 }
+
+/**
+ * A studio backdrop (centre, edge) that a garment of colour `hex` stands out against: mid-dark for light garments,
+ * mid-light for dark ones, so black, white and everything between stay readable in 3D.
+ */
+export function contrastBackdrop(hex: string): [string, string] {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  const n = m ? parseInt(m[1], 16) : 0x808080;
+  const lin = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return L > 0.4 ? ["#6f737a", "#4d5057"] : L < 0.12 ? ["#c9c6c0", "#a9a6a0"] : ["#a3a19c", "#7f7d79"];
+}

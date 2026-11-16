@@ -10,6 +10,13 @@ The downloaded 3D collection (`public/garment-library`, 120 garments) is sold ma
 * `/collection` and `/collection/<id>` permanently redirect to the shop (old links keep working).
 * The cart has **Try on** on every line.
 
+## More to customise (V3.1)
+* **Print areas:** every upper-body style has both chest sides, the back neck, and both sleeves where it has sleeves; tops, shirts, blouses, dresses, hoodies and jumpsuits also have a front and a back panel. The fabric still decides the method (e.g. Oxford: embroidery only). Suits keep to chest, sleeve and back-neck placements.
+* **Layers:** up to 3 artworks per print area (12 per garment), ordered back to front, with duplicate and mirror.
+* **Text:** bold, italic, outline colour, letter spacing and an arc, on top of font and colour.
+* **Any colour, dyed to order** (Atelier and Atelier Pro): a custom hex instead of a stocked colour, +₹250 and 3 more days.
+* The 3D view's backdrop follows the fabric colour so the garment never blends into it.
+
 ## What can be chosen (`src/lib/garment/made-to-order.ts`)
 | Option | Rule |
 |---|---|

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { gateMode, gateRedirect } from "@/lib/auth/gate";
 
 /**
  * CSRF defence for the JSON API: every state-changing request must come from
@@ -8,6 +9,12 @@ import { NextResponse, type NextRequest } from "next/server";
 const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export function middleware(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
+  if (!pathname.startsWith("/api/")) {
+    // sign in first: pages are for signed-in customers and guests
+    const to = gateRedirect(pathname, search, !!req.cookies.get("mv_session")?.value, gateMode(process.env.MODVERSE_LOGIN_GATE), req.headers.get("x-mv-gate") === "on");
+    return to ? NextResponse.redirect(new URL(to, req.url)) : NextResponse.next();
+  }
   if (SAFE.has(req.method) || req.nextUrl.pathname.startsWith("/api/webhooks/")) return NextResponse.next();
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
   const origin = req.headers.get("origin") ?? req.headers.get("referer");
@@ -25,4 +32,4 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/api/:path*"] };
+export const config = { matcher: ["/api/:path*", "/((?!_next/|.*\\..*).*)"] };

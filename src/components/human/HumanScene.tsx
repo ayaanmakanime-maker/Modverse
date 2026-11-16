@@ -34,14 +34,15 @@ export interface WornItem {
   /** a stocked fabric colour is chosen: the creator's printed texture is switched off (solid colour, as made) */
   plain?: boolean;
   /** artwork on a shop garment, placed as in the design studio (cm from the garment's top centre) */
-  decals?: { url: string; side: "front" | "back" | "left"; at: { x: number; y: number }; width: number; height: number; roll: number }[];
+  decals?: { url: string; side: "front" | "back" | "left" | "right"; at: { x: number; y: number }; width: number; height: number; roll: number; flip?: boolean }[];
 }
 export type MannequinStyle = "wire" | "solid";
 export interface SceneLook { style: MannequinStyle; garmentTint: string }
 export type ViewId = "full" | "upper";
 const STYLE = {
-  wire: { bg: "#0a1420", floor: "#0f1d2c", body: "#123049", line: "#5fd4ff", hemi: ["#cfe9ff", "#0a1420", 0.85] as const },
-  solid: { bg: "#ebe7e1", floor: "#e4dfd8", body: "#d9d4cc", line: "#ffffff", hemi: ["#ffffff", "#cfc8be", 0.9] as const },
+  // mid-tone backdrops: black, white and every colour in between stand out against them
+  wire: { bg: "#46505c", floor: "#3d4651", body: "#6b7785", line: "#e6edf5", hemi: ["#ffffff", "#46505c", 0.9] as const },
+  solid: { bg: "#b9b5ae", floor: "#aaa69f", body: "#e6e1d9", line: "#ffffff", hemi: ["#ffffff", "#b9b5ae", 0.9] as const },
 };
 
 export interface HumanSceneProps {
@@ -152,6 +153,7 @@ function Rig(p: HumanSceneProps) {
           for (const a of it.decals) {
             const d = buildTrackedDecal(rest, geo.index.array, garmentProjector(box, a.side, a.at, a.width, a.height, a.roll));
             if (!d) continue;
+            if (a.flip) for (let k = 0; k < d.uv.length; k += 2) d.uv[k] = 1 - d.uv[k];
             const g = new THREE.BufferGeometry();
             g.setAttribute("position", new THREE.BufferAttribute(placeTrackedDecal(d, rest), 3));
             g.setAttribute("uv", new THREE.BufferAttribute(d.uv, 2));

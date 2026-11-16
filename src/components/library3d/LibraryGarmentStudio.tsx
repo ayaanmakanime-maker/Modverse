@@ -8,6 +8,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { ContactShadows, Decal, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { contrastBackdrop } from "@/lib/color";
 import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
@@ -17,7 +18,7 @@ export type Side = "front" | "back" | "left" | "right";
  * `at`: an explicit centre in cm from the top centre of the garment (x to the wearer's left, y downwards), used by
  * made-to-order placements; `rotation` in degrees.
  */
-export interface DecalItem { id: number; kind: "image" | "text"; src: string; side: Side; size: number; up: number; label: string; x?: number; aspect?: number; at?: { x: number; y: number }; rotation?: number }
+export interface DecalItem { id: number; kind: "image" | "text"; src: string; side: Side; size: number; up: number; label: string; x?: number; aspect?: number; at?: { x: number; y: number }; rotation?: number; flip?: boolean }
 
 /** Pattern alterations previewed on the 3D model (cm): body length, girth, sleeve length. */
 export interface Alteration { length: number; width: number; sleeve: number; bottoms: boolean }
@@ -117,9 +118,14 @@ function Model({ url, tint, useTexture, roughness, decals, alteration, onReady, 
   }, [mesh, alt]); // eslint-disable-line react-hooks/exhaustive-deps
   const box = (mesh?.geometry.userData.restBox as THREE.Box3 | undefined) ?? mesh?.geometry.boundingBox;
   const textures = useMemo(() => new Map<string, THREE.Texture>(), []);
-  const tex = (src: string) => {
-    let t = textures.get(src);
-    if (!t) { t = new THREE.TextureLoader().load(src, () => invalidate()); t.colorSpace = THREE.SRGBColorSpace; textures.set(src, t); }
+  const tex = (src: string, flip = false) => {
+    const key = `${flip ? "f:" : ""}${src}`;
+    let t = textures.get(key);
+    if (!t) {
+      t = new THREE.TextureLoader().load(src, () => invalidate()); t.colorSpace = THREE.SRGBColorSpace;
+      if (flip) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; }
+      textures.set(key, t);
+    }
     return t;
   };
   if (!mesh || !box) return null;
@@ -132,10 +138,10 @@ function Model({ url, tint, useTexture, roughness, decals, alteration, onReady, 
         const pos: [number, number, number] = d.side === "front" ? [dx, y, box.max.z] : d.side === "back" ? [-dx, y, box.min.z] : d.side === "left" ? [box.max.x * 0.82, d.at ? y : size.y * 0.3, 0] : [box.min.x * 0.82, d.at ? y : size.y * 0.3, 0];
         const roll = ((d.rotation ?? 0) * Math.PI) / 180;
         const rot: [number, number, number] = d.side === "front" ? [0, 0, -roll] : d.side === "back" ? [0, Math.PI, -roll] : d.side === "left" ? [0, Math.PI / 2, -roll] : [0, -Math.PI / 2, -roll];
-        const depth = (d.side === "front" || d.side === "back" ? size.z : size.x) * 0.9;
+        const depth = d.side === "front" || d.side === "back" ? size.z * 0.9 : size.x * 0.45;
         return (
-          <Decal key={`${d.id}:${alt}`} position={pos} rotation={rot} scale={[d.size, d.kind === "text" ? d.size / 2 : d.size * (d.aspect ?? 1), depth]}>
-            <meshStandardMaterial map={tex(d.src)} transparent polygonOffset polygonOffsetFactor={-4} roughness={0.8} depthWrite={false} />
+          <Decal key={`${d.id}:${alt}:${d.flip ? 1 : 0}`} renderOrder={d.id} position={pos} rotation={rot} scale={[d.size, d.kind === "text" ? d.size / 2 : d.size * (d.aspect ?? 1), depth]}>
+            <meshStandardMaterial map={tex(d.src, d.flip)} transparent polygonOffset polygonOffsetFactor={-4} roughness={0.8} depthWrite={false} />
           </Decal>
         );
       })}
@@ -218,6 +224,8 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
   const [roughness, setRoughness] = useState(0.85);
   const [decalsFree, setDecals] = useState<DecalItem[]>([]);
   const tint = order?.tint ?? tintFree, useTexture = order ? false : useTextureFree, decals = order?.decals ?? decalsFree;
+  // backdrop that the garment stands out against: from the fabric colour, or neutral for a creator's printed texture
+  const backdrop = useTexture ? (["#a3a19c", "#7f7d79"] as [string, string]) : contrastBackdrop(tint);
   const [side, setSide] = useState<Side>("front");
   const [text, setText] = useState("");
   const [textColor, setTextColor] = useState("#111111");
@@ -234,7 +242,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
     <div className={bare ? "h-full" : order ? "space-y-3" : "mt-4 grid gap-4 lg:grid-cols-[1fr_320px]"} data-testid="library-studio" data-loaded={size ? "yes" : error ? "error" : "no"} data-decals={decals.length}>
       <div className={bare ? "relative h-full min-h-[240px] overflow-hidden" : "relative h-[60vh] min-h-[380px] overflow-hidden rounded-2xl border border-line"}>
         {error ? <p className="p-6 text-sm text-mute">{error}</p> : (
-          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; onScene?.(scene); gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: "#141416", touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
+          <Canvas shadows frameloop="demand" dpr={[1, 2]} camera={{ fov: 32, near: 1, far: 5000, position: [0, 0, 300] }} gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }} onCreated={({ gl, scene }) => { glRef.current = gl; sceneRef.current = scene; onScene?.(scene); gl.toneMapping = THREE.NeutralToneMapping; }} style={{ background: `radial-gradient(circle at 50% 42%, ${backdrop[0]}, ${backdrop[1]})`, touchAction: "none" }} aria-label={`3D preview of ${name}`} data-testid="library-canvas">
             <hemisphereLight args={["#ffffff", "#3a3a3d", 0.5]} />
             <directionalLight position={[70, 130, 150]} intensity={2.2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-150} shadow-camera-right={150} shadow-camera-top={150} shadow-camera-bottom={-150} shadow-camera-far={600} />
             <directionalLight position={[-110, 60, -120]} intensity={1.4} />

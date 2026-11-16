@@ -1,11 +1,11 @@
 "use client";
 /** Shared rendering of a made-to-order collection garment line (cart, orders, admin, partner portal). */
 import clsx from "clsx";
-import { artworkLabel, describeMto, getMtoFabric, mtoProfileFor, parseLibraryLine } from "@/lib/garment/made-to-order";
+import { artworkLabel, describeMto, getMtoFabric, mtoColour, mtoProfileFor, parseLibraryLine } from "@/lib/garment/made-to-order";
 
 export function MtoThumb({ snapshot, className }: { snapshot: unknown; className?: string }) {
   const line = parseLibraryLine(snapshot);
-  const colour = line && getMtoFabric(line.options.fabricId)?.colours.find((c) => c.id === line.options.colourId);
+  const colour = line && mtoColour(line.options);
   return (
     <span className={clsx("relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-2", className)} data-testid="mto-thumb">
       {line?.garment.thumbnail ? <img src={line.garment.thumbnail} alt="" className="h-full w-full object-contain p-1" /> : null}

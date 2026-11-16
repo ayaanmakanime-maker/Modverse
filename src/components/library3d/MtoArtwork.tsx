@@ -13,30 +13,63 @@ import { Select, Spinner, toast } from "@/components/ui";
 import { UploadSignIn } from "@/components/editor/panels-artwork";
 import { FONTS } from "@/lib/typography/fonts";
 import { loadFont } from "@/lib/render/assets";
-import type { MtoFabric, MtoMethod, MtoOptions, MtoProfile, MtoZone } from "@/lib/garment/made-to-order";
+import { MAX_ART, MAX_ART_PER_ZONE, type MtoFabric, type MtoMethod, type MtoOptions, type MtoProfile, type MtoZone } from "@/lib/garment/made-to-order";
 
-export const ZONE_LABEL: Record<MtoZone, string> = { front: "Front", back: "Back", "chest-left": "Left chest", "sleeve-left": "Left sleeve", "hip-left": "Left hip" };
+export const ZONE_LABEL: Record<MtoZone, string> = { front: "Front", back: "Back", "chest-left": "Left chest", "chest-right": "Right chest", "sleeve-left": "Left sleeve", "sleeve-right": "Right sleeve", "back-neck": "Back neck", "hip-left": "Left hip" };
 export const METHOD_LABEL: Record<MtoMethod, string> = { dtg: "DTG print", dtf: "DTF transfer", screen: "Screen print", embroidery: "Embroidery" };
 /** Where each zone's centre sits on the garment: cm to the wearer's left of centre, and down from the top. */
-export const ZONE_ANCHOR: Record<MtoZone, { x: number; y: number; side: "front" | "back" | "left" }> = { front: { x: 0, y: 24, side: "front" }, back: { x: 0, y: 22, side: "back" }, "chest-left": { x: 9, y: 17, side: "front" }, "sleeve-left": { x: 0, y: 14, side: "left" }, "hip-left": { x: 10, y: 12, side: "front" } };
+export const ZONE_ANCHOR: Record<MtoZone, { x: number; y: number; side: "front" | "back" | "left" | "right" }> = {
+  front: { x: 0, y: 24, side: "front" }, back: { x: 0, y: 22, side: "back" }, "chest-left": { x: 9, y: 17, side: "front" }, "chest-right": { x: -9, y: 17, side: "front" },
+  "sleeve-left": { x: 0, y: 14, side: "left" }, "sleeve-right": { x: 0, y: 14, side: "right" }, "back-neck": { x: 0, y: 6, side: "back" }, "hip-left": { x: 10, y: 12, side: "front" },
+};
 const TEXT_FONTS = FONTS.filter((f) => f.category !== "indic").slice(0, 14).map((f) => f.family);
 
 export type Art = MtoOptions["artwork"][number];
 export interface ArtPreview { url: string; aspect: number; name: string }
-export const artKey = (a: Art) => a.uploadId ?? (a.assetId ? `asset:${a.assetId}` : `text:${a.text}|${a.font}|${a.color}`);
+export const artKey = (a: Art) => a.uploadId ?? (a.assetId ? `asset:${a.assetId}` : `text:${a.text}|${a.font}|${a.color}|${a.bold ? 1 : 0}${a.italic ? 1 : 0}|${a.outline ?? ""}|${a.spacing ?? 0}|${a.arc ?? 0}`);
+export type TextStyle = Pick<Art, "bold" | "italic" | "outline" | "spacing" | "arc">;
 
-/** Text artwork as a tightly cropped PNG (for the 3D preview) and its height / width ratio. */
-export async function renderText(text: string, font: string, color: string): Promise<ArtPreview> {
-  await loadFont({ family: font, weight: 700, italic: false }).catch(() => undefined);
+/** Text artwork as a tightly cropped PNG (for the previews) and its height / width ratio: weight, italic, outline, letter spacing and an arc. */
+export async function renderText(text: string, font: string, color: string, st: TextStyle = {}): Promise<ArtPreview> {
+  const weight = st.bold === false ? 400 : 700;
+  await loadFont({ family: font, weight, italic: !!st.italic }).catch(() => undefined);
+  const px = 160, spec = `${st.italic ? "italic " : ""}${weight} ${px}px "${font}", system-ui, sans-serif`;
+  const probe = document.createElement("canvas").getContext("2d")!;
+  probe.font = spec;
+  const gap = (st.spacing ?? 0) * px, chars = [...text];
+  const widths = chars.map((ch) => probe.measureText(ch).width);
+  const line = widths.reduce((s, w) => s + w, 0) + gap * Math.max(0, chars.length - 1);
+  const m = probe.measureText(text), asc = m.actualBoundingBoxAscent || px * 0.8, desc = m.actualBoundingBoxDescent || px * 0.2;
+  const pad = px * 0.14 + (st.outline ? px * 0.06 : 0);
+  const arc = ((st.arc ?? 0) * Math.PI) / 180;
   const c = document.createElement("canvas"), g = c.getContext("2d")!;
-  const px = 160;
-  g.font = `700 ${px}px "${font}", system-ui, sans-serif`;
-  const m = g.measureText(text);
-  const w = Math.ceil(m.width + px * 0.2), h = Math.ceil((m.actualBoundingBoxAscent || px * 0.8) + (m.actualBoundingBoxDescent || px * 0.2) + px * 0.2);
-  c.width = Math.max(8, w); c.height = Math.max(8, h);
-  g.font = `700 ${px}px "${font}", system-ui, sans-serif`;
-  g.fillStyle = color; g.textBaseline = "alphabetic"; g.textAlign = "center";
-  g.fillText(text, c.width / 2, px * 0.1 + (m.actualBoundingBoxAscent || px * 0.8));
+  const paint = (ch: string, x: number, y: number) => {
+    if (st.outline) { g.lineWidth = px * 0.09; g.lineJoin = "round"; g.strokeStyle = st.outline; g.strokeText(ch, x, y); }
+    g.fillText(ch, x, y);
+  };
+  if (Math.abs(arc) < 0.05) {
+    c.width = Math.max(8, Math.ceil(line + pad * 2)); c.height = Math.max(8, Math.ceil(asc + desc + pad * 2));
+    g.font = spec; g.fillStyle = color; g.textBaseline = "alphabetic"; g.textAlign = "left";
+    let x = pad;
+    chars.forEach((ch, i) => { paint(ch, x, pad + asc); x += widths[i] + gap; });
+  } else {
+    // letters on a circle: a positive arc bows upwards (a rainbow), a negative one downwards
+    const R = line / Math.abs(arc), up = arc > 0, half = Math.abs(arc) / 2;
+    const w = 2 * (R + asc) * Math.sin(Math.min(Math.PI / 2, half)) + pad * 2 + px, h = (R + asc) - (R - desc) * Math.cos(Math.min(Math.PI / 2, half)) + pad * 2 + px * 0.2;
+    c.width = Math.ceil(w); c.height = Math.ceil(h);
+    g.font = spec; g.fillStyle = color; g.textBaseline = "alphabetic"; g.textAlign = "center";
+    const cx = c.width / 2, cy = up ? pad + asc + R : c.height - pad - desc - R;
+    let run = -line / 2;
+    chars.forEach((ch, i) => {
+      const mid = run + widths[i] / 2, th = mid / R;
+      g.save();
+      g.translate(cx + R * Math.sin(th), up ? cy - R * Math.cos(th) : cy + R * Math.cos(th));
+      g.rotate(up ? th : -th);
+      paint(ch, 0, 0);
+      g.restore();
+      run += widths[i] + gap;
+    });
+  }
   return { url: c.toDataURL("image/png"), aspect: c.height / c.width, name: text };
 }
 
@@ -67,7 +100,10 @@ interface LibraryItem { id: string; name: string; url: string | null; width: num
 
 export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPreviews }: { o: MtoOptions; setO: (f: (x: MtoOptions) => MtoOptions) => void; profile: MtoProfile; fabric: MtoFabric; signedIn: boolean; previews: Record<string, ArtPreview>; setPreviews: (f: (x: Record<string, ArtPreview>) => Record<string, ArtPreview>) => void }) {
   const zones = Object.entries(profile.zones) as [MtoZone, { w: number; h: number }][];
-  const freeZones = zones.filter(([z]) => !o.artwork.some((a) => a.zone === z));
+  // a print area takes up to MAX_ART_PER_ZONE artworks (layered in the order listed); new artwork goes to the chosen area
+  const count = (z: MtoZone) => o.artwork.filter((a) => a.zone === z).length;
+  const freeZones = o.artwork.length >= MAX_ART ? [] : zones.filter(([z]) => count(z) < MAX_ART_PER_ZONE);
+  const [target, setTarget] = useState<MtoZone | "">("");
   const [tab, setTab] = useState<"upload" | "library" | "text">("upload");
   const [uploading, setUploading] = useState(false);
   const [q, setQ] = useState("");
@@ -85,8 +121,8 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
   }, [tab, q]);
 
   const place = (src: Pick<Art, "uploadId" | "assetId" | "text" | "font" | "color">, preview: ArtPreview) => {
-    const zone = freeZones[0];
-    if (!zone) return toast("Every placement on this style is in use — remove one first", "info");
+    const zone = freeZones.find(([z]) => z === target) ?? freeZones.find(([z]) => count(z) === 0) ?? freeZones[0];
+    if (!zone) return toast("Every print area on this style is full — remove an artwork first", "info");
     const method = fabric.methods.includes("dtf") && !src.text ? "dtf" : fabric.methods[0];
     const size = fitSize(zone[1], preview.aspect, method);
     const a: Art = { ...src, zone: zone[0], ...size, offsetXCm: 0, offsetYCm: 0, rotation: 0, method };
@@ -111,14 +147,14 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
   const patch = (i: number, p: Partial<Art>) => setO((x) => ({ ...x, artwork: x.artwork.map((a, k) => (k === i ? { ...a, ...p } : a)) }));
   // re-render text previews whose glyphs changed (font / colour / wording)
   useEffect(() => {
-    for (const a of o.artwork) if (a.text && !previews[artKey(a)]) renderText(a.text, a.font ?? TEXT_FONTS[0], a.color ?? "#111111").then((p) => setPreviews((x) => ({ ...x, [artKey(a)]: p })));
+    for (const a of o.artwork) if (a.text && !previews[artKey(a)]) renderText(a.text, a.font ?? TEXT_FONTS[0], a.color ?? "#111111", a).then((p) => setPreviews((x) => ({ ...x, [artKey(a)]: p })));
   }, [o.artwork]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tabBtn = (id: typeof tab, label: string, Icon: typeof Upload) => <button role="tab" aria-selected={tab === id} className={clsx("mv-chip !px-2.5 !py-1 !text-[0.7rem]", tab === id && "!border-champagne !text-bone")} onClick={() => setTab(id)} data-testid={`mto-art-tab-${id}`}><Icon className="mr-1 inline size-3" />{label}</button>;
   return (
     <section className="mv-card space-y-2 p-4" data-testid="mto-artwork">
       <h3 className="text-xs uppercase tracking-widest text-mute">Graphics and text</h3>
-      <p className="text-[0.65rem] text-mute">Placements: {zones.map(([z, m]) => `${ZONE_LABEL[z]} up to ${m.w} × ${m.h} cm`).join(" · ")}. {fabric.name} takes {fabric.methods.map((m) => METHOD_LABEL[m]).join(", ")}.</p>
+      <p className="text-[0.65rem] text-mute">Print areas (up to {MAX_ART_PER_ZONE} layered artworks each): {zones.map(([z, m]) => `${ZONE_LABEL[z]} up to ${m.w} × ${m.h} cm`).join(" · ")}. {fabric.name} takes {fabric.methods.map((m) => METHOD_LABEL[m]).join(", ")}.</p>
 
       {o.artwork.map((a, i) => {
         const zone = profile.zones[a.zone]!, pv = previews[artKey(a)], aspect = pv?.aspect ?? a.heightCm / a.widthCm, lim = offsetLimits(a, zone);
@@ -131,15 +167,33 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
               <button aria-label="Remove artwork" className="text-mute hover:text-bad" onClick={() => setO((x) => ({ ...x, artwork: x.artwork.filter((_, k) => k !== i) }))}><Trash2 className="size-4" /></button>
             </div>
             {a.text !== undefined && (
+              <>
               <div className="grid grid-cols-[1fr_auto_auto] gap-1.5">
                 <input className="mv-input !py-1 !text-xs" maxLength={40} value={a.text} onChange={(e) => patch(i, { text: e.target.value })} aria-label="Text" />
                 <Select value={a.font} onChange={(e) => patch(i, { font: e.target.value })} className="!w-28 !py-1 !text-xs" aria-label="Font">{TEXT_FONTS.map((f) => <option key={f}>{f}</option>)}</Select>
                 <input type="color" value={a.color ?? "#111111"} onChange={(e) => patch(i, { color: e.target.value })} aria-label="Text colour" className="h-8 w-8 rounded border border-line bg-transparent" />
               </div>
+              <div className="flex flex-wrap items-center gap-1.5" data-testid="mto-text-style">
+                <button className={clsx("mv-chip !px-2 !py-0.5 !text-[0.68rem] font-bold", a.bold !== false && "!border-champagne")} aria-pressed={a.bold !== false} onClick={() => patch(i, { bold: a.bold === false })} data-testid="mto-text-bold">B</button>
+                <button className={clsx("mv-chip !px-2 !py-0.5 !text-[0.68rem] italic", a.italic && "!border-champagne")} aria-pressed={!!a.italic} onClick={() => patch(i, { italic: !a.italic })} data-testid="mto-text-italic">I</button>
+                <label className="flex items-center gap-1 text-mute"><input type="checkbox" checked={!!a.outline} onChange={(e) => patch(i, { outline: e.target.checked ? "#ffffff" : undefined })} data-testid="mto-text-outline" /> Outline</label>
+                {a.outline && <input type="color" value={a.outline} onChange={(e) => patch(i, { outline: e.target.value })} aria-label="Outline colour" className="h-6 w-6 rounded border border-line bg-transparent" />}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-mute">Letter spacing<input type="range" className="w-full" min={0} max={0.5} step={0.02} value={a.spacing ?? 0} onChange={(e) => patch(i, { spacing: +e.target.value || undefined })} aria-label="Letter spacing" /></label>
+                <label className="block text-mute">Arc {a.arc ?? 0}°<input type="range" className="w-full" min={-180} max={180} step={5} value={a.arc ?? 0} onChange={(e) => patch(i, { arc: +e.target.value || undefined })} aria-label="Text arc" data-testid="mto-text-arc" /></label>
+              </div>
+              </>
             )}
             <div className="grid grid-cols-2 gap-1.5">
-              <Select value={a.zone} onChange={(e) => { const z = e.target.value as MtoZone; patch(i, { zone: z, ...fitSize(profile.zones[z]!, aspect, a.method), offsetXCm: 0, offsetYCm: 0 }); }} className="!py-1 !text-xs" aria-label="Placement" data-testid="mto-art-zone">{zones.filter(([z]) => z === a.zone || !o.artwork.some((x) => x.zone === z)).map(([z]) => <option key={z} value={z}>{ZONE_LABEL[z]}</option>)}</Select>
+              <Select value={a.zone} onChange={(e) => { const z = e.target.value as MtoZone; patch(i, { zone: z, ...fitSize(profile.zones[z]!, aspect, a.method), offsetXCm: 0, offsetYCm: 0 }); }} className="!py-1 !text-xs" aria-label="Placement" data-testid="mto-art-zone">{zones.filter(([z]) => z === a.zone || count(z) < MAX_ART_PER_ZONE).map(([z]) => <option key={z} value={z}>{ZONE_LABEL[z]}</option>)}</Select>
               <Select value={a.method} onChange={(e) => patch(i, { method: e.target.value as MtoMethod })} className="!py-1 !text-xs" aria-label="Method" data-testid="mto-art-method">{fabric.methods.map((m) => <option key={m} value={m}>{METHOD_LABEL[m]}</option>)}</Select>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button className={clsx("mv-chip !px-2 !py-0.5 !text-[0.68rem]", a.flipX && "!border-champagne")} aria-pressed={!!a.flipX} onClick={() => patch(i, { flipX: !a.flipX })} data-testid="mto-art-flip">Mirror</button>
+              <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" disabled={i === 0} onClick={() => setO((x) => { const l = [...x.artwork]; [l[i - 1], l[i]] = [l[i], l[i - 1]]; return { ...x, artwork: l }; })} title="Move this layer back">↓ Back</button>
+              <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" disabled={i === o.artwork.length - 1} onClick={() => setO((x) => { const l = [...x.artwork]; [l[i + 1], l[i]] = [l[i], l[i + 1]]; return { ...x, artwork: l }; })} title="Move this layer forward">↑ Front</button>
+              <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" disabled={!freeZones.some(([z]) => z === a.zone)} onClick={() => setO((x) => ({ ...x, artwork: [...x.artwork, { ...a, offsetXCm: 0, offsetYCm: 0 }] }))} data-testid="mto-art-duplicate">Duplicate</button>
             </div>
             <label className="block text-mute">Size {a.widthCm} × {a.heightCm} cm
               <input type="range" className="w-full" min={2} max={maxW} step={0.5} value={Math.min(a.widthCm, maxW)} onChange={(e) => { const w = +e.target.value; patch(i, { widthCm: w, heightCm: Math.max(1, Math.round(w * aspect * 2) / 2) }); }} aria-label="Artwork size" data-testid="mto-art-width" />
@@ -155,7 +209,9 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
 
       {freeZones.length > 0 && (
         <div className="space-y-2 rounded-lg border border-dashed border-line p-2">
-          <div className="flex flex-wrap gap-1" role="tablist" aria-label="Add artwork">{tabBtn("upload", "Your image", Upload)}{tabBtn("library", "Library", ImagePlus)}{tabBtn("text", "Text", Type)}</div>
+          <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Add artwork">{tabBtn("upload", "Your image", Upload)}{tabBtn("library", "Library", ImagePlus)}{tabBtn("text", "Text", Type)}
+            <Select value={target} onChange={(e) => setTarget(e.target.value as MtoZone | "")} className="ml-auto !w-auto !py-1 !text-[0.68rem]" aria-label="Print area for new artwork" data-testid="mto-art-target"><option value="">Next free area</option>{freeZones.map(([z]) => <option key={z} value={z}>{ZONE_LABEL[z]}</option>)}</Select>
+          </div>
           {tab === "upload" && (signedIn ? (
             <label className={clsx("mv-btn mv-btn-ghost w-full cursor-pointer justify-center text-xs", uploading && "opacity-60")}>
               {uploading ? <Spinner /> : <Upload className="size-4" />} {uploading ? "Uploading…" : "Upload PNG, JPG, WebP or SVG"}
@@ -197,7 +253,7 @@ export async function resolveArtPreviews(artwork: Art[]): Promise<Record<string,
   }
   await Promise.all(artwork.map(async (a) => {
     if (a.uploadId) out[a.uploadId] = { url: `/api/uploads/${a.uploadId}`, aspect: a.heightCm / a.widthCm, name: "Your artwork" };
-    else if (a.text) out[artKey(a)] = await renderText(a.text, a.font ?? TEXT_FONTS[0], a.color ?? "#111111");
+    else if (a.text) out[artKey(a)] = await renderText(a.text, a.font ?? TEXT_FONTS[0], a.color ?? "#111111", a);
   }));
   return out;
 }

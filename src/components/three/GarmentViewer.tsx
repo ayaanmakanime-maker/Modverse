@@ -9,7 +9,6 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { isSoftwareRenderer } from "@/lib/three/capabilities";
-import { useResolvedTheme } from "@/components/theme";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import type { DesignConfig } from "@/lib/garment/schema";
 import { buildGarmentGeometry, type ButtonData, type ButtonholeData, type GarmentGeometry, type MeshData } from "@/lib/three/garment-geometry";
@@ -20,7 +19,7 @@ import { getFabric } from "@/lib/garment/fabrics";
 import { weaveCanvas, WEAVE_PERIOD_CM } from "@/lib/three/fabric-textures";
 import { dataTexture, enableDualNormal, FABRIC_LOOK, heightToNormal, roughnessCanvas, trimNormal } from "@/lib/three/fabric-materials";
 import type { PanelId, Zone } from "@/lib/garment/types";
-import { isDark, mixHex, pbrAlbedo } from "@/lib/color";
+import { contrastBackdrop, isDark, mixHex, pbrAlbedo } from "@/lib/color";
 
 export type ViewPreset = "front" | "back" | "left" | "right" | "three-quarter";
 export type LightingPreset = "studio" | "daylight" | "evening";
@@ -568,10 +567,10 @@ export const GarmentViewer = forwardRef<GarmentViewerHandle, GarmentViewerProps>
       return new Blob([result as ArrayBuffer], { type: "model/gltf-binary" });
     },
   }));
-  const uiTheme = useResolvedTheme();
   const L0 = LIGHTS[lighting];
   // Light UI → bright photo-studio sweep (white garments get a soft grey edge so they still read).
-  const L = uiTheme === "light" ? { ...L0, bg: ["#ffffff", "#e4e1db"] as [string, string] } : L0;
+  // the backdrop follows the garment's own colour so it never blends in (in either theme)
+  const L = { ...L0, bg: contrastBackdrop(config.fabric.color) };
   const mode = controlsMode ?? (compact ? "none" : "full");
   if (webgl === false)
     return <div className="flex h-full items-center justify-center p-6 text-center text-sm text-mute">3D preview needs WebGL, which isn&apos;t available in this browser. The 2D editor and all other features still work.</div>;

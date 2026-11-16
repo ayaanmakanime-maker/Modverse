@@ -90,6 +90,12 @@ The design then behaves like a collection garment: it follows your body and ever
 
 Styling parts stay available for context (12 complete outfits, 4 trousers, 16 shoes, all CC0 MakeHuman parts fitted through their `.mhclo`), under a collapsed "Styling" section. They have no size and no fit map.
 
+## Pose, repaired bindings and backdrop (V3.1)
+* **Standing pose.** The rest mesh holds its arms out with the elbows bent forwards and the fingers flat. The standing poses now bring the upper arms down to the sides, open the forearm about the elbow's own axis so it hangs with a soft bend, turn the palms to the thighs, curl the fingers a little (every finger joint bends about the knuckle line; `Pose.fingers`), and put the feet under the hips with the toes slightly out. Walking swings the arms from that position.
+* **Binding repair (`repairGarmentFit`).** An audit of all 119 `.mhclo` bindings found 44 garments with vertices that are right on the body they were modelled on but tear away by 15–560 cm on other bodies (bound to helper geometry that does not follow the body) — the spikes and shards seen on some tops, trousers and dresses. On load, a vertex is re-bound to its three nearest body vertices when it lands far from its authored position, or when it moves more than 5 cm differently from its mesh neighbours on a probe body; this repeats until nothing more is found. After repair the worst edge stretch on a third body is under 10 cm for all but a few very full dresses and one cardigan (up to 30 cm on an extreme body).
+* **Styling under the garment.** A garment that reaches below the knee (suits with their own trousers, long coats) hides the styling trousers. The women's mannequin now wears trousers by default under tops.
+* **Backdrop.** Solid is the default finish. Both finishes use a mid-tone backdrop so black, white and coloured garments all stand out; the wireframe is neutral grey, no longer the same blue as the fit map's "loose".
+
 ## Size and fit map (`src/lib/human/fit-map.ts`)
 A garment is cut for a size, not for the customer. For the chosen size:
 1. The **size-chart body** (`SIZE_CHARTS` in `src/lib/garment/sizing.ts`: chest/bust, waist, hip, shoulder, neck, upper arm) is solved onto the mannequin **at the customer's height**, so the map reads girth fit, not length.

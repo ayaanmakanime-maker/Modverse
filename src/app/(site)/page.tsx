@@ -1,131 +1,164 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Layers, Ruler, Camera, Box, Type, ShieldCheck } from "lucide-react";
-import { Logo } from "@/components/brand/Logo";
+import { ArrowRight, Package, Palette, Ruler, Scissors, ShieldCheck, Truck } from "lucide-react";
+import { visibleGarments, type LibraryGarment } from "@/lib/garment-library";
+import { GARMENT_MODELS } from "@/lib/garment/models";
 import { GarmentFlat } from "@/components/garment/GarmentFlat";
 import { createDesign } from "@/lib/garment/design";
-import { getLibraryIndex } from "@/lib/library/server";
+import { TYPE_ORDER } from "@/lib/garment/collection-search";
+import { defaultMtoOptions, garmentTypeFor, GARMENT_TYPE_LABELS, mtoProfileFor, priceMto } from "@/lib/garment/made-to-order";
+import { formatINR } from "@/lib/garment/pricing";
+import { getPricingRules } from "@/lib/services/pricing";
 
-const JOURNEY = ["Discover", "Select garment", "Design", "Customise", "Visualise", "Try on", "Validate", "Order", "Manufacture"];
-const SHOWCASE: [string, "men" | "women", string][] = [
-  ["tee-oversized", "men", "#111111"],
-  ["shirt-cuban-camp", "women", "#0F172A"],
-  ["tee-raglan", "women", "#F5F3EE"],
-  ["shirt-linen", "men", "#E8DCC6"],
-];
+export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const lib = getLibraryIndex();
-  const sample = lib.assets.filter((a) => a.kind === "graphic").filter((_, i) => i % 25 === 0).slice(0, 10);
+type Range = "men" | "women";
+const thumb = (g: LibraryGarment) => (g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null);
+/** Styles shown first on the home page (they exist in the library; missing ones are skipped). */
+const HERO: Record<Range, string[]> = { women: ["toigo-keyhole-neck-dress", "toigo-female-suit", "toigo-shift-dress"], men: ["toigo-male-double-breasted-suit", "elvs-male-shirt-untucked-bd1", "mindfront-m-suit-01"] };
+
+function Tile({ g, className = "" }: { g: LibraryGarment; className?: string }) {
+  const src = thumb(g);
   return (
-    <div>
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-16 pt-10 md:px-6 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
-          <div className="animate-fade-up">
-            <Logo variant="original" priority className="w-full max-w-xl" />
-            <h1 className="mv-display mt-6 text-4xl text-bone md:text-6xl">Design the garment itself.</h1>
-            <p className="mt-5 max-w-xl text-lg text-bone-2">
-              Silhouette, construction, fabric, every panel, typography and artwork — guided by AI Muse, previewed in 3D, tried on with your camera and checked for manufacturing before you order.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/design/new?mode=studio" className="mv-btn mv-btn-primary">Start designing <ArrowRight className="size-4" /></Link>
-              <Link href="/shop/men" className="mv-btn mv-btn-ghost">Explore the catalogue</Link>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {SHOWCASE.map(([id, aud, color]) => {
-              const d = createDesign(id, aud);
-              d.fabric.color = color;
-              return (
-                <Link key={id} href={`/shop/${aud}/${id}`} className="mv-card group flex aspect-[4/5] items-center justify-center p-4 transition hover:border-line-2">
-                  <GarmentFlat config={d} view="front" className="h-full w-full transition duration-500 group-hover:scale-[1.03]" title={id} />
-                </Link>
-              );
-            })}
+    <span className={`mv-product-stage flex items-center justify-center overflow-hidden rounded-2xl ${className}`}>
+      {src ? <img src={src} alt={g.name} className="h-full w-full object-contain p-3 transition duration-500 group-hover:scale-105" loading="lazy" /> : null}
+    </span>
+  );
+}
+
+/** The shop's front page: the ranges, every category, styles with their prices, and how ordering works. */
+export default async function Home() {
+  const [all, rules] = await Promise.all([visibleGarments(), getPricingRules()]);
+  const styles = all.filter((g) => mtoProfileFor(g.category));
+  const inRange = (r: Range) => styles.filter((g) => g.audience === r || g.audience === "unisex");
+  const from = (g: LibraryGarment) => { const p = priceMto(g, defaultMtoOptions(g)!, rules); return formatINR(p.unitPrice + p.gst); };
+  const href = (g: LibraryGarment, r: Range) => `/shop/${r}/${g.id}`;
+  const pick = (r: Range, ids: string[]) => ids.map((id) => inRange(r).find((g) => g.id === id)).filter((g): g is LibraryGarment => !!g);
+  /** One style per category, then more, so a rail shows the breadth of the range. */
+  const rail = (r: Range, n: number) => {
+    const list = inRange(r), out: LibraryGarment[] = [];
+    for (let round = 0; out.length < n && round < 4; round++) for (const c of TYPE_ORDER) { const g = list.filter((x) => x.category === c)[round]; if (g && out.length < n) out.push(g); }
+    return out;
+  };
+  const categories = (r: Range) => TYPE_ORDER.map((c) => ({ c, list: inRange(r).filter((g) => g.category === c) })).filter((x) => x.list.length > 0);
+  const total = styles.length + GARMENT_MODELS.length;
+  const heroW = pick("women", HERO.women), heroM = pick("men", HERO.men);
+  const hero = [heroW[0], heroM[0], heroW[1], heroM[1]].filter(Boolean) as LibraryGarment[];
+
+  return (
+    <div data-testid="home">
+      <p className="border-b border-line bg-ink-2 px-4 py-2 text-center text-xs text-bone-2">
+        Free shipping above {formatINR(rules.shipping.freeAbove)} · Every piece made to order in your size, fabric and colour
+      </p>
+
+      {/* hero */}
+      <section className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 md:px-6 lg:grid-cols-[1fr_1.15fr] lg:py-14">
+        <div>
+          <p className="mv-eyebrow">New season · {total} styles</p>
+          <h1 className="mv-display mt-3 text-5xl leading-[1.05] text-bone md:text-6xl">Dresses, suits, shirts, denim.<br />Made for you.</h1>
+          <p className="mt-5 max-w-lg text-base text-bone-2">Choose a style, pick the fabric and colour, add your own artwork, and see it on a mannequin with your measurements before it is made.</p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link href="/shop/women" className="mv-btn mv-btn-primary" data-testid="home-shop-women">Shop women <ArrowRight className="size-4" /></Link>
+            <Link href="/shop/men" className="mv-btn mv-btn-primary" data-testid="home-shop-men">Shop men <ArrowRight className="size-4" /></Link>
           </div>
         </div>
-      </section>
-
-      <section className="border-y border-line bg-ink-2">
-        <div className="mx-auto flex max-w-7xl gap-6 overflow-x-auto px-4 py-5 mv-scroll md:px-6">
-          {JOURNEY.map((j, i) => (
-            <span key={j} className="mv-eyebrow flex shrink-0 items-center gap-6">{j}{i < JOURNEY.length - 1 && <span className="text-line-2">→</span>}</span>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-20 md:px-6">
-        <p className="mv-eyebrow">Shop by category</p>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {([["men", "Men", "tee-drop-shoulder", "#4A4A48"], ["women", "Women", "shirt-oxford-button-down", "#AFC8E6"]] as const).map(([slug, name, model, color]) => {
-            const d = createDesign(model, slug);
-            d.fabric.color = color;
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+          {hero.map((g) => {
+            const r: Range = g.audience === "women" ? "women" : "men";
             return (
-              <Link key={slug} href={`/shop/${slug}`} className="mv-card group relative flex aspect-[4/3] items-end overflow-hidden p-6">
-                <div className="absolute inset-0 flex items-center justify-center p-8 opacity-90"><GarmentFlat config={d} view="front" className="h-full w-full" /></div>
-                <div className="relative"><p className="mv-display text-4xl">{name}</p><p className="mt-1 text-sm text-mute">T-shirts &amp; shirts</p></div>
+              <Link key={g.id} href={href(g, r)} className="group block">
+                <Tile g={g} className="aspect-[4/5]" />
+                <span className="mt-2 block truncate text-sm text-bone">{g.name}</span>
+                <span className="block text-xs text-mute">from {from(g)}</span>
               </Link>
             );
           })}
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
-        <p className="mv-eyebrow">Three ways to design — one engine</p>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {[
-            { mode: "studio", name: "Design Studio", tag: "Guided", body: "Templates, presets, colours, fabrics, library graphics and your own words — with AI Muse at your side." },
-            { mode: "atelier", name: "Atelier", tag: "Advanced", body: "Independent panels, collars and cuffs, proportions, layers, embroidery, avatar preview and version history." },
-            { mode: "pro", name: "Atelier Pro", tag: "Professional", body: "Precise measurements, material properties, print & embroidery zones, fit and manufacturing validation, tech packs and BOM." },
-          ].map((m) => (
-            <Link key={m.mode} href={`/design/new?mode=${m.mode}`} className="mv-card group p-6 transition hover:border-line-2">
-              <p className="mv-eyebrow text-champagne">{m.tag}</p>
-              <p className="mv-display mt-3 text-3xl">{m.name}</p>
-              <p className="mt-3 text-sm text-mute">{m.body}</p>
-              <span className="mt-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-bone-2 group-hover:text-bone">Open <ArrowRight className="size-3.5" /></span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-          <div>
-            <p className="mv-eyebrow">The ModVerse Creative Library</p>
-            <h2 className="mv-display mt-3 text-4xl">{lib.counts.graphic} graphics. {lib.collections.length} collections.</h2>
-            <p className="mt-4 text-bone-2">Plus {lib.counts.pattern} seamless patterns, {lib.counts.template} composition templates, {lib.counts.palette} palettes and {lib.counts.element} stickers — original, editable SVG artwork you can recolour, layer and place on any panel.</p>
-            <Link href="/library" className="mv-btn mv-btn-ghost mt-6">Browse the library</Link>
+      {/* categories: the whole range, for women and men */}
+      {(["women", "men"] as Range[]).map((r) => (
+        <section key={r} className="mx-auto max-w-7xl px-4 pb-12 md:px-6" data-testid={`home-categories-${r}`}>
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="mv-display text-3xl">{r === "women" ? "Women" : "Men"}</h2>
+            <Link href={`/shop/${r}`} className="text-xs uppercase tracking-[0.16em] text-bone-2 hover:text-bone">View all {inRange(r).length + GARMENT_MODELS.filter((m) => m.audiences.includes(r)).length} <ArrowRight className="inline size-3.5" /></Link>
           </div>
-          <div className="grid grid-cols-5 gap-2">
-            {sample.map((a) => (
-              <Link key={a.id} href={`/library?collection=${a.collection}`} className="mv-card mv-checker aspect-[5/6] overflow-hidden p-1" title={`${a.name} · ${a.collectionName}`}>
-                <img src={a.url!} alt={a.name} className="h-full w-full object-contain" loading="lazy" />
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {categories(r).map(({ c, list }) => (
+              <Link key={c} href={`/shop/${r}?cat=${c}#shop`} className="group block" data-testid={`home-cat-${r}-${c}`}>
+                <Tile g={list[0]} className="aspect-square" />
+                <span className="mt-2 block text-sm text-bone">{GARMENT_TYPE_LABELS[garmentTypeFor(c)]}</span>
+                <span className="block text-xs text-mute">{list.length + (c === "tshirts" || c === "shirts" ? GARMENT_MODELS.filter((m) => m.audiences.includes(r) && m.garmentType === (c === "tshirts" ? "tshirt" : "shirt")).length : 0)} styles</span>
               </Link>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      {/* product rails */}
+      {(["women", "men"] as Range[]).map((r) => (
+        <section key={r} className="border-t border-line">
+          <div className="mx-auto max-w-7xl px-4 py-12 md:px-6">
+            <div className="flex items-end justify-between gap-3">
+              <h2 className="mv-display text-3xl">{r === "women" ? "Popular for women" : "Popular for men"}</h2>
+              <Link href={`/shop/${r}`} className="text-xs uppercase tracking-[0.16em] text-bone-2 hover:text-bone">Shop {r} <ArrowRight className="inline size-3.5" /></Link>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4" data-testid={`home-rail-${r}`}>
+              {rail(r, 8).map((g) => (
+                <Link key={g.id} href={href(g, r)} className="group block" data-testid="home-product">
+                  <Tile g={g} className="aspect-[4/5]" />
+                  <span className="mt-2 block truncate text-sm text-bone">{g.name}</span>
+                  <span className="block text-xs text-mute">{mtoProfileFor(g.category)!.label} · from {from(g)}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
+
+      {/* how it works */}
+      <section className="border-t border-line bg-ink-2">
+        <div className="mx-auto max-w-7xl px-4 py-12 md:px-6">
+          <h2 className="mv-display text-3xl">How it works</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {([
+              [Palette, "1 · Make it yours", "Fabric, colour, fit, length, and your own image, graphics or text on the garment."],
+              [Ruler, "2 · Try it on", "Enter your measurements and see the garment on a mannequin of your size, with a fit map."],
+              [Scissors, "3 · Made to order", "Our studio checks every order, then the workshop cuts and sews your piece."],
+              [Truck, "4 · Delivered", `Tracked delivery across India, free above ${formatINR(rules.shipping.freeAbove)}.`],
+            ] as const).map(([Icon, t, b]) => (
+              <div key={t} className="mv-card p-5">
+                <Icon className="size-5 text-champagne" aria-hidden />
+                <p className="mt-3 font-medium">{t}</p>
+                <p className="mt-1 text-sm text-mute">{b}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-8 md:px-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            [Sparkles, "AI Muse", "Describe a garment in plain words — it builds and edits the real configuration, and tells you what it can't do."],
-            [Type, "Typography editor", "34 licensed typefaces incl. Devanagari, Tamil and Bengali; curved, circular, outlined and layered text."],
-            [Box, "Parametric 3D", "Every model, collar, cuff and proportion change rebuilds the 3D garment geometry live."],
-            [Camera, "AI photo try-on", "Upload a photo and see a garment on you, made by an image model on your own Puter account. A visualisation, not a fit check."],
-            [Ruler, "Measurement fit", "Size recommendations from real garment dimensions — labelled as estimates, never as verified fit."],
-            [Layers, "Manufacturing-aware", "Print areas, DPI, fabric and construction rules with explanations and one-click fixes."],
-          ].map(([Icon, t, b]) => {
-            const I = Icon as typeof Sparkles;
-            return (
-              <div key={t as string} className="mv-card p-5">
-                <I className="size-5 text-champagne" aria-hidden />
-                <p className="mt-3 font-medium">{t as string}</p>
-                <p className="mt-1 text-sm text-mute">{b as string}</p>
-              </div>
-            );
+      {/* design your own */}
+      <section className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-12 md:px-6 lg:grid-cols-[1fr_1.2fr]">
+        <div>
+          <p className="mv-eyebrow">Design studio</p>
+          <h2 className="mv-display mt-2 text-4xl">Start from a blank T-shirt or shirt</h2>
+          <p className="mt-3 max-w-md text-sm text-bone-2">Shape the collar, sleeves and fit, then build your artwork with layers, type and thousands of graphics. Every other style in the shop opens in the same studio.</p>
+          <Link href="/design/new" className="mv-btn mv-btn-ghost mt-5">Open the design studio <ArrowRight className="size-4" /></Link>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {([["tee-oversized", "men", "#1b1b1d"], ["shirt-cuban-camp", "women", "#22304D"], ["tee-raglan", "women", "#F4F4F1"], ["shirt-linen", "men", "#CDBA98"]] as const).map(([id, aud, color]) => {
+            const d = createDesign(id, aud);
+            d.fabric.color = color;
+            return <Link key={id} href={`/shop/${aud}/${id}`} className="mv-product-stage group flex aspect-[4/5] items-center justify-center rounded-2xl p-3"><GarmentFlat config={d} view="front" className="h-full w-full transition duration-500 group-hover:scale-105" title={id} /></Link>;
           })}
         </div>
-        <p className="mt-6 flex items-center gap-2 text-xs text-mute"><ShieldCheck className="size-4" /> Honest by design: prototypes, estimates and simulated services are always labelled.</p>
+      </section>
+
+      <section className="border-t border-line">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 text-sm text-bone-2 sm:grid-cols-3 md:px-6">
+          <p className="flex items-center gap-2"><Package className="size-4 text-champagne" /> Made to order: nothing is mass-produced</p>
+          <p className="flex items-center gap-2"><Ruler className="size-4 text-champagne" /> Sizes XS–3XL, or made to measure on woven styles</p>
+          <p className="flex items-center gap-2"><ShieldCheck className="size-4 text-champagne" /> Checked by our studio before production</p>
+        </div>
       </section>
     </div>
   );

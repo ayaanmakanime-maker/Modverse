@@ -55,7 +55,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
       <p className="mv-eyebrow">ModVerse · {row.name}</p>
       <h1 className="mv-display mt-2 text-4xl md:text-5xl">{row.name}</h1>
-      <p className="mt-3 max-w-2xl text-sm text-bone-2 md:text-base">{row.description} Design your own tees and shirts in the studio, or order any style made to measure — try everything on the Human Studio mannequin first.</p>
+      <p className="mt-3 max-w-2xl text-sm text-bone-2 md:text-base">{inRange.length + active.length} styles: {types.map((t) => (COLLECTION_LABELS[t] ?? t).toLowerCase()).join(", ")}. Every piece is made to order in your size, fabric and colour.</p>
 
       <section id="shop" className="mt-6" data-testid="shop-collection">
         <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 mv-scroll md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="Garment type">
@@ -65,28 +65,27 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         <CatalogueFilters action={`/shop/${category}`} query={query} count={items.length} extra={{ cat }} madeToOrder={garments.length} />
         {items.length + garments.length === 0 && <p className="mt-8 text-sm text-mute">Nothing matches these filters. <Link className="underline" href={`/shop/${category}`}>Clear filters</Link>.</p>}
         <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" data-testid="shop-collection-grid">
+          {garments.map((g) => (
+            <li key={g.id}>
+              <Link href={`/shop/${category}/${g.id}`} className="mv-card group flex h-full flex-col overflow-hidden transition hover:border-line-2" data-testid="shop-garment-card">
+                <span className="mv-product-stage block aspect-[4/5]">{g.thumbnail && <img src={`/garment-library/${g.path}/${g.thumbnail}`} alt="" className="h-full w-full object-contain p-2 transition duration-500 group-hover:scale-[1.04]" loading="lazy" decoding="async" />}</span>
+                <span className="flex flex-1 flex-col gap-0.5 p-3">
+                  <span className="truncate text-sm text-bone">{g.name}</span>
+                  <span className="text-[0.68rem] text-mute">{mtoProfileFor(g.category)!.label}</span>
+                  <span className="mt-auto pt-1 text-xs text-bone-2">from {formatINR(collectionPrice(g))}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
           {items.map(({ product, model }) => (
             <li key={product.id}>
               <Link href={`/shop/${category}/${model.id}`} className="mv-card group flex h-full flex-col overflow-hidden transition hover:border-line-2" data-testid="product-card">
-                <span className="flex aspect-square items-center justify-center bg-surface-2/40 p-3"><GarmentFlat config={createDesign(model.id, range)} view="front" className="h-full w-full transition duration-500 group-hover:scale-[1.04]" title={model.name} /></span>
+                <span className="mv-product-stage flex aspect-[4/5] items-center justify-center p-3"><GarmentFlat config={createDesign(model.id, range)} view="front" className="h-full w-full transition duration-500 group-hover:scale-[1.04]" title={model.name} /></span>
                 <span className="flex flex-1 flex-col gap-0.5 p-3">
                   <span className="text-[0.62rem] uppercase tracking-[0.14em] text-champagne">Design your own</span>
                   <span className="truncate text-sm text-bone">{model.name}</span>
                   <span className="text-[0.68rem] text-mute">{model.garmentType === "tshirt" ? "T-shirt" : "Shirt"} · {model.fit}</span>
                   <span className="mt-auto pt-1 text-xs text-bone-2">from {formatINR(product.basePrice)}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-          {garments.map((g) => (
-            <li key={g.id}>
-              <Link href={`/shop/${category}/${g.id}`} className="mv-card group flex h-full flex-col overflow-hidden transition hover:border-line-2" data-testid="shop-garment-card">
-                <span className="block aspect-square bg-surface-2/40">{g.thumbnail && <img src={`/garment-library/${g.path}/${g.thumbnail}`} alt="" className="h-full w-full object-contain p-2 transition duration-500 group-hover:scale-[1.04]" loading="lazy" decoding="async" />}</span>
-                <span className="flex flex-1 flex-col gap-0.5 p-3">
-                  <span className="text-[0.62rem] uppercase tracking-[0.14em] text-mute">Made to order</span>
-                  <span className="truncate text-sm text-bone">{g.name}</span>
-                  <span className="text-[0.68rem] text-mute">{mtoProfileFor(g.category)!.label}</span>
-                  <span className="mt-auto pt-1 text-xs text-bone-2">from {formatINR(collectionPrice(g))}</span>
                 </span>
               </Link>
             </li>

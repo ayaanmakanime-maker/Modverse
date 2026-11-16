@@ -23,7 +23,7 @@ import { BrandLoader, Logo } from "@/components/brand/Logo";
 import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { formatINR, type PricingRules } from "@/lib/garment/pricing";
 import { SIZE_CHARTS } from "@/lib/garment/sizing";
-import { getMtoFabric, mtoProfileFor, priceMto, validateMto, type MtoGarmentRef, type MtoOptions, type MtoZone } from "@/lib/garment/made-to-order";
+import { CUSTOM_DYE, getMtoFabric, mtoColour, mtoProfileFor, priceMto, validateMto, type MtoGarmentRef, type MtoOptions, type MtoZone } from "@/lib/garment/made-to-order";
 import type { DecalItem } from "./LibraryGarmentStudio";
 import { artKey, MtoArtwork, offsetLimits, resolveArtPreviews, ZONE_ANCHOR, ZONE_LABEL, METHOD_LABEL, type ArtPreview } from "./MtoArtwork";
 
@@ -86,7 +86,7 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
   useEffect(() => { if (user && profile.madeToMeasure) api<{ profiles: typeof profiles }>("/api/account/measurements").then((r) => setProfiles(r.profiles)).catch(() => undefined); }, [user, profile.madeToMeasure]);
 
   const fabric = getMtoFabric(o.fabricId)!;
-  const colour = fabric.colours.find((c) => c.id === o.colourId) ?? fabric.colours[0];
+  const colour = mtoColour(o);
   const setFabric = (fid: string) => {
     const f = getMtoFabric(fid)!;
     setO((x) => ({ ...x, fabricId: fid, colourId: f.colours.some((c) => c.id === x.colourId) ? x.colourId : f.colours[0].id, artwork: x.artwork.map((a) => (f.methods.includes(a.method) ? a : { ...a, method: f.methods[0] })) }));
@@ -100,7 +100,7 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
     const pv = previews[artKey(a)];
     if (!pv) return [];
     const anchor = ZONE_ANCHOR[a.zone];
-    return [{ id: i + 1, kind: "image" as const, src: pv.url, side: anchor.side, size: a.widthCm, up: 0.5, aspect: a.heightCm / a.widthCm, label: pv.name, at: { x: anchor.x + a.offsetXCm, y: anchor.y - a.offsetYCm }, rotation: a.rotation }];
+    return [{ id: i + 1, kind: "image" as const, src: pv.url, side: anchor.side, size: a.widthCm, up: 0.5, aspect: a.heightCm / a.widthCm, label: pv.name, at: { x: anchor.x + a.offsetXCm, y: anchor.y - a.offsetYCm }, rotation: a.rotation, flip: !!a.flipX }];
   });
   const fitEase = o.fit === "slim" ? -4 : o.fit === "relaxed" ? 6 : 0;
   const alteration = { length: o.lengthAdjustCm, width: o.widthAdjustCm + fitEase, sleeve: o.sleeveAdjustCm, bottoms: profile.category === "trousers" || profile.category === "skirts" };
@@ -168,9 +168,16 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
           <section className="space-y-1.5">
             <h3 className="mv-eyebrow !text-[0.6rem]">Colour · {colour.name}</h3>
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Colour">
-              {fabric.colours.map((c) => <button key={c.id} role="radio" aria-checked={o.colourId === c.id} title={c.name} aria-label={c.name} onClick={() => set({ colourId: c.id })} className={clsx("size-8 rounded-full border-2", o.colourId === c.id ? "border-champagne" : "border-line")} style={{ background: c.hex }} data-testid={`mto-colour-${c.id}`} />)}
+              {fabric.colours.map((c) => <button key={c.id} role="radio" aria-checked={!o.customColour && o.colourId === c.id} title={c.name} aria-label={c.name} onClick={() => set({ colourId: c.id, customColour: null })} className={clsx("size-8 rounded-full border-2", !o.customColour && o.colourId === c.id ? "border-champagne" : "border-line")} style={{ background: c.hex }} data-testid={`mto-colour-${c.id}`} />)}
             </div>
             <p className="text-[0.62rem] text-mute">{fabric.name}: its stocked colour card. Screens show colours approximately.{mode === "studio" ? " Other fabrics are in Atelier." : ""}</p>
+            {mode !== "studio" ? (
+              <label className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs" data-testid="mto-custom-colour">
+                <input type="color" value={o.customColour ?? colour.hex} onChange={(e) => set({ customColour: e.target.value })} aria-label="Custom colour" className="h-7 w-9 rounded border border-line bg-transparent" />
+                <span className="flex-1"><span className="block text-bone-2">Any colour, dyed to order</span><span className="block text-[0.62rem] text-mute">+{formatINR(CUSTOM_DYE.surcharge)} · {CUSTOM_DYE.extraDays} more days · matched to this colour by the dye house</span></span>
+                {o.customColour && <button className="text-mute underline" onClick={(e) => { e.preventDefault(); set({ customColour: null }); }}>Clear</button>}
+              </label>
+            ) : <p className="text-[0.62rem] text-mute">Any colour, dyed to order, is in Atelier.</p>}
           </section>
         </div>
       );
@@ -359,7 +366,7 @@ function ZoneCanvas({ o, setO, profile, previews, tint, onEmpty }: { o: MtoOptio
                 };
                 return (
                   <g key={i} transform={`translate(${cx} ${cy}) rotate(${a.rotation})`} data-testid="zone-art">
-                    {pv ? <image href={pv.url} x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} preserveAspectRatio="xMidYMid meet" style={{ cursor: "move" }} onPointerDown={start("move")} /> : <rect x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} fill="#0003" onPointerDown={start("move")} />}
+                    {pv ? <image href={pv.url} x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} preserveAspectRatio="xMidYMid meet" transform={a.flipX ? "scale(-1 1)" : undefined} style={{ cursor: "move" }} onPointerDown={start("move")} /> : <rect x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} fill="#0003" onPointerDown={start("move")} />}
                     <rect x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} fill="none" stroke="#fff" strokeWidth={0.08} pointerEvents="none" />
                     <rect x={a.widthCm / 2 - 0.6} y={a.heightCm / 2 - 0.6} width={1.2} height={1.2} fill="#c9a96e" style={{ cursor: "nwse-resize" }} onPointerDown={start("size")} data-testid="zone-art-resize" />
                   </g>

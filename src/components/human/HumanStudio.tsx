@@ -22,7 +22,7 @@ import { Button, Notice, Segmented, Spinner, toast } from "@/components/ui";
 import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { bodyPositions, cupLetter, DEFAULT_LOOK, loadHumanAsset, lookMorphs, measureBody, measuresFor, type BodyState, type ControlId, type HumanAsset, type MeasureDef, type MeasureId, type Sex } from "@/lib/human/model";
 import { fitBody, type FitResult } from "@/lib/human/solve";
-import { loadGarmentFit, type GarmentFit } from "@/lib/human/fit-garment";
+import { fitGarment, loadGarmentFit, repairGarmentFit, type GarmentFit } from "@/lib/human/fit-garment";
 import { baseNormals, clearanceColors, clearanceSummary, EASE_BANDS, garmentClearance, sizeFits, smoothClearance } from "@/lib/human/fit-map";
 import { bodyForSize } from "@/lib/garment/sizing";
 import { COLLECTION_LABELS } from "@/lib/garment-library-labels";
@@ -43,7 +43,7 @@ const PROFILE_TO_MEASURE: Partial<Record<string, MeasureId>> = { height: "height
 type Slots = Partial<Record<PartKind, string>>;
 const DEFAULT_SLOTS: Record<Sex, Slots> = {
   male: { bottoms: "toigo_wool_pants", shoes: "toigo_ankle_boots_male" },
-  female: { shoes: "toigo_ballet_flats" },
+  female: { bottoms: "cortu_cargo_pants", shoes: "toigo_ballet_flats" },
 };
 /** MakeHuman's "ideal proportions" per sex; the cup shape follows bust and underbust when both are given. */
 const DEFAULT_BUILD: Record<Sex, { muscle: number; cup: number; proportions: number }> = { male: { muscle: 0.15, cup: 0, proportions: 0.45 }, female: { muscle: 0, cup: 0.3, proportions: 0.7 } };
@@ -208,7 +208,9 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const types = [...new Set(ownGarments.map((g) => g.category))];
   const shownGarments = ownGarments.filter((g) => !type || g.category === type);
   /** Trousers and skirts are worn alone (no styling trousers); dresses and jumpsuits too. */
-  const bottomsCovered = !!garment && ["trousers", "skirts", "dresses", "jumpsuits"].includes(garment.category);
+  // …and anything else that reaches below the knee on the body (suits with their own trousers, long coats)
+  const [legCover, setLegCover] = useState<Record<string, boolean>>({});
+  const bottomsCovered = !!garment && (["trousers", "skirts", "dresses", "jumpsuits"].includes(garment.category) || !!legCover[garment.id]);
   const category = design ? (design.config.garmentType === "shirt" ? "shirts" : "tshirts") : garment?.category;
   const profile = category ? mtoProfileFor(category) : null;
   const sizeKeys = profile?.sizeKeys ?? (["chest", "waist", "hip"] as const);
@@ -224,7 +226,9 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   }, [garmentId]);
   const fabric = profile ? getMtoFabric(fabricId && profile.fabrics.includes(fabricId) ? fabricId : profile.fabrics[0]) : null;
   const colour = fabric?.colours.find((c) => c.id === colourId) ?? null;
-  const tint = colour?.hex ?? "#FFFFFF";
+  // a customised style may be dyed to order: any colour
+  const customHex = styleDesign?.options.customColour ?? null;
+  const tint = customHex ?? colour?.hex ?? "#FFFFFF";
 
   // one of your customised shop styles: the garment in your fabric colour, size, fit and artwork
   async function openStyleDesign(id: string, size?: string): Promise<boolean> {
@@ -283,14 +287,31 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
     setGfit(null);
     if (!garment) return;
     let live = true;
-    if (garment.hasFit === false && !asset) return;
+    if (!asset) return;
     // a style shipped without a .mhclo binding is bound here, to the base body it was modelled on
-    const fitFor = (m: THREE.Mesh) => (garment.hasFit === false ? Promise.resolve(bindToBody(asset!, asset!.base[garment.audience === "women" ? "female" : "male"], m.geometry.attributes.position.array as Float32Array)) : loadGarmentFit(garment.base));
+    const fitFor = (m: THREE.Mesh) => (garment.hasFit === false ? Promise.resolve(bindToBody(asset!, asset!.base[garment.audience === "women" ? "female" : "male"], m.geometry.attributes.position.array as Float32Array))
+      // a few source bindings have stray vertices: they are re-bound so no spikes show
+      : loadGarmentFit(garment.base).then((f) => {
+        const gs: Sex = garment.audience === "women" ? "female" : "male";
+        const probe = m.geometry.index ? { body: bodyPositions(asset!, { sex: gs, controls: { weight: 0.7, proportions: 0.7, cup: 0.6, muscle: 0.4 }, scale: 1 }), index: m.geometry.index.array } : undefined;
+        return repairGarmentFit(f, asset!.base[gs], m.geometry.attributes.position.array as Float32Array, asset!.bodyVerts, probe).fit;
+      }));
     garmentMesh(garment.glb).then((m) => Promise.all([fitFor(m), m.geometry.index?.array ?? null]))
       .then(([f, index]) => live && setGfit({ id: garment.id, fit: f, index }))
       .catch(() => toast("No fitting data for this garment", "bad"));
     return () => { live = false; };
-  }, [garment, garment?.hasFit === false ? asset : null]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [garment, asset]);
+
+  useEffect(() => {
+    if (!gfit || !asset || legCover[gfit.id] !== undefined) return;
+    const g = garments.find((x) => x.id === gfit.id);
+    const base = asset.base[g?.audience === "women" ? "female" : "male"];
+    const p = fitGarment(gfit.fit, base);
+    let lo = Infinity, feet = Infinity;
+    for (let i = 1; i < p.length; i += 3) if (p[i] < lo) lo = p[i];
+    for (let k = 0; k < asset.bodyVerts.length; k++) feet = Math.min(feet, base[asset.bodyVerts[k] * 3 + 1]);
+    setLegCover((x) => ({ ...x, [gfit.id]: lo - feet < 55 }));
+  }, [gfit, asset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ---------------- size and fit map ---------------- */
   const [size, setSize] = useState<string | null>(initial.size ?? null);
@@ -345,14 +366,14 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
         const pv = artPreviews[artKey(a)];
         if (!pv) return [];
         const z = ZONE_ANCHOR[a.zone];
-        return [{ url: pv.url, side: z.side, at: { x: z.x + a.offsetXCm, y: z.y - a.offsetYCm }, width: a.widthCm, height: a.heightCm, roll: a.rotation }];
+        return [{ url: pv.url, side: z.side, at: { x: z.x + a.offsetXCm, y: z.y - a.offsetYCm }, width: a.widthCm, height: a.heightCm, roll: a.rotation, flip: !!a.flipX }];
       }) : [];
       const dk = decals.map((d) => `${d.url.length}:${d.at.x},${d.at.y},${d.width},${d.roll}`).join("|");
-      out.push({ key: `garment/${garment.id}${dk ? `/${dk}` : ""}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null, fabric: fabricFamily(garment), decals, plain: !!colour });
+      out.push({ key: `garment/${garment.id}${dk ? `/${dk}` : ""}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null, fabric: fabricFamily(garment), decals, plain: !!colour || !!customHex });
     }
     if (design && wearable && !outfitId) out.push({ key: wearable.key, kind: "design", fit: wearable.binding.fit, object: { geometry: wearable.geometry, materials: wearable.materials }, colors: fitMap ? colors : null });
     return out;
-  }, [wanted, loaded, garment, gfit, design, wearable, outfitId, fitMap, colors, styleDesign, artPreviews, colour]);
+  }, [wanted, loaded, garment, gfit, design, wearable, outfitId, fitMap, colors, styleDesign, artPreviews, colour, customHex]);
   const [ready, setReady] = useState<string[]>([]);
 
   /* ---------------- motion and view ---------------- */
@@ -361,7 +382,7 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const [cloth, setCloth] = useState(true);
   const [turntable, setTurntable] = useState(false);
   const [view, setView] = useState<ViewId>("full");
-  const [style, setStyle] = useState<MannequinStyle>("wire");
+  const [style, setStyle] = useState<MannequinStyle>("solid");
   const sceneRef = useRef<THREE.Scene | null>(null);
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
   const statsEl = useRef<HTMLElement | null>(null);

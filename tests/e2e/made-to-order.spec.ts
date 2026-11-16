@@ -56,6 +56,25 @@ test("made to order: shop → customise within manufacturing limits → cart →
   await expect(page.getByTestId("zone-art")).toHaveCount(0);
   await page.getByTestId("redo").click();
   await expect(page.getByTestId("zone-art")).toHaveCount(1);
+  // more to customise: both chest sides, the back neck and sleeves; any colour dyed to order; styled text; layers
+  await page.getByRole("radio", { name: "2D" }).click();
+  for (const z of ["chest-left", "chest-right", "back-neck", "sleeve-left", "sleeve-right", "front", "back"]) await expect(page.getByTestId(`zone-${z}`)).toBeVisible();
+  await page.getByRole("radio", { name: "3D" }).click();
+  await page.getByTestId("mto-art-tab-text").click();
+  await page.getByTestId("mto-art-target").selectOption("chest-left");
+  await page.getByTestId("mto-text").fill("AK");
+  await page.getByTestId("mto-text-add").click();
+  await expect(page.getByTestId("mto-art-item")).toHaveCount(2); // a second layer on the same print area
+  const txt = page.getByTestId("mto-art-item").nth(1);
+  await txt.getByTestId("mto-text-italic").click();
+  await txt.getByTestId("mto-art-flip").click();
+  await expect(mto).toHaveAttribute("data-valid", "yes");
+  await page.getByTestId("gd-tab-colour").click();
+  const before = Number(await mto.getAttribute("data-price"));
+  await page.getByTestId("mto-custom-colour").locator("input[type=color]").fill("#7b3fa0");
+  await expect.poll(async () => Number(await mto.getAttribute("data-price"))).toBe(before + 250);
+  await page.getByTestId("mto-colour-sky").click(); // back to the stocked colour
+  await expect.poll(async () => Number(await mto.getAttribute("data-price"))).toBe(before);
   // saved to the account and reopened in the studio
   await page.getByTestId("design-name").fill("Office Oxford");
   await page.getByTestId("gd-save").click();
