@@ -31,8 +31,8 @@ export function buildSkeleton(a: HumanAsset, rest: Float32Array): Skeleton {
 }
 
 const D = Math.PI / 180;
-/** Forearm twist that turns the palms from facing forward (A-pose) towards the thighs. */
-const TWIST = 48;
+/** Forearm twist (degrees; the wrist adds ~30 % more) that turns the palms to face the thighs, a little to the back. */
+const TWIST = 22;
 function euler(out: Float64Array, o: number, x: number, y: number, z: number) {
   const cx = Math.cos(x * D), sx = Math.sin(x * D), cy = Math.cos(y * D), sy = Math.sin(y * D), cz = Math.cos(z * D), sz = Math.sin(z * D);
   // R = Rz · Ry · Rx (row-major)
@@ -41,32 +41,60 @@ function euler(out: Float64Array, o: number, x: number, y: number, z: number) {
   out[o + 6] = -sy; out[o + 7] = cy * sx; out[o + 8] = cy * cx;
 }
 
+type V3 = [number, number, number];
+const nrm = (v: number[]): V3 => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+const crs = (a: number[], b: number[]): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+type HandAxes = { curl: V3; thumbIn: { axis: V3; angle: number }; thumbFlex: [V3, V3] } | null;
+const handCache = new WeakMap<Skeleton, HandAxes>();
+const handAxes = (sk: Skeleton): HandAxes => { if (!handCache.has(sk)) handCache.set(sk, handAxesOf(sk)); return handCache.get(sk)!; };
+/** Rotation axes of a resting left hand, from its joints at rest (null when the rig has no fingers). */
+function handAxesOf(sk: Skeleton): HandAxes {
+  const at = (nm: string) => { const i = sk.index.get(nm); return i === undefined ? null : [sk.head[i * 3], sk.head[i * 3 + 1], sk.head[i * 3 + 2]]; };
+  const dir = (nm: string) => { const i = sk.index.get(nm)!; return [sk.dir[i * 3], sk.dir[i * 3 + 1], sk.dir[i * 3 + 2]]; };
+  const hand = at("LeftHand"), index = at("LeftHandIndex1"), middle = at("LeftHandMiddle1"), pinky = at("LeftHandPinky1");
+  if (!hand || !index || !middle || !pinky || !at("LeftHandThumb3")) return null;
+  const k = nrm([pinky[0] - index[0], pinky[1] - index[1], pinky[2] - index[2]]);
+  const h = nrm([middle[0] - hand[0], middle[1] - hand[1], middle[2] - hand[2]]);
+  // palm normal: the side the fingers curl towards
+  const palm = crs(k, h);
+  // the thumb comes in beside the index finger: mostly along the hand, towards the index side and a little over the palm
+  const t0 = nrm(dir("LeftHandThumb1"));
+  const want = nrm([0.75 * h[0] - 0.45 * k[0] + 0.45 * palm[0], 0.75 * h[1] - 0.45 * k[1] + 0.45 * palm[1], 0.75 * h[2] - 0.45 * k[2] + 0.45 * palm[2]]);
+  const angle = (Math.acos(Math.max(-1, Math.min(1, t0[0] * want[0] + t0[1] * want[1] + t0[2] * want[2]))) * 180) / Math.PI;
+  // rotating v about u moves it towards u × v: thumb joints bend towards the palm about (bone × palm)
+  const flex = (nm: string) => nrm(crs(dir(nm), palm));
+  return { curl: k, thumbIn: { axis: nrm(crs(t0, want)), angle }, thumbFlex: [flex("LeftHandThumb2"), flex("LeftHandThumb3")] };
+}
+
 export interface Posed { positions: Float32Array; /** posed joint positions (n × 3) */ heads: Float32Array }
 
 /** Skins `rest` (base-vertex positions) into `out` for the pose; feet are put back on y = 0. */
 export function skin(a: HumanAsset, sk: Skeleton, rest: Float32Array, pose: Pose, out: Float32Array = new Float32Array(rest.length)): Posed {
   const n = sk.names.length;
   const R = new Float64Array(n * 9), H = new Float64Array(n * 3), L = new Float64Array(9);
-  // finger curl: every finger joint bends about the hand's knuckle line (index → pinky knuckle), towards the palm
-  const curlAxis = (side: "Left" | "Right"): [number, number, number] | null => {
-    const i = sk.index.get(`${side}HandIndex1`), k = sk.index.get(`${side}HandPinky1`);
-    if (i === undefined || k === undefined) return null;
-    const x = sk.head[k * 3] - sk.head[i * 3], y = sk.head[k * 3 + 1] - sk.head[i * 3 + 1], z = sk.head[k * 3 + 2] - sk.head[i * 3 + 2], l = Math.hypot(x, y, z) || 1;
-    return side === "Left" ? [x / l, y / l, z / l] : [-x / l, -y / l, -z / l];
+  // A resting hand, worked out on the left hand at rest and mirrored for the right (axes (x, −y, −z): a mirrored
+  // rotation). The fingers bend about the knuckle line (index → little finger), towards the palm; the thumb folds in
+  // alongside the index finger and bends a little at its joints.
+  const hand = pose.fingers ? handAxes(sk) : null;
+  const rot = (M: Float64Array, ax: V3, deg: number) => {
+    const c = Math.cos(deg * D), sn = Math.sin(deg * D), t = 1 - c, [x, y, z] = ax;
+    M.set([t * x * x + c, t * x * y - sn * z, t * x * z + sn * y, t * x * y + sn * z, t * y * y + c, t * y * z - sn * x, t * x * z - sn * y, t * y * z + sn * x, t * z * z + c]);
   };
-  const axes = pose.fingers ? { Left: curlAxis("Left"), Right: curlAxis("Right") } : null;
+  const mirror = (v: V3, left: boolean): V3 => (left ? v : [v[0], -v[1], -v[2]]);
   for (let b = 0; b < n; b++) {
     const name = sk.names[b];
     const e = pose.bones[name];
     euler(L, 0, e?.[0] ?? 0, e?.[1] ?? 0, e?.[2] ?? 0);
-    const finger = axes && /Hand(Index|Middle|Ring|Pinky|Thumb)/.exec(name);
+    const finger = hand && /^(Left|Right)Hand(Index|Middle|Ring|Pinky|Thumb)(\d)$/.exec(name);
     if (finger) {
-      const ax = axes[name.startsWith("Left") ? "Left" : "Right"];
-      if (ax) {
-        // the little finger curls most, the thumb least; the tip joints a little more than the knuckles
-        const amount = pose.fingers! * ({ Index: 0.8, Middle: 0.95, Ring: 1.05, Pinky: 1.15, Thumb: 0.35 } as Record<string, number>)[finger[1]] * (name.endsWith("1") ? 0.8 : 1);
-        const c = Math.cos(amount * D), sn = Math.sin(amount * D), t = 1 - c, [x, y, z] = ax;
-        L.set([t * x * x + c, t * x * y - sn * z, t * x * z + sn * y, t * x * y + sn * z, t * y * y + c, t * y * z - sn * x, t * x * z - sn * y, t * y * z + sn * x, t * z * z + c]);
+      const left = finger[1] === "Left", f = finger[2], j = Number(finger[3]), amt = pose.fingers!;
+      if (f === "Thumb") {
+        if (j === 1) rot(L, mirror(hand.thumbIn.axis, left), hand.thumbIn.angle * Math.min(1.2, amt / 24));
+        else rot(L, mirror(hand.thumbFlex[j - 2], left), amt * (j === 2 ? 0.55 : 0.45));
+      } else {
+        // the knuckles bend least, the middle joints most; the little finger curls most
+        const k = ({ Index: 0.78, Middle: 0.92, Ring: 1.04, Pinky: 1.16 } as Record<string, number>)[f] * (j === 1 ? 0.72 : j === 2 ? 1.22 : 0.92);
+        rot(L, mirror(hand.curl, left), amt * k);
       }
     }
     if (e && e[3]) {
@@ -118,24 +146,36 @@ export function skin(a: HumanAsset, sk: Skeleton, rest: Float32Array, pose: Pose
   return { positions: out, heads };
 }
 
-export type PoseId = "relaxed" | "apose" | "contrapposto" | "walk";
+export type PoseId = "idle" | "relaxed" | "apose" | "contrapposto" | "walk";
 export const POSES: { id: PoseId; label: string; animated: boolean }[] = [
-  { id: "relaxed", label: "Relaxed", animated: true },
+  { id: "idle", label: "Idle", animated: true },
+  { id: "relaxed", label: "Standing still", animated: true },
   { id: "contrapposto", label: "Weight on one leg", animated: true },
   { id: "walk", label: "Walk", animated: true },
   { id: "apose", label: "A-pose (measuring)", animated: false },
 ];
+export const DEFAULT_POSE: PoseId = "idle";
 
-/** The pose at time `t` (seconds). `life` adds breathing and small weight shifts to the standing poses. */
-export function poseAt(id: PoseId, t: number, life = true): Pose {
+export interface PoseOptions {
+  /** degrees the arms are held further out from the body, so they clear its sides and what is worn (see armClearance) */
+  armOut?: number;
+}
+
+/**
+ * The pose at time `t` (seconds). `life` adds the small movements of someone standing: breathing, weight shifts and
+ * glances. "idle" is a game-lobby stance: loose knees, the weight drifting from one leg to the other, shoulders and
+ * arms relaxed, the head looking around.
+ */
+export function poseAt(id: PoseId, t: number, life = true, opt: PoseOptions = {}): Pose {
   const b: Pose["bones"] = {};
   if (id === "apose") return { bones: b };
   const s = Math.sin, breath = life ? s(t * 1.7) : 0, sway = life ? s(t * 0.55) : 0, drift = life ? s(t * 0.31 + 1) : 0;
   // In the rest pose the arms are held out at ~49° with the elbows bent ~46° forwards. A standing person's arms hang
   // at the sides with a soft elbow: the upper arm comes down, the forearm straightens about the elbow's own axis
   // (ELBOW × the X / Y split of that axis), and the palm turns in towards the thigh.
-  const arm = 35, EX = 0.75, EY = 0.66;
+  const arm = 35 - Math.max(0, opt.armOut ?? 0), EX = 0.75, EY = 0.66;
   const elbow = (open: number, side: 1 | -1, twist: number): number[] => [open * EX, side * open * EY, 0, side * twist];
+  if (id === "idle") return idle(t, life, arm, elbow);
   if (id === "walk") {
     const ph = t * 4.6, A = 22, K = 34, swing = 14;
     b.Hips = [0, -5 * s(ph), 1.5 * s(ph)];
@@ -147,7 +187,7 @@ export function poseAt(id: PoseId, t: number, life = true): Pose {
     // arms swing opposite to the legs; the elbow bends a little more on the forward swing
     b.LeftArm = [swing * s(ph), 0, -arm]; b.RightArm = [-swing * s(ph), 0, arm];
     b.LeftForeArm = elbow(26 - 10 * Math.max(0, s(ph)), 1, TWIST); b.RightForeArm = elbow(26 - 10 * Math.max(0, -s(ph)), -1, TWIST);
-    return { bones: b, root: [0, 0, 0], fingers: 12 };
+    return { bones: b, root: [0, 0, 0], fingers: 18 };
   }
   b.Spine1 = [-0.6 * breath, 1.2 * drift, 0];
   b.Spine2 = [-1.1 * breath, 0, 0];
@@ -172,5 +212,44 @@ export function poseAt(id: PoseId, t: number, life = true): Pose {
     b.Hips = [0, 0, 0.7 * sway];
     b.Spine = [0, 0, -0.5 * sway];
   }
-  return { bones: b, fingers: 12 };
+  return { bones: b, fingers: 20 };
+}
+
+/** Hip joint to ankle, cm (the adult range of the body model; used to keep the feet planted while the hips shift). */
+const LEG = 88;
+
+function idle(t: number, life: boolean, arm: number, elbow: (open: number, side: 1 | -1, twist: number) => number[]): Pose {
+  const s = Math.sin, b: Pose["bones"] = {};
+  const L = life ? 1 : 0;
+  // two slow, unrelated rhythms make the weight shift irregular, like a person waiting (-1 … 1, + = on the left leg)
+  const w = L * (0.68 * s(t * 0.42) + 0.32 * s(t * 0.17 + 1.3));
+  const breath = L * s(t * 1.75);
+  // a soft bounce in the knees, a little behind the breath
+  const bounce = L * (0.5 + 0.5 * s(t * 1.75 - 0.9));
+  const look = L * (8 * s(t * 0.23 + 0.5) + 3 * s(t * 0.61));
+  const tilt = 2.2 * w, shift = 1.4 * w;
+  // hips: over the standing leg, raised on that side, turned a little towards it
+  b.Hips = [0, 2.5 * w, tilt];
+  // feet stay where they are: the legs take out the hip shift and tilt
+  const comp = tilt + (shift / LEG) * (180 / Math.PI);
+  const knee = 3.5 + 1.6 * bounce;
+  const kL = knee + 7 * Math.max(0, -w), kR = knee + 7 * Math.max(0, w);
+  b.LeftUpLeg = [-kL, 2, -2.5 - comp]; b.LeftLeg = [2 * kL, 0, 0]; b.LeftFoot = [-kL, 7, 2.5 + comp];
+  b.RightUpLeg = [-kR, -2, 2.5 - comp]; b.RightLeg = [2 * kR, 0, 0]; b.RightFoot = [-kR, -7, -2.5 + comp];
+  // the spine curves back over the hips (an easy S), the chest rises with each breath
+  b.Spine = [1, -1 * w, -0.55 * tilt];
+  b.Spine1 = [-0.5 * breath, -1.2 * w, -0.45 * tilt];
+  b.Spine2 = [-1.2 * breath, 0, 0];
+  b.Neck = [2 + 0.5 * breath, 0.4 * look, 0.4 * tilt];
+  b.Head = [-1 + L * 2 * s(t * 0.37 + 2), 0.6 * look, L * (1.2 * s(t * 0.29) - 0.4)];
+  // shoulders dropped and soft, lifting slightly as the chest fills
+  b.LeftShoulder = [0, 0, -3 + 0.7 * breath]; b.RightShoulder = [0, 0, 3 - 0.7 * breath];
+  // arms hang loose and drift a little — forward and back, never in towards the body
+  const fl = L * (2 * s(t * 0.5 + 0.3) + 1.2 * w), fr = L * (2 * s(t * 0.47 + 2.1) - 1.2 * w);
+  b.LeftArm = [-2 + fl, 0, -arm + 0.6 * Math.max(0, w)];
+  b.RightArm = [-2 + fr, 0, arm - 0.6 * Math.max(0, -w)];
+  b.LeftForeArm = elbow(34 + L * 2 * s(t * 0.5 + 1), 1, TWIST); b.RightForeArm = elbow(34 + L * 2 * s(t * 0.47 + 3), -1, TWIST);
+  // wrists loose: a slight bend back towards the thumb side
+  b.LeftHand = [-3, 0, -4, TWIST * 0.3]; b.RightHand = [-3, 0, 4, -TWIST * 0.3];
+  return { bones: b, root: [shift, 0, 0], fingers: 24 + L * 2 * s(t * 0.3) };
 }

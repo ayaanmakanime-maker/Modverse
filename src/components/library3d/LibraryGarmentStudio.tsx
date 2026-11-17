@@ -8,6 +8,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { ContactShadows, Decal, Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { cmPerUv, patternTexture, type PatternSpec } from "@/lib/three/pattern-map";
 import { contrastBackdrop } from "@/lib/color";
 import { Export3DPanel } from "@/components/three/Export3DPanel";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -69,7 +70,7 @@ function textImage(text: string, color: string): string {
   return c.toDataURL("image/png");
 }
 
-function Model({ url, tint, useTexture, roughness, decals, alteration, onReady, onError }: { url: string; tint: string; useTexture: boolean; roughness: number; decals: DecalItem[]; alteration?: Alteration; onReady: (size: THREE.Vector3) => void; onError: (m: string) => void }) {
+function Model({ url, tint, useTexture, roughness, decals, alteration, pattern, onReady, onError }: { url: string; tint: string; useTexture: boolean; roughness: number; decals: DecalItem[]; alteration?: Alteration; pattern?: PatternSpec | null; onReady: (size: THREE.Vector3) => void; onError: (m: string) => void }) {
   const invalidate = useThree((s) => s.invalidate);
   const [mesh, setMesh] = useState<THREE.Mesh | null>(null);
   const original = useRef<THREE.Texture | null>(null);
@@ -95,15 +96,21 @@ function Model({ url, tint, useTexture, roughness, decals, alteration, onReady, 
     }, undefined, () => live && onError("The 3D model could not be loaded."));
     return () => { live = false; };
   }, [url, onReady, onError]);
+  // an all-over print replaces the fabric colour with the printed pattern (on that colour as its ground)
+  const patternKey = pattern ? `${pattern.url}|${pattern.ground}|${pattern.scaleCm}|${pattern.rotation}` : "";
   useEffect(() => {
     if (!mesh) return;
     const mat = mesh.material as THREE.MeshStandardMaterial;
-    mat.map = useTexture ? original.current : null;
-    mat.color.set(tint);
+    let printed: THREE.Texture | null = null;
+    const g = mesh.geometry;
+    if (pattern && g.attributes.uv) printed = patternTexture(pattern, cmPerUv(g.userData.rest ?? g.attributes.position.array, g.attributes.uv.array, g.index?.array ?? null), () => { mat.needsUpdate = true; invalidate(); });
+    mat.map = printed ?? (useTexture ? original.current : null);
+    mat.color.set(printed ? "#ffffff" : tint);
     mat.roughness = roughness;
     mat.needsUpdate = true;
     invalidate();
-  }, [mesh, tint, useTexture, roughness, invalidate]);
+    return () => { printed?.dispose(); };
+  }, [mesh, tint, useTexture, roughness, invalidate, patternKey]); // eslint-disable-line react-hooks/exhaustive-deps
   // pattern alterations (length, width, sleeves) on the mesh itself
   const alt = alteration ? `${alteration.length}|${alteration.width}|${alteration.sleeve}|${alteration.bottoms}` : "";
   useEffect(() => {
@@ -203,7 +210,7 @@ async function exportGarment(root: THREE.Object3D, format: ExportFormat, meta: {
  * `bare`: only the 3D view, filling its container (the design studio and product pages put their own tools around
  * it); `onScene` receives the scene for exports.
  */
-export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence, order, bare, onScene }: { url: string; name: string; heightCm: number; attribution: string; licence: string; order?: { tint: string; decals: DecalItem[]; alteration?: Alteration }; bare?: boolean; onScene?: (s: THREE.Scene) => void }) {
+export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence, order, bare, onScene }: { url: string; name: string; heightCm: number; attribution: string; licence: string; order?: { tint: string; decals: DecalItem[]; alteration?: Alteration; pattern?: PatternSpec | null }; bare?: boolean; onScene?: (s: THREE.Scene) => void }) {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const [exporting, setExporting] = useState("");
   const doExport = async (format: ExportFormat) => {
@@ -250,7 +257,7 @@ export function LibraryGarmentStudio({ url, name, heightCm, attribution, licence
               <Lightformer form="rect" intensity={1.1} position={[0, 4, 7]} scale={[10, 6, 1]} />
               <Lightformer form="rect" intensity={0.5} position={[-7, 2, 1]} rotation-y={Math.PI / 2} scale={[8, 6, 1]} />
             </Environment>
-            <Model url={url} tint={tint} useTexture={useTexture} roughness={roughness} decals={decals} alteration={order?.alteration} onReady={setSize} onError={setError} />
+            <Model url={url} tint={tint} useTexture={useTexture} roughness={roughness} decals={decals} alteration={order?.alteration} pattern={order?.pattern} onReady={setSize} onError={setError} />
             {size && <ContactShadows position={[0, -size.y / 2 - 1, 0]} opacity={0.45} scale={span * 3} blur={2.4} far={span} />}
             <OrbitControls makeDefault enableDamping minDistance={span * 0.5} maxDistance={span * 6} />
             <Rig view={view} dist={span * 2.6} />

@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getGarmentDesign } from "@/lib/services/garment-designs";
 import { mtoOptionsSchema } from "@/lib/garment/made-to-order";
 import { GarmentEditor } from "@/components/library3d/GarmentEditor";
+import type { DesignVersion } from "@/components/library3d/AtelierTools";
 import { loadStyle, modeOf } from "../load";
 
 export const dynamic = "force-dynamic";
@@ -19,5 +20,5 @@ export default async function GarmentDesignPage({ params, searchParams }: { para
   const style = await loadStyle(d.garmentId);
   const options = mtoOptionsSchema.safeParse(d.options);
   if (!style || !options.success) notFound();
-  return <GarmentEditor garment={style.ref} glb={style.glb} heightCm={style.heightCm} rules={style.rules} initial={{ id: d.id, name: d.name, mode: modeOf(sp.mode, d.mode), options: options.data }} />;
+  return <GarmentEditor garment={style.ref} glb={style.glb} heightCm={style.heightCm} rules={style.rules} initial={{ id: d.id, name: d.name, mode: modeOf(sp.mode, d.mode), options: options.data, versions: ((d.versions as DesignVersion[] | null) ?? []).flatMap((v) => { const o = mtoOptionsSchema.safeParse(v.options); return o.success ? [{ ...v, options: o.data }] : []; }) }} />;
 }

@@ -6,7 +6,7 @@
  */
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { ImagePlus, Search, Trash2, Type, Upload } from "lucide-react";
+import { AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical, Brush, ImagePlus, Images, Lock, Search, SlidersHorizontal, Trash2, Type, Upload } from "lucide-react";
 import { api, errorMessage } from "@/lib/client/api";
 import { uploadArtwork } from "@/lib/client/upload";
 import { Select, Spinner, toast } from "@/components/ui";
@@ -14,6 +14,7 @@ import { UploadSignIn } from "@/components/editor/panels-artwork";
 import { FONTS } from "@/lib/typography/fonts";
 import { loadFont } from "@/lib/render/assets";
 import { MAX_ART, MAX_ART_PER_ZONE, type MtoFabric, type MtoMethod, type MtoOptions, type MtoProfile, type MtoZone } from "@/lib/garment/made-to-order";
+import { AdjustPanel, DrawPad, MyImages } from "./AtelierTools";
 
 export const ZONE_LABEL: Record<MtoZone, string> = { front: "Front", back: "Back", "chest-left": "Left chest", "chest-right": "Right chest", "sleeve-left": "Left sleeve", "sleeve-right": "Right sleeve", "back-neck": "Back neck", "hip-left": "Left hip" };
 export const METHOD_LABEL: Record<MtoMethod, string> = { dtg: "DTG print", dtf: "DTF transfer", screen: "Screen print", embroidery: "Embroidery" };
@@ -26,8 +27,8 @@ const TEXT_FONTS = FONTS.filter((f) => f.category !== "indic").slice(0, 14).map(
 
 export type Art = MtoOptions["artwork"][number];
 export interface ArtPreview { url: string; aspect: number; name: string }
-export const artKey = (a: Art) => a.uploadId ?? (a.assetId ? `asset:${a.assetId}` : `text:${a.text}|${a.font}|${a.color}|${a.bold ? 1 : 0}${a.italic ? 1 : 0}|${a.outline ?? ""}|${a.spacing ?? 0}|${a.arc ?? 0}`);
-export type TextStyle = Pick<Art, "bold" | "italic" | "outline" | "spacing" | "arc">;
+export const artKey = (a: Art) => a.uploadId ?? (a.assetId ? `asset:${a.assetId}` : `text:${a.text}|${a.font}|${a.color}|${a.bold ? 1 : 0}${a.italic ? 1 : 0}|${a.outline ?? ""}|${a.spacing ?? 0}|${a.arc ?? 0}|${a.shadow ?? ""}`);
+export type TextStyle = Pick<Art, "bold" | "italic" | "outline" | "spacing" | "arc" | "shadow">;
 
 /** Text artwork as a tightly cropped PNG (for the previews) and its height / width ratio: weight, italic, outline, letter spacing and an arc. */
 export async function renderText(text: string, font: string, color: string, st: TextStyle = {}): Promise<ArtPreview> {
@@ -40,10 +41,12 @@ export async function renderText(text: string, font: string, color: string, st: 
   const widths = chars.map((ch) => probe.measureText(ch).width);
   const line = widths.reduce((s, w) => s + w, 0) + gap * Math.max(0, chars.length - 1);
   const m = probe.measureText(text), asc = m.actualBoundingBoxAscent || px * 0.8, desc = m.actualBoundingBoxDescent || px * 0.2;
-  const pad = px * 0.14 + (st.outline ? px * 0.06 : 0);
+  const pad = px * 0.14 + (st.outline ? px * 0.06 : 0) + (st.shadow ? px * 0.07 : 0);
   const arc = ((st.arc ?? 0) * Math.PI) / 180;
   const c = document.createElement("canvas"), g = c.getContext("2d")!;
   const paint = (ch: string, x: number, y: number) => {
+    // a hard drop shadow (printable as a second colour), offset down and to the right
+    if (st.shadow) { const f = g.fillStyle; g.fillStyle = st.shadow; g.fillText(ch, x + px * 0.06, y + px * 0.06); g.fillStyle = f; }
     if (st.outline) { g.lineWidth = px * 0.09; g.lineJoin = "round"; g.strokeStyle = st.outline; g.strokeText(ch, x, y); }
     g.fillText(ch, x, y);
   };
@@ -98,13 +101,16 @@ export function rotateWithin(a: Art, rotation: number, zone: { w: number; h: num
 
 interface LibraryItem { id: string; name: string; url: string | null; width: number | null; height: number | null }
 
-export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPreviews }: { o: MtoOptions; setO: (f: (x: MtoOptions) => MtoOptions) => void; profile: MtoProfile; fabric: MtoFabric; signedIn: boolean; previews: Record<string, ArtPreview>; setPreviews: (f: (x: Record<string, ArtPreview>) => Record<string, ArtPreview>) => void }) {
+export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPreviews, mode = "studio" }: { o: MtoOptions; setO: (f: (x: MtoOptions) => MtoOptions) => void; profile: MtoProfile; fabric: MtoFabric; signedIn: boolean; previews: Record<string, ArtPreview>; setPreviews: (f: (x: Record<string, ArtPreview>) => Record<string, ArtPreview>) => void; mode?: "studio" | "atelier" | "pro" }) {
+  const atelier = mode !== "studio", pro = mode === "pro";
+  const [adjusting, setAdjusting] = useState<number | null>(null);
+  const [drawing, setDrawing] = useState(false);
   const zones = Object.entries(profile.zones) as [MtoZone, { w: number; h: number }][];
   // a print area takes up to MAX_ART_PER_ZONE artworks (layered in the order listed); new artwork goes to the chosen area
   const count = (z: MtoZone) => o.artwork.filter((a) => a.zone === z).length;
   const freeZones = o.artwork.length >= MAX_ART ? [] : zones.filter(([z]) => count(z) < MAX_ART_PER_ZONE);
   const [target, setTarget] = useState<MtoZone | "">("");
-  const [tab, setTab] = useState<"upload" | "library" | "text">("upload");
+  const [tab, setTab] = useState<"upload" | "mine" | "library" | "text" | "draw">("upload");
   const [uploading, setUploading] = useState(false);
   const [q, setQ] = useState("");
   const [lib, setLib] = useState<LibraryItem[] | null>(null);
@@ -136,6 +142,23 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
       place({ uploadId: up.id }, { url: up.url, aspect: up.width && up.height ? up.height / up.width : 1, name: file.name.slice(0, 30) });
     } catch (e) { toast(errorMessage(e), "bad"); }
     finally { setUploading(false); }
+  }
+  // a drawing from the pad: saved as your image, then placed like an upload
+  async function placeDrawing(file: File) {
+    setDrawing(true);
+    try {
+      const up = await uploadArtwork<{ id: string; url: string; width?: number | null; height?: number | null }>(file);
+      place({ uploadId: up.id }, { url: up.url, aspect: 1, name: "Your drawing" });
+    } catch (e) { toast(errorMessage(e), "bad"); }
+    finally { setDrawing(false); }
+  }
+  // adjusted artwork replaces the layer's image with the new one (the original stays in your images)
+  async function applyAdjust(i: number, file: File) {
+    const up = await uploadArtwork<{ id: string; url: string; width?: number | null; height?: number | null }>(file);
+    const a = o.artwork[i];
+    setPreviews((x) => ({ ...x, [up.id]: { url: up.url, aspect: up.width && up.height ? up.height / up.width : a.heightCm / a.widthCm, name: "Adjusted artwork" } }));
+    setO((x) => ({ ...x, artwork: x.artwork.map((b, k) => (k === i ? { ...b, uploadId: up.id, assetId: undefined } : b)) }));
+    toast("Adjustments applied");
   }
   async function addText() {
     const t = text.trim();
@@ -178,6 +201,8 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
                 <button className={clsx("mv-chip !px-2 !py-0.5 !text-[0.68rem] italic", a.italic && "!border-champagne")} aria-pressed={!!a.italic} onClick={() => patch(i, { italic: !a.italic })} data-testid="mto-text-italic">I</button>
                 <label className="flex items-center gap-1 text-mute"><input type="checkbox" checked={!!a.outline} onChange={(e) => patch(i, { outline: e.target.checked ? "#ffffff" : undefined })} data-testid="mto-text-outline" /> Outline</label>
                 {a.outline && <input type="color" value={a.outline} onChange={(e) => patch(i, { outline: e.target.value })} aria-label="Outline colour" className="h-6 w-6 rounded border border-line bg-transparent" />}
+                {atelier && <label className="flex items-center gap-1 text-mute"><input type="checkbox" checked={!!a.shadow} onChange={(e) => patch(i, { shadow: e.target.checked ? "#555555" : undefined })} data-testid="mto-text-shadow" /> Shadow</label>}
+                {atelier && a.shadow && <input type="color" value={a.shadow} onChange={(e) => patch(i, { shadow: e.target.value })} aria-label="Shadow colour" className="h-6 w-6 rounded border border-line bg-transparent" />}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <label className="block text-mute">Letter spacing<input type="range" className="w-full" min={0} max={0.5} step={0.02} value={a.spacing ?? 0} onChange={(e) => patch(i, { spacing: +e.target.value || undefined })} aria-label="Letter spacing" /></label>
@@ -189,12 +214,17 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
               <Select value={a.zone} onChange={(e) => { const z = e.target.value as MtoZone; patch(i, { zone: z, ...fitSize(profile.zones[z]!, aspect, a.method), offsetXCm: 0, offsetYCm: 0 }); }} className="!py-1 !text-xs" aria-label="Placement" data-testid="mto-art-zone">{zones.filter(([z]) => z === a.zone || count(z) < MAX_ART_PER_ZONE).map(([z]) => <option key={z} value={z}>{ZONE_LABEL[z]}</option>)}</Select>
               <Select value={a.method} onChange={(e) => patch(i, { method: e.target.value as MtoMethod })} className="!py-1 !text-xs" aria-label="Method" data-testid="mto-art-method">{fabric.methods.map((m) => <option key={m} value={m}>{METHOD_LABEL[m]}</option>)}</Select>
             </div>
+            {a.locked && <p className="flex items-center gap-1 text-[0.62rem] text-mute"><Lock className="size-3" /> Locked in Layers: position, size and rotation are fixed.</p>}
+            {atelier && !a.text && pv && (adjusting === i ? (
+              signedIn ? <AdjustPanel url={pv.url} onApply={(f) => applyAdjust(i, f)} onClose={() => setAdjusting(null)} /> : <p className="text-[0.62rem] text-mute">Sign in to adjust images (the adjusted image is saved to your account).</p>
+            ) : <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" onClick={() => setAdjusting(i)} data-testid="mto-art-adjust"><SlidersHorizontal className="mr-1 inline size-3" />Adjust image</button>)}
             <div className="flex flex-wrap items-center gap-1.5">
               <button className={clsx("mv-chip !px-2 !py-0.5 !text-[0.68rem]", a.flipX && "!border-champagne")} aria-pressed={!!a.flipX} onClick={() => patch(i, { flipX: !a.flipX })} data-testid="mto-art-flip">Mirror</button>
               <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" disabled={i === 0} onClick={() => setO((x) => { const l = [...x.artwork]; [l[i - 1], l[i]] = [l[i], l[i - 1]]; return { ...x, artwork: l }; })} title="Move this layer back">↓ Back</button>
               <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" disabled={i === o.artwork.length - 1} onClick={() => setO((x) => { const l = [...x.artwork]; [l[i + 1], l[i]] = [l[i], l[i + 1]]; return { ...x, artwork: l }; })} title="Move this layer forward">↑ Front</button>
               <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" disabled={!freeZones.some(([z]) => z === a.zone)} onClick={() => setO((x) => ({ ...x, artwork: [...x.artwork, { ...a, offsetXCm: 0, offsetYCm: 0 }] }))} data-testid="mto-art-duplicate">Duplicate</button>
             </div>
+            <fieldset disabled={!!a.locked} className="space-y-1.5 disabled:opacity-50">
             <label className="block text-mute">Size {a.widthCm} × {a.heightCm} cm
               <input type="range" className="w-full" min={2} max={maxW} step={0.5} value={Math.min(a.widthCm, maxW)} onChange={(e) => { const w = +e.target.value; patch(i, { widthCm: w, heightCm: Math.max(1, Math.round(w * aspect * 2) / 2) }); }} aria-label="Artwork size" data-testid="mto-art-width" />
             </label>
@@ -203,13 +233,32 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
               <label className="block text-mute">Up / down<input type="range" className="w-full" min={-Math.floor(lim.y * 2) / 2} max={Math.floor(lim.y * 2) / 2} step={0.5} value={Math.max(-lim.y, Math.min(lim.y, a.offsetYCm))} onChange={(e) => patch(i, { offsetYCm: +e.target.value })} aria-label="Vertical position" data-testid="mto-art-y" disabled={lim.y < 0.5} /></label>
               <label className="block text-mute">Rotate {a.rotation}°<input type="range" className="w-full" min={-45} max={45} step={1} value={a.rotation} onChange={(e) => patch(i, rotateWithin(a, +e.target.value, zone))} aria-label="Rotation" data-testid="mto-art-rotate" /></label>
             </div>
+            {pro && (
+              <div className="space-y-1.5 rounded-md bg-surface-2/50 p-1.5" data-testid="mto-art-precise">
+                <div className="grid grid-cols-4 gap-1">
+                  {([["W", "widthCm", 2, maxW], ["X", "offsetXCm", -lim.x, lim.x], ["Y", "offsetYCm", -lim.y, lim.y], ["°", "rotation", -45, 45]] as const).map(([l, k, lo, hi]) => (
+                    <label key={k} className="flex items-center gap-1 text-[0.62rem] text-mute">{l}
+                      <input type="number" className="mv-input !px-1 !py-0.5 !text-[0.68rem]" step={k === "rotation" ? 1 : 0.5} min={Math.floor(lo * 2) / 2} max={Math.floor(hi * 2) / 2} value={a[k]} aria-label={`Exact ${k}`} data-testid={`mto-art-num-${k}`}
+                        onChange={(e) => { const v = Math.max(lo, Math.min(hi, +e.target.value || 0)); if (k === "widthCm") patch(i, { widthCm: v, heightCm: Math.max(1, Math.round(v * aspect * 2) / 2) }); else if (k === "rotation") patch(i, rotateWithin(a, v, zone)); else patch(i, { [k]: Math.round(v * 2) / 2 }); }} />
+                    </label>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-1" role="group" aria-label="Align in the print area">
+                  {([[AlignStartVertical, "Align left", { offsetXCm: -lim.x }], [AlignCenterVertical, "Centre horizontally", { offsetXCm: 0 }], [AlignEndVertical, "Align right", { offsetXCm: lim.x }], [AlignStartHorizontal, "Align top", { offsetYCm: lim.y }], [AlignCenterHorizontal, "Centre vertically", { offsetYCm: 0 }], [AlignEndHorizontal, "Align bottom", { offsetYCm: -lim.y }]] as const).map(([Icon, label, p]) => (
+                    <button key={label} className="mv-chip !px-1.5 !py-0.5" title={label} aria-label={label} onClick={() => patch(i, { ...p })} data-testid={`mto-align-${label.split(" ").pop()!.toLowerCase()}`}><Icon className="size-3.5" /></button>
+                  ))}
+                  <button className="mv-chip !px-2 !py-0.5 !text-[0.65rem]" onClick={() => patch(i, { ...fitSize(zone, aspect, a.method), offsetXCm: 0, offsetYCm: 0, rotation: 0 })} data-testid="mto-art-fill">Fill the area</button>
+                </div>
+              </div>
+            )}
+            </fieldset>
           </div>
         );
       })}
 
       {freeZones.length > 0 && (
         <div className="space-y-2 rounded-lg border border-dashed border-line p-2">
-          <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Add artwork">{tabBtn("upload", "Your image", Upload)}{tabBtn("library", "Library", ImagePlus)}{tabBtn("text", "Text", Type)}
+          <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Add artwork">{tabBtn("upload", "Upload", Upload)}{signedIn && tabBtn("mine", "Your images", Images)}{tabBtn("library", "Library", ImagePlus)}{tabBtn("text", "Text", Type)}{atelier && tabBtn("draw", "Draw", Brush)}
             <Select value={target} onChange={(e) => setTarget(e.target.value as MtoZone | "")} className="ml-auto !w-auto !py-1 !text-[0.68rem]" aria-label="Print area for new artwork" data-testid="mto-art-target"><option value="">Next free area</option>{freeZones.map(([z]) => <option key={z} value={z}>{ZONE_LABEL[z]}</option>)}</Select>
           </div>
           {tab === "upload" && (signedIn ? (
@@ -218,6 +267,8 @@ export function MtoArtwork({ o, setO, profile, fabric, signedIn, previews, setPr
               <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/heic,.png,.jpg,.jpeg,.webp,.svg,.heic" className="sr-only" disabled={uploading} data-testid="mto-art-upload" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
             </label>
           ) : <UploadSignIn />)}
+          {tab === "mine" && signedIn && <MyImages onPick={(u) => place({ uploadId: u.id }, { url: u.url, aspect: u.width && u.height ? u.height / u.width : 1, name: (u.name ?? "Your image").slice(0, 30) })} />}
+          {tab === "draw" && atelier && (signedIn ? <DrawPad onDone={(f) => void placeDrawing(f)} busy={drawing} /> : <UploadSignIn />)}
           {tab === "library" && (
             <div className="space-y-2">
               <label className="flex items-center gap-1.5"><Search className="size-3.5 text-mute" /><input className="mv-input !py-1 !text-xs" placeholder="Search graphics (lotus, tiger, retro…)" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search graphics" data-testid="mto-lib-search" /></label>

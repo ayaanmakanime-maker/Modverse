@@ -25,7 +25,8 @@ export const fittingSchema = z.object({
   size: z.string().regex(/^[A-Z0-9]{1,5}$/).nullable().default(null),
   fabricId: id.nullable().default(null),
   colourId: id.nullable().default(null),
-  styling: z.object({ bottoms: id.optional(), shoes: id.optional(), outfit: id.optional() }).default({}),
+  // `model`: one of the studio's own T-shirt / shirt models tried on, in `modelColour` (hex without #)
+  styling: z.object({ bottoms: id.optional(), shoes: id.optional(), outfit: id.optional(), model: id.optional(), modelColour: z.string().regex(/^[0-9a-f]{6}$/i).optional() }).default({}),
   pose: z.string().regex(/^[a-z-]{1,20}$/).nullable().default(null),
   /** body measurements are personal data: stored only with an explicit yes */
   consent: z.literal(true, { message: "Consent is required to store body measurements" }),

@@ -12,8 +12,10 @@ import { buildTrackedDecal, garmentProjector, placeTrackedDecal, type TrackedDec
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { HumanAsset } from "@/lib/human/model";
 import { buildSkeleton, poseAt, skin, type PoseId } from "@/lib/human/pose";
+import { armClearance, colliderMask, coveredBody, garmentTopology, type GarmentTopology } from "@/lib/human/coverage";
+import { cmPerUv, patternTexture, type PatternSpec } from "@/lib/three/pattern-map";
 import { fitGarment, type GarmentFit } from "@/lib/human/fit-garment";
-import { BodyCollider, bodyTriangles, CLOTH_DEFAULTS, FABRIC_CLOTH, GarmentCloth, limbCapsules, limbRadii } from "@/lib/human/garment-cloth";
+import { BodyCollider, bodyTriangles, CLOTH_DEFAULTS, FABRIC_CLOTH, GarmentCloth, limbCapsules, limbRadii, SpringCloth } from "@/lib/human/garment-cloth";
 
 /** Phones and low-core devices: fewer substeps keep the frame rate (XPBD stays stable with fewer, it just stiffens). */
 const LIGHT = typeof navigator !== "undefined" && ((navigator.hardwareConcurrency ?? 8) <= 4 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
@@ -33,6 +35,12 @@ export interface WornItem {
   object?: { geometry: THREE.BufferGeometry; materials: THREE.Material[] };
   /** a stocked fabric colour is chosen: the creator's printed texture is switched off (solid colour, as made) */
   plain?: boolean;
+  /** the arms are held at least this far out (degrees, see pose.ts): a garment bound with the arms there */
+  armOut?: number;
+  /** vertices that are openings besides the mesh's free edges (a design's collar: skin near it is never hidden) */
+  openings?: Uint8Array;
+  /** an all-over print: the pattern replaces the fabric colour (composited on it) */
+  pattern?: PatternSpec | null;
   /** artwork on a shop garment, placed as in the design studio (cm from the garment's top centre) */
   decals?: { url: string; side: "front" | "back" | "left" | "right"; at: { x: number; y: number }; width: number; height: number; roll: number; flip?: boolean }[];
 }
@@ -72,7 +80,12 @@ export function garmentMesh(url: string): Promise<THREE.Mesh> {
   return p;
 }
 
-interface Worn { item: WornItem; mesh: THREE.Mesh; target: Float32Array; cloth: GarmentCloth | null; clothFor: Float32Array | null; decals: { mesh: THREE.Mesh; d: TrackedDecal }[] }
+interface Worn { item: WornItem; mesh: THREE.Mesh; target: Float32Array; cloth: GarmentCloth | SpringCloth | null; clothFor: Float32Array | null; decals: { mesh: THREE.Mesh; d: TrackedDecal }[]; /** seams and openings, once worked out */ topo: GarmentTopology | null }
+
+/** Clothing that covers the body (not hair, eyes, lashes). */
+const CLOTHING = new Set<WornItem["kind"]>(["garment", "design", "bottoms", "shoes", "outfits"]);
+/** See-through materials (lace, alpha-cut prints) show the body: it is never hidden under them. */
+const opaque = (w: Worn) => !w.item.alpha && ([] as THREE.Material[]).concat(w.mesh.material).every((m) => !m.transparent && !(m.alphaTest > 0) && m.opacity >= 1);
 
 function materialFor(it: WornItem): THREE.Material {
   const map = it.textureUrl ? texture(it.textureUrl) : null;
@@ -165,7 +178,7 @@ function Rig(p: HumanSceneProps) {
             decals.push({ mesh: dm, d });
           }
         }
-        map.set(it.key, { item: it, mesh, target: new Float32Array(it.fit.vertices * 3), cloth: null, clothFor: null, decals });
+        map.set(it.key, { item: it, mesh, target: new Float32Array(it.fit.vertices * 3), cloth: null, clothFor: null, decals, topo: null });
         report();
       };
       if (it.object) {
@@ -194,6 +207,8 @@ function Rig(p: HumanSceneProps) {
   const { garmentTint } = p.look;
   const garmentColors = p.items.find((i) => i.kind === "garment" || i.kind === "design")?.colors ?? null;
   const garmentPlain = !!p.items.find((i) => i.kind === "garment")?.plain;
+  const pattern = p.items.find((i) => i.kind === "garment")?.pattern ?? null;
+  const patternKey = pattern ? `${pattern.url}|${pattern.ground}|${pattern.scaleCm}|${pattern.rotation}` : "";
   const [readyTick, setReadyTick] = useState(0);
   useEffect(() => {
     for (const w of worn.current.values()) {
@@ -204,40 +219,78 @@ function Rig(p: HumanSceneProps) {
       for (const m of ([] as THREE.Material[]).concat(w.mesh.material) as THREE.MeshStandardMaterial[]) {
         m.userData.map ??= m.map ?? "none";
         m.userData.color ??= "#" + m.color.getHexString();
+        // an all-over print on a shop garment: the pattern, tiled at its real size on the fabric colour
+        let printed: THREE.Texture | null = null;
+        if (!on && w.item.kind === "garment" && pattern && geo.attributes.uv && geo.index) {
+          const cm = cmPerUv(fitGarment(w.item.fit, props.current.rest), geo.attributes.uv.array, geo.index.array);
+          printed = patternTexture(pattern, cm, () => { m.needsUpdate = true; invalidate(); });
+        }
+        if (m.userData.printed) { (m.userData.printed as THREE.Texture).dispose(); m.userData.printed = null; }
         if (on) { m.vertexColors = true; m.map = null; m.color.set("#ffffff"); }
+        else if (printed) { m.vertexColors = false; m.map = printed; m.userData.printed = printed; m.color.set("#ffffff"); }
         else { m.vertexColors = false; m.map = m.userData.map === "none" || (w.item.kind === "garment" && garmentPlain) ? null : m.userData.map; m.color.set(w.item.kind === "design" ? m.userData.color : garmentTint); }
         m.needsUpdate = true;
       }
     }
     invalidate();
-  }, [garmentTint, garmentColors, garmentPlain, itemKeys, readyTick, invalidate]);
-
-  // body faces hidden under what is worn, and the helper eyes replaced by the eye part
-  useEffect(() => {
-    const hidden = new Uint8Array(asset.meta.vertices);
-    for (const it of p.items) for (const [a, b] of it.fit.hideBody) for (let v = a; v <= b && v < hidden.length; v++) hidden[v] = 1;
-    const idx = asset.bodyIndex, o = asset.orig, keep: number[] = [];
-    for (let t = 0; t < idx.length; t += 3) if (!(hidden[o[idx[t]]] && hidden[o[idx[t + 1]]] && hidden[o[idx[t + 2]]])) keep.push(idx[t], idx[t + 1], idx[t + 2]);
-    body.g.setIndex(keep);
-    dirty.current = true; invalidate();
-  }, [asset, body, itemKeys, invalidate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [garmentTint, garmentColors, garmentPlain, patternKey, itemKeys, readyTick, invalidate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sk = useMemo(() => buildSkeleton(asset, rest), [asset, rest]);
   // the posed body as a collision surface for every garment (rebuilt each frame something is worn)
-  const collider = useMemo(() => new BodyCollider(bodyTriangles(asset.bodyIndex, asset.orig), asset.isBody), [asset]);
+  // (outer skin only: the base mesh's inner throat and mouth would throw a collar through the neck)
+  const collider = useMemo(() => new BodyCollider(bodyTriangles(asset.bodyIndex, asset.orig), colliderMask(asset)), [asset]);
   const radii = useMemo(() => limbRadii(sk.names, sk.head, rest, asset.joints, asset.isBody), [asset, sk, rest]);
   const posedBuf = useMemo(() => new Float32Array(rest.length), [rest]);
+
+  // Keeping body and clothes apart, worked out whenever the body, what is worn or the pose changes:
+  //  · body faces lying close under opaque clothing, away from its openings, are not drawn (nothing can poke through);
+  //  · the arms are held out just enough that forearms and hands clear the body and the fabric lying on it.
+  const armTarget = useRef(0), armNow = useRef(0);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const cur = props.current;
+      const clothing = [...worn.current.values()].filter((w) => CLOTHING.has(w.item.kind) && w.mesh.geometry.index);
+      const fits = clothing.filter((w) => w.item.kind !== "shoes").map((w) => w.item.fit);
+      // arms: clear of the body and what lies on it, and never closer than a garment was bound with
+      const floor = Math.max(0, ...clothing.map((w) => w.item.armOut ?? 0));
+      armTarget.current = Math.max(floor, armClearance({ asset, sk, rest, pose: cur.pose, worn: fits, margin: fits.length ? 1.5 : 1 }));
+      // coverage and seams on the body as it stands (garments bound in a stance are only right there)
+      const stand = skin(asset, sk, rest, poseAt(cur.pose, 0, false, { armOut: armTarget.current })).positions;
+      const hidden = new Uint8Array(asset.meta.vertices);
+      for (const w of worn.current.values()) for (const [a, b] of w.item.fit.hideBody) for (let v = a; v <= b && v < hidden.length; v++) hidden[v] = 1;
+      for (const w of clothing) {
+        const at = fitGarment(w.item.fit, stand, undefined, rest);
+        if (!w.topo) {
+          w.topo = garmentTopology(at, w.mesh.geometry.index!.array);
+          const extra = w.item.openings;
+          if (extra && extra.length === w.topo.opening.length) for (let i = 0; i < extra.length; i++) if (extra[i]) w.topo.opening[i] = 1;
+        }
+        if (opaque(w)) coveredBody(asset, stand, at, w.topo, 3, 5, hidden);
+      }
+      const idx = asset.bodyIndex, o = asset.orig, keep: number[] = [];
+      for (let k = 0; k < idx.length; k += 3) if (!(hidden[o[idx[k]]] && hidden[o[idx[k + 1]]] && hidden[o[idx[k + 2]]])) keep.push(idx[k], idx[k + 1], idx[k + 2]);
+      body.g.setIndex(keep);
+      const el = props.current.statsEl.current;
+      if (el) { el.dataset.armOut = String(armTarget.current); el.dataset.hiddenBody = String(hidden.reduce((n, v) => n + v, 0)); }
+      dirty.current = true; invalidate();
+    }, 120);
+    return () => clearTimeout(t);
+  }, [asset, body, itemKeys, readyTick, rest, sk, p.pose, invalidate]);
+
   useEffect(() => { dirty.current = true; invalidate(); }, [rest, p.pose, p.life, p.cloth, invalidate]);
 
   useFrame((state, dtRaw) => {
     const cur = props.current;
     const animated = cur.pose !== "apose" && cur.life;
     if (cur.turntable && group.current) group.current.rotation.y += dtRaw * 0.5;
-    if (!animated && !dirty.current) return;
+    // the arms ease to their clearance (a body or garment change never snaps them)
+    const armGap = armTarget.current - armNow.current;
+    if (!animated && !dirty.current && Math.abs(armGap) < 0.05) return;
     const t0 = performance.now();
     const dt = Math.min(dtRaw, 1 / 20);
     if (animated) time.current += dt;
-    const posed = skin(asset, sk, rest, poseAt(cur.pose, time.current, cur.life), posedBuf);
+    armNow.current = Math.abs(armGap) < 0.05 ? armTarget.current : armNow.current + armGap * Math.min(1, Math.max(dt, 1 / 60) * 4);
+    const posed = skin(asset, sk, rest, poseAt(cur.pose, time.current, cur.life, { armOut: armNow.current }), posedBuf);
     const P = posed.positions;
     // body: positions and seam-free normals
     const pos = body.g.attributes.position.array as Float32Array, nor = body.g.attributes.normal.array as Float32Array, o = asset.orig, nb = body.nb, idx = asset.bodyIndex;
@@ -262,15 +315,21 @@ function Rig(p: HumanSceneProps) {
     for (const w of worn.current.values()) {
       const attr = w.mesh.geometry.attributes.position as THREE.BufferAttribute;
       const out = attr.array as Float32Array;
-      const sim = cur.cloth && animated && (w.item.kind === "garment" || w.item.kind === "outfits") && w.item.fit.vertices <= 40000;
+      // every garment — shop styles, your designs and outfits — is cloth-simulated while the body moves; the seams of
+      // separately modelled panels are held together
+      const sim = cur.cloth && animated && (w.item.kind === "garment" || w.item.kind === "design" || w.item.kind === "outfits") && w.item.fit.vertices <= 40000 && !!w.topo;
       if (sim) {
         if (!w.cloth || w.clothFor !== rest) {
           const index = w.mesh.geometry.index!.array as ArrayLike<number>;
-          w.cloth = new GarmentCloth(fitGarment(w.item.fit, rest), index, rest, asset.isBody, { ...CLOTH_DEFAULTS, ...(w.item.fabric ? FABRIC_CLOTH[w.item.fabric] : {}), substeps: LIGHT ? 4 : 8 }, cur.crotchY);
+          // your designs (dense panels placed around the body) sway on springs; draped shop garments get full cloth
+          w.cloth = w.item.kind === "design"
+            ? new SpringCloth(fitGarment(w.item.fit, rest), index, rest, asset.isBody)
+            : new GarmentCloth(fitGarment(w.item.fit, rest), index, rest, asset.isBody, { ...CLOTH_DEFAULTS, ...(w.item.fabric ? FABRIC_CLOTH[w.item.fabric] : {}), substeps: LIGHT ? 4 : 8 }, cur.crotchY, w.topo!.seams);
           w.clothFor = rest;
         }
         fitGarment(w.item.fit, P, w.target, rest);
-        w.cloth.step(w.target, dt, caps, out, collider);
+        if (w.cloth instanceof SpringCloth) w.cloth.step(w.target, dt, out, collider);
+        else w.cloth.step(w.target, dt, caps, out, collider);
         particles += w.cloth.particles;
       } else {
         fitGarment(w.item.fit, P, out as unknown as Float32Array<ArrayBuffer>, rest);
@@ -287,7 +346,7 @@ function Rig(p: HumanSceneProps) {
         d.mesh.geometry.computeVertexNormals();
       }
     }
-    dirty.current = false;
+    dirty.current = Math.abs(armTarget.current - armNow.current) >= 0.05;
     frames.current++;
     const el = cur.statsEl.current;
     if (el && (frames.current % 10 === 0 || !animated)) {

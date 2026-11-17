@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type * as THREE from "three";
 import clsx from "clsx";
-import { Box, Download, Image as ImageIcon, Palette, Redo2, Ruler, Save, Scissors, ShoppingBag, Undo2, User } from "lucide-react";
+import { Box, Download, FileText, Grid3x3, History, Image as ImageIcon, Layers as LayersIcon, Palette, Redo2, Ruler, Save, Scissors, ShoppingBag, Undo2, User } from "lucide-react";
 import { api, errorMessage } from "@/lib/client/api";
 import { useSession } from "@/components/session";
 import { Badge, Button, Modal, Notice, Segmented, Select, toast } from "@/components/ui";
@@ -26,18 +26,23 @@ import { SIZE_CHARTS } from "@/lib/garment/sizing";
 import { CUSTOM_DYE, getMtoFabric, mtoColour, mtoProfileFor, priceMto, validateMto, type MtoGarmentRef, type MtoOptions, type MtoZone } from "@/lib/garment/made-to-order";
 import type { DecalItem } from "./LibraryGarmentStudio";
 import { artKey, MtoArtwork, offsetLimits, resolveArtPreviews, ZONE_ANCHOR, ZONE_LABEL, METHOD_LABEL, type ArtPreview } from "./MtoArtwork";
+import { LayersPanel, PatternPanel, resolvePatternUrl, TechSheetPanel, VersionsPanel, type DesignVersion } from "./AtelierTools";
 
 const Studio = dynamic(() => import("./LibraryGarmentStudio").then((m) => m.LibraryGarmentStudio), { ssr: false, loading: () => <div className="h-full"><BrandLoader label="Loading the 3D garment" /></div> });
 
 export type EditorMode = "studio" | "atelier" | "pro";
 const MODE_LABEL: Record<EditorMode, string> = { studio: "Design Studio", atelier: "Atelier", pro: "Atelier Pro" };
 const THREADS = ["white", "navy", "black", "gold", "red", "tonal"] as const;
-type Tab = "colour" | "size" | "artwork" | "details" | "order";
+type Tab = "colour" | "size" | "artwork" | "pattern" | "layers" | "details" | "versions" | "techpack" | "order";
 const TABS: { id: Tab; label: string; icon: typeof Palette; modes: EditorMode[] }[] = [
   { id: "colour", label: "Colour", icon: Palette, modes: ["studio", "atelier", "pro"] },
   { id: "size", label: "Size & fit", icon: Ruler, modes: ["studio", "atelier", "pro"] },
   { id: "artwork", label: "Artwork", icon: ImageIcon, modes: ["studio", "atelier", "pro"] },
+  { id: "pattern", label: "All-over print", icon: Grid3x3, modes: ["atelier", "pro"] },
+  { id: "layers", label: "Layers", icon: LayersIcon, modes: ["atelier", "pro"] },
   { id: "details", label: "Details", icon: Scissors, modes: ["atelier", "pro"] },
+  { id: "versions", label: "Versions", icon: History, modes: ["atelier", "pro"] },
+  { id: "techpack", label: "Tech sheet", icon: FileText, modes: ["pro"] },
   { id: "order", label: "Order", icon: ShoppingBag, modes: ["studio", "atelier", "pro"] },
 ];
 
@@ -46,7 +51,7 @@ export interface GarmentEditorProps {
   glb: string;
   heightCm: number;
   rules: PricingRules;
-  initial: { id: string | null; name: string; mode: EditorMode; options: MtoOptions };
+  initial: { id: string | null; name: string; mode: EditorMode; options: MtoOptions; versions?: DesignVersion[] };
 }
 
 export function GarmentEditor({ garment, glb, heightCm, rules, initial }: GarmentEditorProps) {
@@ -81,6 +86,16 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
 
   const [previews, setPreviews] = useState<Record<string, ArtPreview>>({});
   useEffect(() => { if (initial.options.artwork.length) resolveArtPreviews(initial.options.artwork).then((p) => setPreviews((x) => ({ ...p, ...x }))); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // the all-over print's pattern image (resolved again when a version with another pattern is restored)
+  const [patternUrl, setPatternUrl] = useState<string | null>(null);
+  const patternRef = o.allOver ? (o.allOver.uploadId ?? o.allOver.assetId ?? "") : "";
+  useEffect(() => {
+    if (!o.allOver) { setPatternUrl(null); return; }
+    let live = true;
+    resolvePatternUrl(o.allOver).then((u) => live && setPatternUrl(u)).catch(() => undefined);
+    return () => { live = false; };
+  }, [patternRef]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [versions, setVersions] = useState<DesignVersion[]>(initial.versions ?? []);
 
   const [profiles, setProfiles] = useState<{ id: string; name: string; audience: string }[]>([]);
   useEffect(() => { if (user && profile.madeToMeasure) api<{ profiles: typeof profiles }>("/api/account/measurements").then((r) => setProfiles(r.profiles)).catch(() => undefined); }, [user, profile.madeToMeasure]);
@@ -98,7 +113,7 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
   // 3D: fabric colour, artwork where it will be made, and the pattern alterations
   const decals: DecalItem[] = o.artwork.flatMap((a, i) => {
     const pv = previews[artKey(a)];
-    if (!pv) return [];
+    if (!pv || a.hidden) return [];
     const anchor = ZONE_ANCHOR[a.zone];
     return [{ id: i + 1, kind: "image" as const, src: pv.url, side: anchor.side, size: a.widthCm, up: 0.5, aspect: a.heightCm / a.widthCm, label: pv.name, at: { x: anchor.x + a.offsetXCm, y: anchor.y - a.offsetYCm }, rotation: a.rotation, flip: !!a.flipX }];
   });
@@ -107,18 +122,27 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
 
   /* ---------- save, cart ---------- */
   const [saving, setSaving] = useState(false);
-  async function save(): Promise<string | null> {
+  /** Saves the design; with `snapshot`, also keeps this state as a named version. */
+  async function save(snapshot?: string): Promise<string | null> {
     if (!user) { router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`); return null; }
     setSaving(true);
     try {
-      const body = { name: name.trim() || garment.name, garmentId: garment.id, mode, options: o };
-      const r = id ? await api<{ design: { id: string } }>(`/api/garment-designs/${id}`, { method: "PUT", body }) : await api<{ design: { id: string } }>("/api/garment-designs", { body });
+      const body = { name: name.trim() || garment.name, garmentId: garment.id, mode, options: o, ...(snapshot !== undefined ? { snapshot } : {}) };
+      const r = id ? await api<{ design: { id: string; versions?: DesignVersion[] } }>(`/api/garment-designs/${id}`, { method: "PUT", body }) : await api<{ design: { id: string; versions?: DesignVersion[] } }>("/api/garment-designs", { body });
       setDirty(false);
+      if (r.design.versions) setVersions(r.design.versions);
       if (!id) { setId(r.design.id); window.history.replaceState(null, "", `/design/garment/${r.design.id}?mode=${mode}`); }
-      toast("Design saved to your account");
+      toast(snapshot !== undefined ? "Version saved" : "Design saved to your account");
       return r.design.id;
     } catch (e) { toast(errorMessage(e), "bad"); return null; }
     finally { setSaving(false); }
+  }
+  async function duplicate() {
+    try {
+      const r = await api<{ design: { id: string } }>("/api/garment-designs", { body: { name: `${(name.trim() || garment.name).slice(0, 72)} (copy)`, garmentId: garment.id, mode, options: o } });
+      toast("Copied as a new design");
+      router.push(`/design/garment/${r.design.id}?mode=${mode}`);
+    } catch (e) { toast(errorMessage(e), "bad"); }
   }
   const [adding, setAdding] = useState<"" | "cart" | "buy">("");
   async function addToCart(then: "cart" | "buy") {
@@ -213,7 +237,11 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
           <p className="text-[0.6rem] text-mute">The 3D view previews fit and alterations on the model; the workshop applies them to the graded pattern.</p>
         </div>
       );
-      case "artwork": return Object.keys(profile.zones).length ? <MtoArtwork o={o} setO={setO} profile={profile} fabric={fabric} signedIn={!!user} previews={previews} setPreviews={setPreviews} /> : <p className="text-xs text-mute">This style has no print areas.</p>;
+      case "artwork": return Object.keys(profile.zones).length ? <MtoArtwork o={o} setO={setO} profile={profile} fabric={fabric} signedIn={!!user} previews={previews} setPreviews={setPreviews} mode={mode} /> : <p className="text-xs text-mute">This style has no print areas.</p>;
+      case "pattern": return <PatternPanel o={o} setO={setO} fabric={fabric} profile={profile} signedIn={!!user} patternUrl={patternUrl} setPatternUrl={setPatternUrl} onFabric={setFabric} />;
+      case "layers": return <LayersPanel o={o} setO={setO} previews={previews} />;
+      case "versions": return <VersionsPanel id={id} versions={versions} saving={saving} onSnapshot={(note) => void save(note)} onRestore={(v) => { setO(() => v.options); if (v.mode === "studio" || v.mode === "atelier" || v.mode === "pro") setMode(v.mode); if (v.options.artwork.length) resolveArtPreviews(v.options.artwork).then((p) => setPreviews((x) => ({ ...x, ...p }))); toast(`Restored “${v.note}”`); }} onDuplicate={() => void duplicate()} />;
+      case "techpack": return <TechSheetPanel garment={garment} o={o} name={name} />;
       case "details": return (
         <div className="space-y-3 text-sm">
           {profile.trims.map((t) => (
@@ -300,8 +328,8 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
             {mode === "pro" && <button className="mv-chip !px-2 !py-0.5 !text-[0.68rem]" onClick={() => setExportOpen(true)} data-testid="open-export-3d"><Box className="mr-1 inline size-3" />Export 3D</button>}
           </div>
           <div className={clsx("grid min-h-0 flex-1", view === "split" ? "grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1" : "grid-cols-1")}>
-            {view !== "3d" && <div className="min-h-0 overflow-auto border-line md:border-r mv-scroll"><ZoneCanvas o={o} setO={setO} profile={profile} previews={previews} tint={colour.hex} onEmpty={() => { setTab("artwork"); setPanelOpen(true); }} /></div>}
-            {view !== "2d" && <div className="relative min-h-0"><Studio bare url={glb} name={garment.name} heightCm={heightCm} attribution={garment.attribution} licence={garment.licence} order={{ tint: colour.hex, decals, alteration }} onScene={(s) => { scene.current = s; }} /></div>}
+            {view !== "3d" && <div className="min-h-0 overflow-auto border-line md:border-r mv-scroll"><ZoneCanvas o={o} setO={setO} profile={profile} previews={previews} tint={colour.hex} pattern={o.allOver && patternUrl ? { url: patternUrl, scaleCm: o.allOver.scaleCm, rotation: o.allOver.rotation } : null} onEmpty={() => { setTab("artwork"); setPanelOpen(true); }} /></div>}
+            {view !== "2d" && <div className="relative min-h-0"><Studio bare url={glb} name={garment.name} heightCm={heightCm} attribution={garment.attribution} licence={garment.licence} order={{ tint: colour.hex, decals, alteration, pattern: o.allOver && patternUrl ? { url: patternUrl, ground: colour.hex, scaleCm: o.allOver.scaleCm, rotation: o.allOver.rotation } : null }} onScene={(s) => { scene.current = s; }} /></div>}
           </div>
         </main>
       </div>
@@ -321,7 +349,7 @@ export function GarmentEditor({ garment, glb, heightCm, rules, initial }: Garmen
 }
 
 /** The print areas in 2D, to scale: drag artwork to move it, drag its corner to resize. Positions stay inside the area. */
-function ZoneCanvas({ o, setO, profile, previews, tint, onEmpty }: { o: MtoOptions; setO: (f: (x: MtoOptions) => MtoOptions) => void; profile: NonNullable<ReturnType<typeof mtoProfileFor>>; previews: Record<string, ArtPreview>; tint: string; onEmpty: () => void }) {
+function ZoneCanvas({ o, setO, profile, previews, tint, pattern, onEmpty }: { o: MtoOptions; setO: (f: (x: MtoOptions) => MtoOptions) => void; profile: NonNullable<ReturnType<typeof mtoProfileFor>>; previews: Record<string, ArtPreview>; tint: string; pattern: { url: string; scaleCm: number; rotation: number } | null; onEmpty: () => void }) {
   const zones = Object.entries(profile.zones) as [MtoZone, { w: number; h: number }][];
   const drag = useRef<{ i: number; kind: "move" | "size"; x0: number; y0: number; a: MtoOptions["artwork"][number]; k: number } | null>(null);
   const patch = (i: number, p: Partial<MtoOptions["artwork"][number]>) => setO((x) => ({ ...x, artwork: x.artwork.map((a, k) => (k === i ? { ...a, ...p } : a)) }));
@@ -354,6 +382,12 @@ function ZoneCanvas({ o, setO, profile, previews, tint, onEmpty }: { o: MtoOptio
               }}
               onPointerUp={() => { drag.current = null; }} onPointerLeave={() => { drag.current = null; }}
               onClick={() => { if (!items.length) onEmpty(); }}>
+              {pattern && (
+                <>
+                  <defs><pattern id={`ao-${z}`} patternUnits="userSpaceOnUse" width={pattern.scaleCm} height={pattern.scaleCm} patternTransform={`rotate(${pattern.rotation})`}><image href={pattern.url} width={pattern.scaleCm} height={pattern.scaleCm} preserveAspectRatio="xMidYMid slice" /></pattern></defs>
+                  <rect x={-zone.w / 2} y={-zone.h / 2} width={zone.w} height={zone.h} fill={`url(#ao-${z})`} pointerEvents="none" />
+                </>
+              )}
               <rect x={-zone.w / 2} y={-zone.h / 2} width={zone.w} height={zone.h} fill="none" stroke="#c9a96e" strokeDasharray="0.6 0.4" strokeWidth={0.12} />
               {!items.length && <text x={0} y={0} textAnchor="middle" dominantBaseline="middle" fontSize={Math.min(zone.w, zone.h) / 9} fill="#8a8a8a">Add artwork</text>}
               {items.map(({ a, i }) => {
@@ -361,14 +395,16 @@ function ZoneCanvas({ o, setO, profile, previews, tint, onEmpty }: { o: MtoOptio
                 const cx = a.offsetXCm, cy = -a.offsetYCm;
                 const start = (kind: "move" | "size") => (e: React.PointerEvent) => {
                   e.stopPropagation();
+                  if (a.locked) return; // locked layers stay where they are
                   ((e.currentTarget as SVGGraphicsElement).ownerSVGElement ?? null)?.setPointerCapture?.(e.pointerId);
                   drag.current = { i, kind, x0: e.clientX, y0: e.clientY, a, k: px };
                 };
+                if (a.hidden) return null;
                 return (
-                  <g key={i} transform={`translate(${cx} ${cy}) rotate(${a.rotation})`} data-testid="zone-art">
+                  <g key={i} transform={`translate(${cx} ${cy}) rotate(${a.rotation})`} data-testid="zone-art" opacity={a.locked ? 0.85 : 1}>
                     {pv ? <image href={pv.url} x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} preserveAspectRatio="xMidYMid meet" transform={a.flipX ? "scale(-1 1)" : undefined} style={{ cursor: "move" }} onPointerDown={start("move")} /> : <rect x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} fill="#0003" onPointerDown={start("move")} />}
                     <rect x={-a.widthCm / 2} y={-a.heightCm / 2} width={a.widthCm} height={a.heightCm} fill="none" stroke="#fff" strokeWidth={0.08} pointerEvents="none" />
-                    <rect x={a.widthCm / 2 - 0.6} y={a.heightCm / 2 - 0.6} width={1.2} height={1.2} fill="#c9a96e" style={{ cursor: "nwse-resize" }} onPointerDown={start("size")} data-testid="zone-art-resize" />
+                    {!a.locked && <rect x={a.widthCm / 2 - 0.6} y={a.heightCm / 2 - 0.6} width={1.2} height={1.2} fill="#c9a96e" style={{ cursor: "nwse-resize" }} onPointerDown={start("size")} data-testid="zone-art-resize" />}
                   </g>
                 );
               })}

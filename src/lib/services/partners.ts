@@ -151,6 +151,8 @@ export function matchManufacturer(caps: ManufacturerCaps, items: (Pick<OrderItem
       const fab = getMtoFabric(line.options.fabricId)?.construction;
       if (fab && !caps.fabrics.includes(fab)) reasons.push(`Doesn't work with ${fab} fabrics`);
       for (const a of line.options.artwork) if (!caps.methods.includes(a.method)) reasons.push(`No ${a.method} capability`);
+      // an all-over print is digitally printed yardage (pigment / reactive ink, or sublimation on polyester)
+      if (line.options.allOver && !caps.methods.includes("sublimation") && !caps.methods.includes("dtg")) reasons.push("No digital fabric printing (all-over print)");
       if (line.options.monogram && !caps.methods.includes("embroidery")) reasons.push("No embroidery capability (monogram)");
       continue;
     }

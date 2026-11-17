@@ -22,6 +22,8 @@ export type MtoZone = "front" | "back" | "chest-left" | "chest-right" | "sleeve-
 export const MAX_ART_PER_ZONE = 3, MAX_ART = 12;
 /** Dyed to order: any colour, matched to the hex by the dye house (surcharge, extra days). */
 export const CUSTOM_DYE = { surcharge: 250, extraDays: 3 };
+/** All-over print: the fabric is digitally printed with a repeating pattern before the pieces are cut. */
+export const ALL_OVER = { surcharge: 690, extraDays: 4, scaleCm: [4, 60] as [number, number] };
 export type MtoFit = "slim" | "regular" | "relaxed";
 
 export interface MtoColour { id: string; name: string; hex: string }
@@ -32,6 +34,8 @@ export interface MtoFabric {
   /** Decoration methods the fabric takes (e.g. DTG needs ≥ 80 % cotton; linen, wool and crepe take embroidery only). */
   methods: MtoMethod[];
   colours: MtoColour[]; care: string;
+  /** Can be digitally printed all over (reactive or pigment ink on woven / knitted cotton and viscose, sublimation on polyester) before cutting. */
+  allOver?: boolean;
 }
 export interface MtoTrim { id: string; label: string; options: { id: string; label: string; surcharge: number }[] }
 export interface MtoProfile {
@@ -64,21 +68,21 @@ const CREPE = [c("black", "Black", "#161616"), c("ivory", "Ivory", "#EFE8DA"), c
 const BOTTOMS = [c("khaki", "Khaki", "#B9A37A"), c("navy", "Navy", "#202B45"), c("black", "Black", "#171717"), c("olive", "Olive", "#545A39"), c("stone", "Stone", "#D3CBBB"), c("charcoal", "Charcoal", "#3B3C3F")];
 
 export const MTO_FABRICS: MtoFabric[] = [
-  { id: "jersey-180", name: "Combed cotton jersey", composition: "100% combed cotton", gsm: 180, construction: "knit", surcharge: 0, methods: ["dtg", "dtf", "screen", "embroidery"], colours: KNIT_COLOURS, care: "Machine wash cold, inside out" },
-  { id: "jersey-240", name: "Heavyweight cotton jersey", composition: "100% cotton", gsm: 240, construction: "knit", surcharge: 180, methods: ["dtg", "dtf", "screen", "embroidery"], colours: KNIT_COLOURS, care: "Machine wash cold, inside out" },
+  { id: "jersey-180", name: "Combed cotton jersey", composition: "100% combed cotton", gsm: 180, construction: "knit", surcharge: 0, methods: ["dtg", "dtf", "screen", "embroidery"], colours: KNIT_COLOURS, care: "Machine wash cold, inside out", allOver: true },
+  { id: "jersey-240", name: "Heavyweight cotton jersey", composition: "100% cotton", gsm: 240, construction: "knit", surcharge: 180, methods: ["dtg", "dtf", "screen", "embroidery"], colours: KNIT_COLOURS, care: "Machine wash cold, inside out", allOver: true },
   { id: "pique-220", name: "Cotton piqué", composition: "100% cotton", gsm: 220, construction: "knit", surcharge: 120, methods: ["dtf", "embroidery"], colours: KNIT_COLOURS.slice(0, 6), care: "Machine wash cold" },
   { id: "rib-200", name: "Stretch cotton rib", composition: "95% cotton, 5% elastane", gsm: 200, construction: "knit", surcharge: 90, methods: ["dtf", "embroidery"], colours: KNIT_COLOURS.slice(0, 6), care: "Machine wash cold, dry flat" },
-  { id: "poplin-110", name: "Cotton poplin (2/40s)", composition: "100% cotton", gsm: 110, construction: "woven", surcharge: 0, methods: ["dtf", "embroidery"], colours: SHIRTING, care: "Machine wash 30 °C, iron medium" },
+  { id: "poplin-110", name: "Cotton poplin (2/40s)", composition: "100% cotton", gsm: 110, construction: "woven", surcharge: 0, methods: ["dtf", "embroidery"], colours: SHIRTING, care: "Machine wash 30 °C, iron medium", allOver: true },
   { id: "oxford-140", name: "Cotton Oxford", composition: "100% cotton", gsm: 140, construction: "woven", surcharge: 200, methods: ["embroidery"], colours: SHIRTING.slice(0, 5), care: "Machine wash 30 °C, iron medium" },
-  { id: "linen-150", name: "Pure linen", composition: "100% linen", gsm: 150, construction: "woven", surcharge: 650, methods: ["embroidery"], colours: [c("white", "White", "#F3F1EA"), c("natural", "Natural flax", "#CDBE9F"), c("sky", "Sky blue", "#AFC9E0"), c("olive", "Olive", "#6B6A45"), c("black", "Black", "#1C1C1C")], care: "Hand wash or gentle cycle, iron damp" },
-  { id: "crepe-160", name: "Viscose crepe", composition: "100% viscose", gsm: 160, construction: "woven", surcharge: 0, methods: ["embroidery"], colours: CREPE, care: "Hand wash cold or dry clean" },
-  { id: "georgette-90", name: "Poly georgette", composition: "100% polyester", gsm: 90, construction: "woven", surcharge: 0, methods: ["embroidery"], colours: CREPE, care: "Hand wash cold" },
+  { id: "linen-150", name: "Pure linen", composition: "100% linen", gsm: 150, construction: "woven", surcharge: 650, methods: ["embroidery"], colours: [c("white", "White", "#F3F1EA"), c("natural", "Natural flax", "#CDBE9F"), c("sky", "Sky blue", "#AFC9E0"), c("olive", "Olive", "#6B6A45"), c("black", "Black", "#1C1C1C")], care: "Hand wash or gentle cycle, iron damp", allOver: true },
+  { id: "crepe-160", name: "Viscose crepe", composition: "100% viscose", gsm: 160, construction: "woven", surcharge: 0, methods: ["embroidery"], colours: CREPE, care: "Hand wash cold or dry clean", allOver: true },
+  { id: "georgette-90", name: "Poly georgette", composition: "100% polyester", gsm: 90, construction: "woven", surcharge: 0, methods: ["embroidery"], colours: CREPE, care: "Hand wash cold", allOver: true },
   { id: "fleece-320", name: "Brushed fleece", composition: "80% cotton, 20% polyester", gsm: 320, construction: "knit", surcharge: 0, methods: ["dtg", "dtf", "screen", "embroidery"], colours: KNIT_COLOURS, care: "Machine wash cold, inside out" },
-  { id: "french-terry-280", name: "Cotton French terry", composition: "100% cotton", gsm: 280, construction: "knit", surcharge: 150, methods: ["dtg", "dtf", "screen", "embroidery"], colours: KNIT_COLOURS, care: "Machine wash cold, inside out" },
+  { id: "french-terry-280", name: "Cotton French terry", composition: "100% cotton", gsm: 280, construction: "knit", surcharge: 150, methods: ["dtg", "dtf", "screen", "embroidery"], colours: KNIT_COLOURS, care: "Machine wash cold, inside out", allOver: true },
   { id: "cotton-knit-12gg", name: "Fine-gauge cotton knit (12 gg)", composition: "100% cotton", gsm: 260, construction: "knit", surcharge: 0, methods: ["embroidery"], colours: KNIT_COLOURS.slice(0, 7), care: "Hand wash, dry flat" },
   { id: "tr-suiting-260", name: "Poly-viscose suiting", composition: "70% polyester, 30% viscose", gsm: 260, construction: "woven", surcharge: 0, methods: ["embroidery"], colours: SUITING, care: "Dry clean" },
   { id: "wool-blend-280", name: "Wool-blend suiting", composition: "55% wool, 45% polyester", gsm: 280, construction: "woven", surcharge: 3200, methods: ["embroidery"], colours: SUITING.slice(0, 5), care: "Dry clean only" },
-  { id: "twill-260", name: "Stretch cotton twill", composition: "98% cotton, 2% elastane", gsm: 260, construction: "woven", surcharge: 0, methods: ["embroidery"], colours: BOTTOMS, care: "Machine wash 30 °C" },
+  { id: "twill-260", name: "Stretch cotton twill", composition: "98% cotton, 2% elastane", gsm: 260, construction: "woven", surcharge: 0, methods: ["embroidery"], colours: BOTTOMS, care: "Machine wash 30 °C", allOver: true },
   { id: "denim-12oz", name: "Indigo denim 12 oz", composition: "99% cotton, 1% elastane", gsm: 400, construction: "woven", surcharge: 250, methods: ["embroidery"], colours: [c("indigo", "Rinse indigo", "#26324F"), c("mid", "Mid wash", "#4E6A93"), c("black", "Black", "#1B1C1F")], care: "Machine wash cold, inside out" },
 ];
 const FABRIC = new Map(MTO_FABRICS.map((f) => [f.id, f]));
@@ -141,6 +145,16 @@ export const mtoOptionsSchema = z.object({
   measurementProfileId: z.string().uuid().nullable().default(null),
   monogram: z.object({ text: z.string().max(12), placement: z.string().max(40), thread: z.enum(["white", "navy", "black", "gold", "red", "tonal"]) }).nullable().default(null),
   /**
+   * All-over print: a repeating pattern (the customer's upload or a Creative Library pattern) printed across the whole
+   * fabric before cutting; the chosen colour is the ground. `scaleCm` is the width of one repeat on the garment.
+   */
+  allOver: z.object({
+    uploadId: z.string().uuid().optional(),
+    assetId: z.string().regex(/^[A-Za-z0-9_.-]{3,128}$/).optional(),
+    scaleCm: z.number().min(ALL_OVER.scaleCm[0]).max(ALL_OVER.scaleCm[1]),
+    rotation: z.number().min(-180).max(180).default(0),
+  }).nullable().default(null),
+  /**
    * Artwork placements: the customer's upload, a Creative Library graphic, or text — each placed within its zone
    * (offset from the zone centre and rotation, like the design studio's layers).
    */
@@ -155,8 +169,14 @@ export const mtoOptionsSchema = z.object({
     outline: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     spacing: z.number().min(0).max(0.5).optional(),
     arc: z.number().min(-180).max(180).optional(),
+    /** text drop shadow colour */
+    shadow: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     /** mirrored left ↔ right */
     flipX: z.boolean().optional(),
+    /** a layer switched off in the editor: kept with the design, never printed or charged */
+    hidden: z.boolean().optional(),
+    /** locked in the editor (cannot be dragged) */
+    locked: z.boolean().optional(),
     zone: z.enum(["front", "back", "chest-left", "chest-right", "sleeve-left", "sleeve-right", "back-neck", "hip-left"]),
     widthCm: z.number().min(2).max(40), heightCm: z.number().min(1).max(40),
     offsetXCm: z.number().min(-20).max(20).default(0), offsetYCm: z.number().min(-20).max(20).default(0),
@@ -176,7 +196,7 @@ export function defaultMtoOptions(g: Pick<MtoGarmentRef, "category" | "audience"
   const p = mtoProfileFor(g.category);
   if (!p) return null;
   const fabric = FABRIC.get(p.fabrics[0])!;
-  return { fabricId: fabric.id, colourId: fabric.colours[0].id, customColour: null, size: "M", fit: p.fits.includes("regular") ? "regular" : p.fits[0], lengthAdjustCm: 0, sleeveAdjustCm: 0, widthAdjustCm: 0, trims: Object.fromEntries(p.trims.map((t) => [t.id, t.options[0].id])), measurementProfileId: null, monogram: null, artwork: [] };
+  return { fabricId: fabric.id, colourId: fabric.colours[0].id, customColour: null, size: "M", fit: p.fits.includes("regular") ? "regular" : p.fits[0], lengthAdjustCm: 0, sleeveAdjustCm: 0, widthAdjustCm: 0, trims: Object.fromEntries(p.trims.map((t) => [t.id, t.options[0].id])), measurementProfileId: null, monogram: null, allOver: null, artwork: [] };
 }
 
 /** Every reason the options cannot be manufactured (empty when they can). */
@@ -204,12 +224,18 @@ export function validateMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: 
       if (!p.monogram.placements.includes(o.monogram.placement)) errors.push("Choose a monogram placement offered for this style.");
     }
   }
+  if (o.allOver) {
+    if (fabric && !fabric.allOver) errors.push(`${fabric.name} cannot be printed all over — choose a cotton, linen or viscose fabric for an all-over print.`);
+    if ([o.allOver.uploadId, o.allOver.assetId].filter(Boolean).length !== 1) errors.push("An all-over print needs exactly one pattern: your upload or a library pattern.");
+  }
   const zones = new Map<string, number>();
   for (const a of o.artwork) {
     const z = p.zones[a.zone];
     if (!z) { errors.push(`Artwork is not placed on the ${a.zone} of this style.`); continue; }
     zones.set(a.zone, (zones.get(a.zone) ?? 0) + 1);
     if (zones.get(a.zone) === MAX_ART_PER_ZONE + 1) errors.push(`Up to ${MAX_ART_PER_ZONE} artworks per print area (${a.zone}).`);
+    // switched-off layers are not made: they only have to be well formed
+    if (a.hidden) continue;
     const sources = [a.uploadId, a.assetId, a.text?.trim()].filter(Boolean).length;
     if (sources !== 1) errors.push("Each placement needs exactly one artwork: an upload, a library graphic or text.");
     if (a.text !== undefined && !/^[\p{L}\p{N} .,&'!?#@+\-]{1,40}$/u.test(a.text.trim())) errors.push("Text: 1–40 letters, numbers, spaces and simple punctuation.");
@@ -242,8 +268,9 @@ export function priceMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: Mto
   else if (o.widthAdjustCm) push("construction", "Width alteration", 150, `${o.widthAdjustCm > 0 ? "+" : ""}${o.widthAdjustCm} cm`);
   for (const t of p.trims) { const opt = t.options.find((x) => x.id === o.trims[t.id]); if (opt) push("construction", `${t.label}: ${opt.label}`, opt.surcharge); }
   if (o.monogram) push("decoration", "Monogram", rules.construction.monogram, `"${o.monogram.text.trim()}" · ${o.monogram.placement}`);
+  if (o.allOver) push("decoration", "All-over print", ALL_OVER.surcharge, `${o.allOver.scaleCm} cm repeat`);
   const d = rules.decoration;
-  for (const a of o.artwork) {
+  for (const a of printedArtwork(o)) {
     const area = a.widthCm * a.heightCm;
     if (a.method === "embroidery") {
       const stitches = Math.round(area * d.stitchDensityPerCm2 * 0.7); // artwork fills ≈ 70 % of its box
@@ -262,6 +289,9 @@ export function priceMto(g: Pick<MtoGarmentRef, "category" | "audience">, o: Mto
   return { lines, categories, unitPrice, gstRate, gst, unitTotal: unitPrice + gst, customisationCost: lines.reduce((s, l) => s + (l.cost ?? 0), 0), currency: "INR", estimate: true, illustrative: rules.illustrative, rulesVersion: rules.version };
 }
 
+/** The placements that are made (layers switched off in the editor are not). */
+export const printedArtwork = (o: Pick<MtoOptions, "artwork">) => o.artwork.filter((a) => !a.hidden);
+
 /** Production sheet for the workshop: everything needed to cut, sew, decorate and pack the piece. */
 export function mtoTechSpec(g: MtoGarmentRef, o: MtoOptions, ctx: { body?: Record<string, number> | null } = {}) {
   const p = mtoProfileFor(g.category)!;
@@ -274,8 +304,9 @@ export function mtoTechSpec(g: MtoGarmentRef, o: MtoOptions, ctx: { body?: Recor
     sizing: { size: o.size, fit: o.fit, madeToMeasure: !!o.measurementProfileId, body: o.measurementProfileId ? ctx.body ?? null : null, lengthAdjustCm: o.lengthAdjustCm, sleeveAdjustCm: o.sleeveAdjustCm, widthAdjustCm: o.widthAdjustCm },
     trims: p.trims.map((t) => ({ trim: t.label, choice: t.options.find((x) => x.id === o.trims[t.id])?.label ?? t.options[0].label })),
     monogram: o.monogram,
-    artwork: o.artwork,
-    leadDays: (o.customColour ? [p.leadDays[0] + CUSTOM_DYE.extraDays, p.leadDays[1] + CUSTOM_DYE.extraDays] : p.leadDays) as [number, number],
+    artwork: printedArtwork(o),
+    allOver: o.allOver ? { ...o.allOver, ground: colour.hex, note: "Print the fabric with the repeat at the stated width, then cut; match the repeat across the centre front." } : null,
+    leadDays: [p.leadDays[0] + (o.customColour ? CUSTOM_DYE.extraDays : 0) + (o.allOver ? ALL_OVER.extraDays : 0), p.leadDays[1] + (o.customColour ? CUSTOM_DYE.extraDays : 0) + (o.allOver ? ALL_OVER.extraDays : 0)] as [number, number],
     checks: ["Cut from the graded pattern of the style (or the made-to-measure pattern)", "Shade-match fabric and thread to the colour card", "Measure the finished garment against the size / measurements ± 1 cm before packing"],
   };
 }
@@ -283,7 +314,7 @@ export function mtoTechSpec(g: MtoGarmentRef, o: MtoOptions, ctx: { body?: Recor
 /** What a placement shows (for production sheets and order views). */
 export function artworkLabel(a: MtoOptions["artwork"][number]): string {
   const extra = `${a.flipX ? " · mirrored" : ""}`;
-  if (a.text) return `Text "${a.text.trim()}"${a.font ? ` in ${a.font}` : ""}${a.bold ? " bold" : ""}${a.italic ? " italic" : ""}${a.color ? ` ${a.color}` : ""}${a.outline ? ` outline ${a.outline}` : ""}${a.spacing ? ` spacing ${a.spacing}em` : ""}${a.arc ? ` arc ${a.arc}°` : ""}${extra}`;
+  if (a.text) return `Text "${a.text.trim()}"${a.font ? ` in ${a.font}` : ""}${a.bold ? " bold" : ""}${a.italic ? " italic" : ""}${a.color ? ` ${a.color}` : ""}${a.outline ? ` outline ${a.outline}` : ""}${a.shadow ? ` shadow ${a.shadow}` : ""}${a.spacing ? ` spacing ${a.spacing}em` : ""}${a.arc ? ` arc ${a.arc}°` : ""}${extra}`;
   if (a.assetId) return `Library graphic ${a.assetId}${extra}`;
   if (a.uploadId) return `Customer artwork ${a.uploadId}${extra}`;
   if (a.assetId) return `Library graphic ${a.assetId}`;
@@ -298,7 +329,9 @@ export function describeMto(g: Pick<MtoGarmentRef, "category">, o: MtoOptions): 
   if (o.sleeveAdjustCm) bits.push(`sleeves ${o.sleeveAdjustCm > 0 ? "+" : ""}${o.sleeveAdjustCm} cm`);
   if (o.widthAdjustCm) bits.push(`width ${o.widthAdjustCm > 0 ? "+" : ""}${o.widthAdjustCm} cm`);
   if (o.monogram) bits.push(`monogram "${o.monogram.text.trim()}"`);
-  if (o.artwork.length) bits.push(`${o.artwork.length} artwork placement${o.artwork.length > 1 ? "s" : ""}`);
+  if (o.allOver) bits.push(`all-over print (${o.allOver.scaleCm} cm repeat)`);
+  const art = printedArtwork(o).length;
+  if (art) bits.push(`${art} artwork placement${art > 1 ? "s" : ""}`);
   void g;
   return bits.join(" · ");
 }

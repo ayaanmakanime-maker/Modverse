@@ -76,6 +76,11 @@ Status labels (V2 spec, Part 17): **Fully implemented** — works end-to-end wit
 ## V2 milestones (commits)
 `780f5a9` V2-A schema v2 + 2D editor · `4ad261f` V2-B realistic 3D · `7fda2ab` V2-C AI architecture · `bfc3d07` V2-D live try-on + fit intelligence · `bd305c4` V2-E dynamic pricing, manufacturing docs, commerce · `703db40` V2-F manufacturer & logistics portals · `8e6b665` V2-G journey test, performance probe + on-demand 3D rendering, documentation · V2.1 artwork previews in order/partner views, notifications, GSTIN checks, payouts ledger, Shiprocket adapter.
 
+## V3.2 — lobby idle, bare by default, no overlap, Atelier tools for every style
+* Human Studio: both mannequins start bare; "My saved garments" and "Try other garments" (the studio's 15 T-shirt and 17 shirt models plus every shop style, men and women); lobby idle pose with relaxed hands; arms held clear of the body and what is worn; skin under opaque clothing not drawn; seam ties in the cloth; spring cloth for designs; designs bound for the standing pose; necklines centred on the neck; the collider ignores the base mesh's inner throat. See HUMAN_STUDIO.md.
+* Shop-style studio: all-over print, layers (hide / lock), drawing, image adjustments, your images, text shadow, Pro precise placement and alignment, versions (migration 0015), tech sheet. See MADE_TO_ORDER.md.
+* Checks this round: lint and typecheck clean, production build passes, Vitest 262 / 262 (38 files), Playwright 58 / 58 (desktop + phone) in one full run.
+
 ## Known limitations
 * 3D garments are parametric visualisations: no cloth simulation; folds are procedural approximations; not graded sewing patterns.
 * The garment on the supplied characters is skinned, not simulated: it follows the skeleton rigidly (no swing, wrinkles or secondary motion), the body under it is a shrunk copy of the character's own shirt, and extreme arm swings can open the armhole or flare the hem. Without the FBX files the avatars are procedural rigged bodies with stylised heads (no facial likeness, not scans). The characters are visual context — fit is judged by the measurement fit check.

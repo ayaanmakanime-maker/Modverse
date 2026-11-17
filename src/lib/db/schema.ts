@@ -507,6 +507,8 @@ export const garmentDesigns = pgTable(
     name: text("name").notNull(),
     mode: text("mode", { enum: ["studio", "atelier", "pro"] }).notNull().default("studio"),
     options: jsonb("options").notNull(),
+    /** named snapshots saved from Atelier / Atelier Pro (newest last, up to 20): { at, note, mode, options } */
+    versions: jsonb("versions").notNull().default([]),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

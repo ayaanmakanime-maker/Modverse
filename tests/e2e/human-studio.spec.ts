@@ -28,8 +28,13 @@ test("Human Studio: the mannequin is shaped to tape measurements, tries a garmen
   await expect(page.getByTestId("hm-range-height")).toHaveAttribute("max", "195");
   await expect(page.getByTestId("hm-range-weight")).toHaveAttribute("min", "38");
   await expect(page.getByRole("slider", { name: /^(Body weight|Muscle|Proportions|Bust shape)$/ })).toHaveCount(0);
-  // dressed by default in a fitted 3D collection garment; the size chart recommends a size and the fit map shows it
-  await expect(canvas).not.toHaveAttribute("data-garment", "none", { timeout: 120_000 });
+  // bare by default: nothing is worn until it is chosen
+  await expect(canvas).toHaveAttribute("data-garment", "none");
+  await expect(page.getByTestId("hm-wearing-state")).toContainText("bare");
+  // try a shop style on: the size chart recommends a size and the fit map shows it
+  await page.getByTestId("hm-src-other").click();
+  await page.getByTestId("hm-garment-toigo-shift-dress").click();
+  await expect(canvas).toHaveAttribute("data-garment", "toigo-shift-dress", { timeout: 120_000 });
   await expect(page.getByTestId("hm-recommended")).toContainText("M");
   await expect(canvas).toHaveAttribute("data-fitmap", "on", { timeout: 120_000 });
   await expect(page.getByTestId("hm-legend")).toBeVisible();
@@ -43,8 +48,11 @@ test("Human Studio: the mannequin is shaped to tape measurements, tries a garmen
   await expect(canvas).toHaveAttribute("data-style", "solid");
   await page.getByTestId("hm-fitmap").uncheck();
   await expect(canvas).toHaveAttribute("data-fitmap", "off");
-  // alive: the default pose animates; walking simulates the loose fabric
-  await expect(canvas).toHaveAttribute("data-pose", "relaxed");
+  // alive: the lobby idle is the default; nothing of the body shows through what is worn, and the arms hang clear of it
+  await expect(canvas).toHaveAttribute("data-pose", "idle");
+  await expect.poll(async () => Number(await canvas.getAttribute("data-hidden-body")), { timeout: 60_000 }).toBeGreaterThan(50);
+  await expect.poll(async () => Number(await canvas.getAttribute("data-arm-out")), { timeout: 60_000 }).toBeGreaterThan(0);
+  // walking simulates the loose fabric
   await page.getByTestId("hm-pose-walk").click();
   await expect(canvas).toHaveAttribute("data-cloth", "on");
   await expect.poll(async () => Number(await canvas.getAttribute("data-cloth-particles")), { timeout: 60_000 }).toBeGreaterThan(500);
@@ -133,9 +141,11 @@ test("Human Studio: a shop style I customised is worn with my colour, size and a
   const id = page.url().match(/garment\/([0-9a-f-]{36})/)![1];
   // in Human Studio it is one of my designs and is worn as customised
   await page.goto("/design/human-studio");
-  await page.getByRole("radio", { name: "My designs" }).click();
-  await page.getByTestId(`hm-design-${id}`).click();
   const canvas = page.getByTestId("human-canvas");
+  await expect(canvas).toHaveAttribute("data-garment", "none", { timeout: 120_000 });
+  // the dedicated "My saved garments" list is where it is tried on
+  await page.getByTestId("hm-src-saved").click();
+  await page.getByTestId(`hm-design-${id}`).click();
   await expect(canvas).toHaveAttribute("data-garment", "toigo-basic-tucked-t-shirt", { timeout: 120_000 });
   await expect(canvas).toHaveAttribute("data-size", "L");
   await expect(page.getByTestId("hm-wearing")).toContainText("Navy tee");
@@ -167,7 +177,7 @@ test("Human Studio: your own editor design on the mannequin, with the fit map", 
   expect(r.ok()).toBe(true);
   const id = (await r.json()).design.id as string;
   await page.goto("/design/human-studio");
-  await page.getByRole("radio", { name: "My designs" }).click();
+  await page.getByTestId("hm-src-saved").click();
   await page.getByTestId(`hm-design-${id}`).click();
   const canvas = page.getByTestId("human-canvas");
   await expect(canvas).toHaveAttribute("data-garment", `design:${id}`, { timeout: 120_000 });
@@ -203,4 +213,40 @@ test("Human Studio is reached from Atelier Pro and reads saved measurements", as
   await page.getByTestId("hm-profile").selectOption({ label: "Tape 2026" });
   await expect(page.getByTestId("hm-in-inseam")).toHaveValue("80");
   await expect(page.getByTestId("hm-in-height")).toHaveValue("178");
+});
+
+test("Human Studio: bare by default; try the studio's T-shirts and shirts and the shop's styles on both mannequins", async ({ page }) => {
+  test.setTimeout(300_000);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/design/human-studio");
+  const canvas = page.getByTestId("human-canvas");
+  await expect(canvas).toHaveAttribute("data-ready", "1", { timeout: 120_000 });
+  await expect(canvas).toHaveAttribute("data-garment", "none");
+  await expect(canvas).toHaveAttribute("data-worn", "0");
+  await expect(canvas).toHaveAttribute("data-pose", "idle");
+  // the saved list is its own option; signed out it points to sign in, and "Try other garments" lists everything else
+  await page.getByTestId("hm-src-saved").click();
+  await expect(page.getByTestId("hm-designs")).toContainText("Sign in");
+  await page.getByTestId("hm-src-other").click();
+  await expect(page.getByTestId("hm-models")).toBeVisible();
+  await expect(page.getByTestId("hm-garments")).toBeVisible();
+  // a studio T-shirt on the men's mannequin, in another colour, simulated as the body moves
+  await page.getByTestId("hm-model-tee-classic-crew").click();
+  await expect(canvas).toHaveAttribute("data-garment", "design:model:tee-classic-crew", { timeout: 120_000 });
+  await page.getByTestId("hm-fitmap").uncheck();
+  await page.getByTestId("hm-model-colours").locator("button").nth(2).click();
+  await expect(canvas).toHaveAttribute("data-garment", "design:model:tee-classic-crew", { timeout: 120_000 });
+  await expect.poll(async () => Number(await canvas.getAttribute("data-cloth-particles")), { timeout: 90_000 }).toBeGreaterThan(500);
+  await expect(page.getByTestId("hm-order")).toHaveAttribute("href", "/design/new?model=tee-classic-crew&audience=men");
+  // the women's mannequin starts bare again; a studio shirt, then a shop style, then taken off
+  await page.getByTestId("hm-sex-female").click();
+  await expect(canvas).toHaveAttribute("data-garment", "none");
+  await page.getByTestId("hm-model-shirt-classic-formal").click();
+  await expect(canvas).toHaveAttribute("data-garment", "design:model:shirt-classic-formal", { timeout: 120_000 });
+  await page.getByTestId("hm-garment-toigo-keyhole-neck-dress").click();
+  await expect(canvas).toHaveAttribute("data-garment", "toigo-keyhole-neck-dress", { timeout: 120_000 });
+  await page.getByTestId("hm-take-off").click();
+  await expect(canvas).toHaveAttribute("data-garment", "none");
+  expect(errors).toEqual([]);
 });

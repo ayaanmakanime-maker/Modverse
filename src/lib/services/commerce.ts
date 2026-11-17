@@ -113,7 +113,8 @@ async function checkLibraryLine(db: Db, user: SessionUser, garmentId: string, ra
   if (!g || !mtoProfileFor(g.category)) throw notFound("Garment");
   const parsed = mtoOptionsSchema.safeParse(raw);
   if (!parsed.success) throw badRequest("Invalid options");
-  const options: MtoOptions = { ...parsed.data, monogram: parsed.data.monogram ? { ...parsed.data.monogram, text: parsed.data.monogram.text.trim() } : null };
+  // layers switched off in the editor are not part of what is ordered
+  const options: MtoOptions = { ...parsed.data, artwork: parsed.data.artwork.filter((a) => !a.hidden).map(({ locked: _l, ...a }) => a), monogram: parsed.data.monogram ? { ...parsed.data.monogram, text: parsed.data.monogram.text.trim() } : null };
   const garment = { id: g.id, name: g.name, audience: g.audience, category: g.category, collection: g.collection, licence: g.licence, attribution: g.attribution, thumbnail: g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null };
   const problems = validateMto(garment, options);
   if (problems.length) throw new ApiError(400, "not_manufacturable", problems.join(" "), { problems });
@@ -121,7 +122,7 @@ async function checkLibraryLine(db: Db, user: SessionUser, garmentId: string, ra
     const [mp] = await db.select({ id: s.measurementProfiles.id }).from(s.measurementProfiles).where(and(eq(s.measurementProfiles.id, options.measurementProfileId), eq(s.measurementProfiles.userId, user.id)));
     if (!mp) throw notFound("Measurement profile");
   }
-  for (const a of options.artwork) {
+  for (const a of [...options.artwork, ...(options.allOver ? [options.allOver] : [])]) {
     if (a.uploadId) {
       const [up] = await db.select({ id: s.uploadedAssets.id }).from(s.uploadedAssets).where(and(eq(s.uploadedAssets.id, a.uploadId), eq(s.uploadedAssets.userId, user.id)));
       if (!up) throw notFound("Artwork upload");
@@ -284,7 +285,7 @@ export async function checkout(user: SessionUser, input: { addressId?: string; a
         const price = priceMto(garment, options, rules);
         await tx.insert(s.orderItems).values({
           orderId: o.id, kind: "library", projectId: null, version: 0, designName: garment.name, designSnapshot: { garment, options },
-          specSnapshot: { ...spec, validation: { status: "pass", counts: { errors: 0, warnings: 0 } }, price, pricingRulesVersion: rules.version, placements: options.artwork.map((a, index) => ({ index, zone: a.zone, method: a.method, widthCm: a.widthCm, heightCm: a.heightCm, offsetXCm: a.offsetXCm, offsetYCm: a.offsetYCm, rotation: a.rotation, reference: a.uploadId ?? (a.assetId ? `library:${a.assetId}` : `text:${a.text}`) })) },
+          specSnapshot: { ...spec, validation: { status: "pass", counts: { errors: 0, warnings: 0 } }, price, pricingRulesVersion: rules.version, placements: options.artwork.map((a, index) => ({ index, zone: a.zone, method: a.method, widthCm: a.widthCm, heightCm: a.heightCm, offsetXCm: a.offsetXCm, offsetYCm: a.offsetYCm, rotation: a.rotation, reference: a.uploadId ?? (a.assetId ? `library:${a.assetId}` : `text:${a.text}`) })), allOver: options.allOver ? { scaleCm: options.allOver.scaleCm, rotation: options.allOver.rotation, reference: options.allOver.uploadId ?? `library:${options.allOver.assetId}` } : null },
           size: l.size, quantity: l.quantity, unitPrice: l.unitPrice,
         });
         continue;

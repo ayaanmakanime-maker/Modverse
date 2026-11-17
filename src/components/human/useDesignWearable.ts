@@ -11,13 +11,22 @@ import { buildGarmentGeometry, type GarmentGeometry } from "@/lib/three/garment-
 import { panelColor } from "@/lib/garment/design";
 import { pbrAlbedo } from "@/lib/color";
 import { useZoneTextures } from "@/components/three/GarmentViewer";
-import { bindDesign, designParts, type DesignBinding } from "@/lib/human/design-bind";
+import { bindDesign, designParts, stanceFit, type DesignBinding } from "@/lib/human/design-bind";
 import type { HumanAsset } from "@/lib/human/model";
+import { buildSkeleton, poseAt, skin } from "@/lib/human/pose";
+import { armClearance } from "@/lib/human/coverage";
 import type { PanelId } from "@/lib/garment/types";
 
 export interface DesignWearable {
   key: string;
+  /** bound on the size body as measured (arms out): the fit map and the A-pose */
   binding: DesignBinding;
+  /** bound on the size body standing in the idle stance (arms down, sleeves laid along them): every other pose */
+  posed: DesignBinding;
+  /** the arm angle (degrees out, see pose.ts) the stance binding was made with: the arms are never held closer */
+  armOut: number;
+  /** 1 for collar and rib vertices: the neck opening (a folded rib has no free edge to find it by) */
+  openings: Uint8Array;
   geometry: THREE.BufferGeometry;
   materials: THREE.Material[];
   index: Uint32Array;
@@ -42,7 +51,7 @@ export function useDesignWearable(config: DesignConfig | null, asset: HumanAsset
   const textures = config && geo ? createElement(TextureSource, { config, geo, onMaps: setMaps }) : null;
 
   // binding to the size body: once per design and size (≈ 0.3 s), after the click that asked for it
-  const [binding, setBinding] = useState<{ key: string; b: DesignBinding } | null>(null);
+  const [binding, setBinding] = useState<{ key: string; b: DesignBinding; p: DesignBinding; armOut: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const bindKey = config && ref ? `${id}|${ref.key}|${config.size}|${config.fit}` : "";
   useEffect(() => {
@@ -50,7 +59,18 @@ export function useDesignWearable(config: DesignConfig | null, asset: HumanAsset
     let live = true;
     setBusy(true);
     const t = setTimeout(() => {
-      try { const b = bindDesign(asset, ref.rest, parts, geo); if (live) setBinding({ key: bindKey, b }); }
+      try {
+        const b = bindDesign(asset, ref.rest, parts, geo);
+        // the same garment bound on the size body standing as on the mannequin, arms a little away from the body so
+        // the panels' sides fit between torso and arm
+        const sk = buildSkeleton(asset, ref.rest);
+        const armOut = armClearance({ asset, sk, rest: ref.rest, pose: "idle", worn: [], margin: 1 }) + 3;
+        const stance = skin(asset, sk, ref.rest, poseAt("idle", 0, false, { armOut }));
+        const index: number[] = [];
+        for (const r of b.ranges) { const pt = parts.find((x) => x.name === r.name)!; if (pt.index) for (let t = 0; t < pt.index.length; t++) index.push(pt.index[t] + r.start); }
+        const p = stanceFit(asset, b, index, stance.positions, sk, stance.heads, ref.rest);
+        if (live) setBinding({ key: bindKey, b, p, armOut });
+      }
       finally { if (live) setBusy(false); }
     }, 30);
     return () => { live = false; clearTimeout(t); };
@@ -62,7 +82,7 @@ export function useDesignWearable(config: DesignConfig | null, asset: HumanAsset
     if (!config || !geo || !binding || binding.key !== bindKey) return null;
     const meshes = [geo.front, geo.back, geo.sleeveLeft, geo.sleeveRight, ...geo.collar, ...geo.cuffs, ...geo.sleevePlackets, ...(geo.placket ? [geo.placket] : []), ...geo.pockets];
     const total = meshes.reduce((n, m) => n + m.positions.length / 3, 0);
-    if (total !== binding.b.fit.vertices) return null;
+    if (total !== binding.b.fit.vertices || total !== binding.p.fit.vertices) return null;
     const uv = new Float32Array(total * 2);
     const index: number[] = [];
     const g = new THREE.BufferGeometry();
@@ -74,7 +94,7 @@ export function useDesignWearable(config: DesignConfig | null, asset: HumanAsset
       start += m.indices.length;
       at += m.positions.length / 3;
     });
-    g.setAttribute("position", new THREE.BufferAttribute(binding.b.placed.slice(), 3));
+    g.setAttribute("position", new THREE.BufferAttribute(binding.p.placed.slice(), 3));
     g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
     const idx = Uint32Array.from(index);
     g.setIndex(new THREE.BufferAttribute(idx, 1));
@@ -88,7 +108,9 @@ export function useDesignWearable(config: DesignConfig | null, asset: HumanAsset
       ...(geo.placket ? [mat(undefined, "placket")] : []),
       ...geo.pockets.map((_, i) => mat(i === 0 ? maps.pocket : undefined, "pocket")),
     ];
-    return { key: `design/${bindKey}/${texKey || "plain"}`, binding: binding.b, geometry: g, materials, index: idx };
+    const openings = new Uint8Array(total);
+    for (const r of binding.b.ranges) if (r.name.startsWith("collar")) openings.fill(1, r.start, r.start + r.count);
+    return { key: `design/${bindKey}/${texKey || "plain"}`, binding: binding.b, posed: binding.p, armOut: binding.armOut, openings, geometry: g, materials, index: idx };
   }, [config, geo, binding, bindKey, texKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { wearable?.geometry.dispose(); wearable?.materials.forEach((m) => m.dispose()); }, [wearable]);
   return { wearable, binding: busy, textures };

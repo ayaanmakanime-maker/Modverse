@@ -121,11 +121,11 @@ export function Slider({ label, value, min, max, step = 0.5, unit = "cm", onChan
   );
 }
 
-export function Segmented<T extends string>({ options, value, onChange, label, size = "md" }: { options: { value: T; label: string; disabled?: boolean; title?: string }[]; value: T; onChange: (v: T) => void; label?: string; size?: "sm" | "md" }) {
+export function Segmented<T extends string>({ options, value, onChange, label, size = "md", testid }: { options: { value: T; label: string; disabled?: boolean; title?: string }[]; value: T; onChange: (v: T) => void; label?: string; size?: "sm" | "md"; /** buttons get data-testid `${testid}-${value}` */ testid?: string }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
       {options.map((o) => (
-        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} disabled={o.disabled} title={o.title} onClick={() => onChange(o.value)} data-active={value === o.value} className={clsx("mv-chip transition hover:border-bone disabled:opacity-40", size === "sm" && "!px-2 !py-0.5")}>
+        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} disabled={o.disabled} title={o.title} onClick={() => onChange(o.value)} data-active={value === o.value} data-testid={testid ? `${testid}-${o.value}` : undefined} className={clsx("mv-chip transition hover:border-bone disabled:opacity-40", size === "sm" && "!px-2 !py-0.5")}>
           {o.label}
         </button>
       ))}

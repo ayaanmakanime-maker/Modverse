@@ -1,0 +1,1 @@
+ALTER TABLE "garment_designs" ADD COLUMN "versions" jsonb DEFAULT '[]'::jsonb NOT NULL;

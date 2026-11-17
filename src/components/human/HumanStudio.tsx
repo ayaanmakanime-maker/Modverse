@@ -29,9 +29,14 @@ import { COLLECTION_LABELS } from "@/lib/garment-library-labels";
 import { getMtoFabric, mtoProfileFor, type MtoOptions } from "@/lib/garment/made-to-order";
 import { bindToBody } from "@/lib/human/design-bind";
 import { artKey, resolveArtPreviews, ZONE_ANCHOR, type ArtPreview } from "@/components/library3d/MtoArtwork";
+import { resolvePatternUrl } from "@/components/library3d/AtelierTools";
 import { safeParseDesignConfig, type DesignConfig } from "@/lib/garment/schema";
 import { loadPart, loadPartsIndex, partBase, type PartInfo, type PartKind, type PartMesh, type PartsIndex } from "@/lib/human/parts";
-import { POSES, type PoseId } from "@/lib/human/pose";
+import { DEFAULT_POSE, POSES, type PoseId } from "@/lib/human/pose";
+import { GARMENT_MODELS, MODEL_BY_ID } from "@/lib/garment/models";
+import { createDesign } from "@/lib/garment/design";
+import { getFabric } from "@/lib/garment/fabrics";
+import { GarmentFlat } from "@/components/garment/GarmentFlat";
 import { garmentMesh, HumanScene, type MannequinStyle, type ViewId, type WornItem } from "./HumanScene";
 import { useDesignWearable } from "./useDesignWearable";
 
@@ -41,16 +46,13 @@ export interface HumanStudioInitial { garment?: string; size?: string; fabric?: 
 
 const PROFILE_TO_MEASURE: Partial<Record<string, MeasureId>> = { height: "height", weight: "weight", chest: "chest", underbust: "underbust", waist: "waist", hip: "hip", neck: "neck", shoulder: "shoulder", armLength: "armLength", bicep: "bicep", wrist: "wrist", inseam: "inseam", thigh: "thigh", calf: "calf", torsoLength: "torsoLength" };
 type Slots = Partial<Record<PartKind, string>>;
-const DEFAULT_SLOTS: Record<Sex, Slots> = {
-  male: { bottoms: "toigo_wool_pants", shoes: "toigo_ankle_boots_male" },
-  female: { bottoms: "cortu_cargo_pants", shoes: "toigo_ballet_flats" },
-};
+/** The mannequin starts bare, men and women alike: nothing is worn until you choose it. */
+const NO_SLOTS: Slots = {};
 /** MakeHuman's "ideal proportions" per sex; the cup shape follows bust and underbust when both are given. */
 const DEFAULT_BUILD: Record<Sex, { muscle: number; cup: number; proportions: number }> = { male: { muscle: 0.15, cup: 0, proportions: 0.45 }, female: { muscle: 0, cup: 0.3, proportions: 0.7 } };
 type Tone = "soft" | "average" | "athletic";
 const TONE_MUSCLE: Record<Tone, (s: Sex) => number> = { soft: () => -0.35, average: (s) => DEFAULT_BUILD[s].muscle, athletic: () => 0.6 };
-const DEFAULT_GARMENT: Record<Sex, string[]> = { male: ["elvs-male-shirt-untucked-bd1"], female: ["toigo-shift-dress", "elvs-simple-fashion-dress-1", "toigo-keyhole-neck-dress"] };
-interface Fitting { id: string; name: string; audience: string; measurements: Record<string, number>; build: { tone?: Tone }; garmentId: string | null; designId: string | null; size: string | null; fabricId: string | null; colourId: string | null; styling: { bottoms?: string; shoes?: string; outfit?: string }; pose: string | null }
+interface Fitting { id: string; name: string; audience: string; measurements: Record<string, number>; build: { tone?: Tone }; garmentId: string | null; designId: string | null; size: string | null; fabricId: string | null; colourId: string | null; styling: { bottoms?: string; shoes?: string; outfit?: string; model?: string; modelColour?: string }; pose: string | null }
 interface DesignRow { id: string; name: string; audience: string; garmentType: string }
 interface StyleRow { id: string; name: string; garmentId: string; garment: { name: string; audience: string; thumbnail: string | null } }
 interface StyleDesign { id: string; name: string; garmentId: string; options: MtoOptions }
@@ -177,17 +179,23 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   }, [user]);
 
   /* ---------------- try on ---------------- */
-  const [slots, setSlots] = useState<Slots>(DEFAULT_SLOTS[sex]);
+  const [pose, setPose] = useState<PoseId>(DEFAULT_POSE);
+  const [slots, setSlots] = useState<Slots>(NO_SLOTS);
   const [garmentId, setGarmentId] = useState(start?.id ?? "");
   const [outfitId, setOutfitId] = useState("");
-  const [source, setSource] = useState<"shop" | "designs">(initial.design ? "designs" : "shop");
-  const [design, setDesign] = useState<{ id: string; name: string; config: DesignConfig } | null>(null);
+  // two ways to try on: your saved garments (designs and customised styles), or any other garment — the studio's own
+  // T-shirt and shirt models and every style in the shop
+  const [source, setSource] = useState<"saved" | "other">(initial.design || initial.fitting ? "saved" : start ? "other" : "saved");
+  /** what is worn from the editor: one of your designs, or a studio model (`model` set, id "model:<id>") */
+  const [design, setDesign] = useState<{ id: string; name: string; config: DesignConfig; model?: string } | null>(null);
   /** one of your customised shop styles, worn with its fabric colour and artwork */
   const [styleDesign, setStyleDesign] = useState<StyleDesign | null>(null);
   const [artPreviews, setArtPreviews] = useState<Record<string, ArtPreview>>({});
-  const defaultGarment = (v: Sex) => { const own = garments.filter((g) => (v === "female" ? g.audience === "women" : g.audience === "men")); return (DEFAULT_GARMENT[v].map((id) => own.find((g) => g.id === id)).find(Boolean) ?? own[0])?.id ?? ""; };
-  useEffect(() => { if (!start && !initial.design && !initial.fitting) setGarmentId(defaultGarment(sex)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const setSex = (v: Sex) => { setSexRaw(v); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[v]); setGarmentId(defaultGarment(v)); setDesign(null); setStyleDesign(null); setOutfitId(""); setSize(null); };
+  /** the pattern image of a customised style's all-over print */
+  const [stylePattern, setStylePattern] = useState<string | null>(null);
+  // switching between the men's and women's mannequin starts bare again
+  const setSex = (v: Sex) => { setSexRaw(v); setSolved(null); setFit(null); setSlots(NO_SLOTS); setGarmentId(""); setDesign(null); setStyleDesign(null); setOutfitId(""); setSize(null); };
+  const takeOff = () => { setGarmentId(""); setDesign(null); setStyleDesign(null); setOutfitId(""); };
   const applyMeasurements = (m: Record<string, number>) => {
     const next: Partial<Record<MeasureId, string>> = {};
     for (const [k, v] of Object.entries(m)) { const id = PROFILE_TO_MEASURE[k]; if (id && v > 0) next[id] = String(v); }
@@ -237,16 +245,28 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
       const d = r.design, g = garments.find((x) => x.id === d.garmentId);
       if (!g) throw new Error("This style is no longer in the shop");
       const s: Sex = g.audience === "women" ? "female" : g.audience === "men" ? "male" : sex;
-      if (s !== sex) { setSexRaw(s); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[s]); }
+      if (s !== sex) { setSexRaw(s); setSolved(null); setFit(null); setSlots(NO_SLOTS); }
       firstGarment.current = true;
-      setDesign(null); setOutfitId(""); setSource("designs");
+      setDesign(null); setOutfitId(""); setSource("saved");
       setGarmentId(d.garmentId);
       setFabricId(d.options.fabricId); setColourId(d.options.colourId); setMtoFit(d.options.fit); setSize(size ?? d.options.size); setFitMap(false);
       setStyleDesign({ id: d.id, name: d.name, garmentId: d.garmentId, options: d.options });
       resolveArtPreviews(d.options.artwork).then(setArtPreviews).catch(() => undefined);
+      setStylePattern(null);
+      if (d.options.allOver) resolvePatternUrl(d.options.allOver).then(setStylePattern).catch(() => undefined);
       return true;
     } catch { return false; }
   }
+  // one of the studio's own T-shirt or shirt models, in one of its fabric's colours
+  function wearModel(id: string, colour: string | null = null, aud: "men" | "women" = audience) {
+    const m = MODEL_BY_ID.get(id);
+    if (!m) return;
+    const config = createDesign(id, aud);
+    if (colour) config.fabric.color = colour;
+    setGarmentId(""); setStyleDesign(null); setOutfitId("");
+    setDesign({ id: `model:${id}`, name: m.name, config, model: id });
+  }
+  const studioModels = useMemo(() => GARMENT_MODELS.filter((m) => m.audiences.includes(audience)).map((m) => ({ m, config: createDesign(m.id, audience), category: m.garmentType === "shirt" ? "shirts" : "tshirts" })), [audience]);
   // your own design (from the editor)
   async function openDesign(id: string, size?: string) {
     setStyleDesign(null);
@@ -256,9 +276,9 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
       if (!c.success) throw new Error("This design cannot be shown on the mannequin");
       if (c.data.garmentType !== "tshirt" && c.data.garmentType !== "shirt") throw new Error("Only T-shirt and shirt designs can be worn on the mannequin for now");
       const s: Sex = c.data.audience === "women" ? "female" : "male";
-      if (s !== sex) { setSexRaw(s); setSolved(null); setFit(null); setSlots(DEFAULT_SLOTS[s]); }
+      if (s !== sex) { setSexRaw(s); setSolved(null); setFit(null); setSlots(NO_SLOTS); }
       setDesign({ id: r.design.id, name: r.design.name, config: c.data });
-      setSource("designs"); setOutfitId("");
+      setSource("saved"); setOutfitId("");
       setSize(size ?? c.data.size);
     } catch (e) { toast(errorMessage(e), "bad"); }
   }
@@ -364,20 +384,24 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
     if (garment && gfit?.id === garment.id && !outfitId) {
       const decals = styleDesign && styleDesign.garmentId === garment.id ? styleDesign.options.artwork.flatMap((a) => {
         const pv = artPreviews[artKey(a)];
-        if (!pv) return [];
+        if (!pv || a.hidden) return [];
         const z = ZONE_ANCHOR[a.zone];
         return [{ url: pv.url, side: z.side, at: { x: z.x + a.offsetXCm, y: z.y - a.offsetYCm }, width: a.widthCm, height: a.heightCm, roll: a.rotation, flip: !!a.flipX }];
       }) : [];
       const dk = decals.map((d) => `${d.url.length}:${d.at.x},${d.at.y},${d.width},${d.roll}`).join("|");
-      out.push({ key: `garment/${garment.id}${dk ? `/${dk}` : ""}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null, fabric: fabricFamily(garment), decals, plain: !!colour || !!customHex });
+      const ao = styleDesign && styleDesign.garmentId === garment.id ? styleDesign.options.allOver : null;
+      out.push({ key: `garment/${garment.id}${dk ? `/${dk}` : ""}`, kind: "garment", fit: gfit.fit, glbUrl: garment.glb, colors: fitMap ? colors : null, fabric: fabricFamily(garment), decals, plain: !!colour || !!customHex, pattern: ao && stylePattern ? { url: stylePattern, ground: tint, scaleCm: ao.scaleCm, rotation: ao.rotation } : null });
     }
-    if (design && wearable && !outfitId) out.push({ key: wearable.key, kind: "design", fit: wearable.binding.fit, object: { geometry: wearable.geometry, materials: wearable.materials }, colors: fitMap ? colors : null });
+    // your design: bound standing as the mannequin stands (the A-pose uses the binding made with the arms out)
+    if (design && wearable && !outfitId) {
+      const a = pose === "apose";
+      out.push({ key: `${wearable.key}${a ? "/a" : ""}`, kind: "design", fit: a ? wearable.binding.fit : wearable.posed.fit, object: { geometry: wearable.geometry, materials: wearable.materials }, colors: fitMap ? colors : null, fabric: design.config.garmentType === "shirt" ? "woven" : "jersey", armOut: a ? 0 : wearable.armOut, openings: wearable.openings });
+    }
     return out;
-  }, [wanted, loaded, garment, gfit, design, wearable, outfitId, fitMap, colors, styleDesign, artPreviews, colour, customHex]);
+  }, [wanted, loaded, garment, gfit, design, wearable, outfitId, fitMap, colors, styleDesign, artPreviews, colour, customHex, pose, stylePattern, tint]);
   const [ready, setReady] = useState<string[]>([]);
 
   /* ---------------- motion and view ---------------- */
-  const [pose, setPose] = useState<PoseId>("relaxed");
   const [life, setLife] = useState(true);
   const [cloth, setCloth] = useState(true);
   const [turntable, setTurntable] = useState(false);
@@ -397,8 +421,9 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
     setSlots({ bottoms: f.styling.bottoms, shoes: f.styling.shoes });
     setOutfitId(f.styling.outfit ?? "");
     if (f.pose && POSES.some((p) => p.id === f.pose)) setPose(f.pose as PoseId);
-    if (f.designId) void openStyleDesign(f.designId, f.size ?? undefined).then((ok) => { if (!ok) void openDesign(f.designId!, f.size ?? undefined); });
-    else { setDesign(null); setStyleDesign(null); setSource("shop"); setGarmentId(f.garmentId ?? ""); firstGarment.current = true; setFabricId(f.fabricId); setColourId(f.colourId); setFitMap(!f.colourId); setSize(f.size); }
+    if (f.styling.model) { setSource("other"); wearModel(f.styling.model, f.styling.modelColour ? `#${f.styling.modelColour}` : null, f.audience === "women" ? "women" : "men"); setSize(f.size); }
+    else if (f.designId) void openStyleDesign(f.designId, f.size ?? undefined).then((ok) => { if (!ok) void openDesign(f.designId!, f.size ?? undefined); });
+    else { setDesign(null); setStyleDesign(null); setSource("other"); setGarmentId(f.garmentId ?? ""); firstGarment.current = true; setFabricId(f.fabricId); setColourId(f.colourId); setFitMap(!f.colourId); setSize(f.size); }
   };
   useEffect(() => {
     if (!user) return;
@@ -417,9 +442,9 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
       const name = saveName.trim() || `Fitting ${new Date().toLocaleDateString()}`;
       const r = await api<{ fitting: Fitting }>("/api/account/fittings", {
         body: {
-          name, audience, measurements: targets, build: { tone }, garmentId: garment && !outfitId && !styleDesign ? garment.id : null, designId: !outfitId ? (design?.id ?? styleDesign?.id ?? null) : null,
+          name, audience, measurements: targets, build: { tone }, garmentId: garment && !outfitId && !styleDesign ? garment.id : null, designId: !outfitId ? ((design && !design.model ? design.id : null) ?? styleDesign?.id ?? null) : null,
           size: wearing ? activeSize : null, fabricId: garment && colour && !styleDesign ? fabric!.id : null, colourId: garment && colour && !styleDesign ? colour.id : null,
-          styling: { ...(slots.bottoms ? { bottoms: slots.bottoms } : {}), ...(slots.shoes ? { shoes: slots.shoes } : {}), ...(outfitId ? { outfit: outfitId } : {}) }, pose, consent: true,
+          styling: { ...(slots.bottoms ? { bottoms: slots.bottoms } : {}), ...(slots.shoes ? { shoes: slots.shoes } : {}), ...(outfitId ? { outfit: outfitId } : {}), ...(design?.model && !outfitId ? { model: design.model, modelColour: design.config.fabric.color.replace("#", "") } : {}) }, pose, consent: true,
         },
       });
       setFittings((x) => [r.fitting, ...x]);
@@ -443,7 +468,7 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
   const bmi = measured ? measured.weight / (measured.height / 100) ** 2 : 0;
   const cup = sex === "female" && measured ? cupLetter(targets.chest ?? measured.chest, targets.underbust ?? measured.underbust) : null;
   // into the design studio: your saved customisation, or this style with the size, fabric, colour and fit chosen here
-  const orderHref = styleDesign && garment ? `/design/garment/${styleDesign.id}` : garment ? `/design/garment/new?${new URLSearchParams({ garment: garment.id, size: activeSize, ...(colour ? { fabric: fabric!.id, colour: colour.id } : {}), ...(mtoFit ? { fit: mtoFit } : {}) })}` : design ? `/design/${design.id}` : "";
+  const orderHref = styleDesign && garment ? `/design/garment/${styleDesign.id}` : garment ? `/design/garment/new?${new URLSearchParams({ garment: garment.id, size: activeSize, ...(colour ? { fabric: fabric!.id, colour: colour.id } : {}), ...(mtoFit ? { fit: mtoFit } : {}) })}` : design?.model ? `/design/new?${new URLSearchParams({ model: design.model, audience })}` : design ? `/design/${design.id}` : "";
   const canvasGarment = garment && worn(`garment/${garment.id}`) ? garment.id : design && wearable && worn(wearable.key) ? `design:${design.id}` : outfitId && worn(`outfits/${outfitId}`) ? outfitId : "none";
   return (
     <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5 sm:mt-6 xl:grid-cols-[340px_minmax(0,1fr)_330px]" data-testid="human-studio">
@@ -451,7 +476,7 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
       {/* ---------- left: your body ---------- */}
       <section className="mv-card order-2 space-y-3 p-4 xl:order-none" data-testid="hm-tab-measure">
         <h2 className="font-medium text-bone">Your body</h2>
-        <Segmented<Sex> value={sex} onChange={setSex} options={[{ value: "male", label: "Men" }, { value: "female", label: "Women" }]} label="Mannequin" />
+        <Segmented<Sex> value={sex} onChange={setSex} options={[{ value: "male", label: "Men" }, { value: "female", label: "Women" }]} label="Mannequin" testid="hm-sex" />
         {user && (profiles.length > 0 || fittings.length > 0) && (
           <div className="grid gap-1.5">
             {fittings.length > 0 && (
@@ -536,37 +561,68 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
       {/* ---------- right: try on, motion, export ---------- */}
       <section className="mv-card order-3 space-y-3 p-4 xl:order-none">
         <h2 className="font-medium text-bone">Try on</h2>
-        <Segmented<"shop" | "designs"> size="sm" value={source} onChange={setSource} options={[{ value: "shop", label: "From the shop" }, { value: "designs", label: "My designs" }]} label="What to try on" />
-        {source === "shop" ? (
-          <div>
-            <div className="mb-1.5 flex flex-wrap gap-1" role="group" aria-label="Garment type">
-              <button className="mv-chip !px-2 !py-0.5 !text-[0.6rem]" data-active={!type} onClick={() => setType("")}>All</button>
-              {types.map((t) => <button key={t} className="mv-chip !px-2 !py-0.5 !text-[0.6rem]" data-active={type === t} onClick={() => setType(t)} data-testid={`hm-type-${t}`}>{COLLECTION_LABELS[t] ?? t}</button>)}
-            </div>
-            <div className="grid max-h-52 grid-cols-4 gap-1.5 overflow-y-auto mv-scroll" data-testid="hm-garments">
-              <button className={clsx("rounded-lg border p-1 text-[0.6rem]", !garmentId && !design && !outfitId ? "border-champagne" : "border-line")} onClick={() => { setGarmentId(""); setDesign(null); setStyleDesign(null); setOutfitId(""); }}>None</button>
-              {shownGarments.map((g) => (
-                <button key={g.id} title={g.name} onClick={() => { setGarmentId(g.id); setDesign(null); setStyleDesign(null); setOutfitId(""); }} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", g.id === garmentId && !design && !outfitId ? "border-champagne" : "border-line")} data-testid={`hm-garment-${g.id}`}>
-                  {g.thumbnail ? <img src={g.thumbnail} alt="" className="aspect-square w-full object-contain" loading="lazy" /> : <div className="aspect-square" />}
-                  <span className="line-clamp-1 text-mute">{g.name}</span>
+        <Segmented<"saved" | "other"> size="sm" value={source} onChange={setSource} options={[{ value: "saved", label: "My saved garments" }, { value: "other", label: "Try other garments" }]} label="What to try on" testid="hm-src" />
+        <div className="flex items-center justify-between gap-2 text-[0.65rem]">
+          <span className="text-mute" data-testid="hm-wearing-state">{wearing ? "Wearing one garment" : outfitId ? "Wearing a complete outfit" : "Nothing worn — the mannequin is bare"}</span>
+          {(wearing || outfitId) && <button className="text-bone-2 underline hover:text-bone" onClick={takeOff} data-testid="hm-take-off">Take it off</button>}
+        </div>
+        {source === "saved" ? (
+          <div className="space-y-1.5" data-testid="hm-designs">
+            {!user ? <p className="text-xs text-mute"><Link href="/login?next=/design/human-studio" className="underline">Sign in</Link> to try on the garments you customised and saved.</p>
+              : designs.length + styles.length === 0 ? (
+                <div className="space-y-2 rounded-xl border border-dashed border-line p-3 text-xs text-mute" data-testid="hm-saved-empty">
+                  <p>No saved garments yet. Customise any style — or your own T-shirt or shirt — in the design studio, save it, and it appears here to try on.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button className="mv-chip !px-2 !py-0.5 !text-[0.65rem]" onClick={() => setSource("other")} data-testid="hm-saved-try-other">Try other garments</button>
+                    <Link href="/design/new" className="mv-chip !px-2 !py-0.5 !text-[0.65rem]">Open the design studio</Link>
+                  </div>
+                </div>
+              ) : [...styles.map((d) => (
+                <button key={d.id} className={clsx("flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs", styleDesign?.id === d.id ? "border-champagne" : "border-line")} onClick={() => { void openStyleDesign(d.id).then((ok) => { if (!ok) toast("This design could not be opened", "bad"); }); }} data-testid={`hm-design-${d.id}`}>
+                  {d.garment.thumbnail && <img src={d.garment.thumbnail} alt="" className="size-8 shrink-0 rounded bg-surface-2 object-contain" />}
+                  <span className="min-w-0 flex-1 truncate">{d.name}</span><span className="text-[0.6rem] text-mute">{d.garment.name}{d.garment.audience !== "unisex" ? ` · ${d.garment.audience === "women" ? "Women" : "Men"}` : ""}</span>
                 </button>
-              ))}
-            </div>
+              )), ...designs.map((d) => (
+                <button key={d.id} className={clsx("flex w-full items-center justify-between rounded-lg border px-2 py-1.5 text-left text-xs", design?.id === d.id ? "border-champagne" : "border-line")} onClick={() => openDesign(d.id)} data-testid={`hm-design-${d.id}`}>
+                  <span className="truncate">{d.name}</span><span className="text-[0.6rem] text-mute">{d.garmentType === "shirt" ? "Shirt" : "T-shirt"} · {d.audience === "women" ? "Women" : "Men"}</span>
+                </button>
+              ))]}
+            {user && designs.length + styles.length > 0 && <p className="text-[0.6rem] text-mute">Saved for both mannequins: choosing one switches to the men&apos;s or women&apos;s mannequin it is cut for.</p>}
           </div>
         ) : (
-          <div className="space-y-1.5" data-testid="hm-designs">
-            {!user ? <p className="text-xs text-mute"><Link href="/login?next=/design/human-studio" className="underline">Sign in</Link> to wear the designs you made in the studio.</p>
-              : designs.length + styles.length === 0 ? <p className="text-xs text-mute">No designs yet. <Link href="/design/new" className="underline">Design one</Link> — any style from the shop or your own T-shirt or shirt — and it appears here.</p>
-                : [...styles.map((d) => (
-                  <button key={d.id} className={clsx("flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs", styleDesign?.id === d.id ? "border-champagne" : "border-line")} onClick={() => { void openStyleDesign(d.id).then((ok) => { if (!ok) toast("This design could not be opened", "bad"); }); }} data-testid={`hm-design-${d.id}`}>
-                    {d.garment.thumbnail && <img src={d.garment.thumbnail} alt="" className="size-8 shrink-0 rounded bg-surface-2 object-contain" />}
-                    <span className="min-w-0 flex-1 truncate">{d.name}</span><span className="text-[0.6rem] text-mute">{d.garment.name}</span>
-                  </button>
-                )), ...designs.map((d) => (
-                  <button key={d.id} className={clsx("flex w-full items-center justify-between rounded-lg border px-2 py-1.5 text-left text-xs", design?.id === d.id ? "border-champagne" : "border-line")} onClick={() => openDesign(d.id)} data-testid={`hm-design-${d.id}`}>
-                    <span className="truncate">{d.name}</span><span className="text-[0.6rem] text-mute">{d.garmentType === "shirt" ? "Shirt" : "T-shirt"} · {d.audience}</span>
-                  </button>
-                ))]}
+          <div data-testid="hm-other">
+            <div className="mb-1.5 flex flex-wrap gap-1" role="group" aria-label="Garment type">
+              <button className="mv-chip !px-2 !py-0.5 !text-[0.6rem]" data-active={!type} onClick={() => setType("")}>All</button>
+              {[...new Set([...studioModels.map((x) => x.category), ...types])].map((t) => <button key={t} className="mv-chip !px-2 !py-0.5 !text-[0.6rem]" data-active={type === t} onClick={() => setType(t)} data-testid={`hm-type-${t}`}>{COLLECTION_LABELS[t] ?? t}</button>)}
+            </div>
+            <div className="max-h-80 space-y-2 overflow-y-auto pr-0.5 mv-scroll">
+              {studioModels.some((x) => !type || x.category === type) && (
+                <div>
+                  <p className="mb-1 text-[0.6rem] uppercase tracking-widest text-mute">ModVerse T-shirts &amp; shirts</p>
+                  <div className="grid grid-cols-4 gap-1.5" data-testid="hm-models">
+                    {studioModels.filter((x) => !type || x.category === type).map(({ m, config }) => (
+                      <button key={m.id} title={m.name} onClick={() => wearModel(m.id)} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", design?.model === m.id ? "border-champagne" : "border-line")} data-testid={`hm-model-${m.id}`}>
+                        <GarmentFlat config={config} view="front" className="aspect-square w-full" title={m.name} />
+                        <span className="line-clamp-1 text-mute">{m.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {shownGarments.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[0.6rem] uppercase tracking-widest text-mute">From the shop</p>
+                  <div className="grid grid-cols-4 gap-1.5" data-testid="hm-garments">
+                    {shownGarments.map((g) => (
+                      <button key={g.id} title={g.name} onClick={() => { setGarmentId(g.id); setDesign(null); setStyleDesign(null); setOutfitId(""); }} className={clsx("rounded-lg border p-1 text-left text-[0.58rem]", g.id === garmentId && !design && !outfitId && !styleDesign ? "border-champagne" : "border-line")} data-testid={`hm-garment-${g.id}`}>
+                        {g.thumbnail ? <img src={g.thumbnail} alt="" className="aspect-square w-full object-contain" loading="lazy" /> : <div className="aspect-square" />}
+                        <span className="line-clamp-1 text-mute">{g.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -603,6 +659,17 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
                 {summary.tight > 0.12 && <p className="text-[0.65rem] text-warn">Size {activeSize} pulls on you in places (red on the fit map). Try a size up.</p>}
               </div>
             )}
+            {design?.model && (() => {
+              const m = MODEL_BY_ID.get(design.model)!, list = [...new Set([m.color, ...getFabric(m.fabricId).suggestedColors].map((c) => c.toUpperCase()))];
+              return (
+                <div className="space-y-1" data-testid="hm-model-colours">
+                  <p className="text-[0.62rem] text-mute">Colour · {getFabric(m.fabricId).name}{fitMap ? " (turn the fit map off to see it)" : ""}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {list.map((c) => <button key={c} className={clsx("size-6 rounded-full border", design.config.fabric.color.toUpperCase() === c ? "border-champagne ring-1 ring-champagne" : "border-line")} style={{ background: c }} aria-label={`Colour ${c}`} onClick={() => { wearModel(m.id, c); setFitMap(false); }} data-testid={`hm-mcolour-${c.slice(1)}`} />)}
+                  </div>
+                </div>
+              );
+            })()}
             {garment && fabric && (
               <div className="space-y-1" data-testid="hm-colours">
                 <p className="text-[0.62rem] text-mute">Colour <span className="text-bone-2">{colour ? colour.name : "as modelled"}</span> · {fabric.name}{fitMap && colour ? " (turn the fit map off to see it)" : ""}</p>
@@ -614,7 +681,7 @@ export function HumanStudio({ garments, initial = {} }: { garments: HumanStudioG
             )}
             <div className="flex flex-wrap items-center gap-2 pt-1">
               {garment && profile && <Link href={orderHref} className="mv-btn mv-btn-primary !px-3 !py-1.5 !text-xs" data-testid="hm-order"><ShoppingBag className="mr-1 inline size-3.5" />{styleDesign ? "Open my design to order" : `Customise & order in size ${activeSize}`}</Link>}
-              {design && <Link href={orderHref} className="mv-btn mv-btn-primary !px-3 !py-1.5 !text-xs" data-testid="hm-order">Open in the editor to order</Link>}
+              {design && <Link href={orderHref} className="mv-btn mv-btn-primary !px-3 !py-1.5 !text-xs" data-testid="hm-order">{design.model ? "Customise & order in the design studio" : "Open in the editor to order"}</Link>}
             </div>
             <p className="text-[0.58rem] text-mute">The garment on the mannequin is the pattern fitted to you; the fit map shows where size {activeSize}, cut for the size-chart body, would sit on yours. Size charts are representative — a manufacturer&apos;s graded chart replaces them for production.</p>
             {garment && <p className="line-clamp-2 text-[0.58rem] text-mute">{garment.attribution}</p>}

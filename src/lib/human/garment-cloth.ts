@@ -89,16 +89,16 @@ export class BodyCollider {
       this.heads[c] = v;
     }
   }
-  /** Nearest skin vertex within ~1.5 cells (−1 if none). */
-  nearest(x: number, y: number, z: number): number {
+  /** Nearest skin vertex within ~`rings` + ½ cells (−1 if none). */
+  nearest(x: number, y: number, z: number, rings = 1): number {
     const P = this.p!, cs = this.cell, [ox, oy, oz] = this.origin, [dx, dy, dz] = this.dims;
     const ix = Math.floor((x - ox) / cs), iy = Math.floor((y - oy) / cs), iz = Math.floor((z - oz) / cs);
-    if (ix < 1 || iy < 1 || iz < 1 || ix >= dx - 1 || iy >= dy - 1 || iz >= dz - 1) return -1;
+    if (ix < rings || iy < rings || iz < rings || ix >= dx - rings || iy >= dy - rings || iz >= dz - rings) return -1;
     let best = -1, bd = Infinity;
     const H = this.heads, N = this.next;
-    for (let k = iz - 1; k <= iz + 1; k++) for (let j = iy - 1; j <= iy + 1; j++) {
+    for (let k = iz - rings; k <= iz + rings; k++) for (let j = iy - rings; j <= iy + rings; j++) {
       const row = k * dx * dy + j * dx;
-      for (let i = ix - 1; i <= ix + 1; i++) {
+      for (let i = ix - rings; i <= ix + rings; i++) {
         for (let v = H[row + i]; v !== -1; v = N[v]) {
           const o = v * 3, ex = P[o] - x, ey = P[o + 1] - y, ez = P[o + 2] - z, d = ex * ex + ey * ey + ez * ez;
           if (d < bd) { bd = d; best = v; }
@@ -114,17 +114,17 @@ export class BodyCollider {
   }
   /**
    * Push every point of `buf` that is inside (or closer than `thickness` to) the skin back outside, along the skin
-   * normal. Returns how many points were moved.
+   * normal; points deeper than `depth`, or with no skin within `rings` cells, are left. Returns how many moved.
    */
-  pushOut(buf: Float32Array, thickness: number): number {
+  pushOut(buf: Float32Array, thickness: number, depth = 6, rings = 1): number {
     if (!this.p) return 0;
     const P = this.p, n = this.n;
     let moved = 0;
     for (let i = 0; i < buf.length; i += 3) {
-      const v = this.nearest(buf[i], buf[i + 1], buf[i + 2]);
+      const v = this.nearest(buf[i], buf[i + 1], buf[i + 2], rings);
       if (v < 0) continue;
       const o = v * 3, d = (buf[i] - P[o]) * n[o] + (buf[i + 1] - P[o + 1]) * n[o + 1] + (buf[i + 2] - P[o + 2]) * n[o + 2];
-      if (d < thickness && d > -6) { const k = thickness - d; buf[i] += n[o] * k; buf[i + 1] += n[o + 1] * k; buf[i + 2] += n[o + 2] * k; moved++; }
+      if (d < thickness && d > -depth) { const k = thickness - d; buf[i] += n[o] * k; buf[i + 1] += n[o + 1] * k; buf[i + 2] += n[o + 2] * k; moved++; }
     }
     return moved;
   }
@@ -156,8 +156,10 @@ export class GarmentCloth {
   /**
    * `crotchY`: height of the crotch on the unposed body. Loose fabric below it hangs between / around the legs, where
    * the fitted target tears apart when the legs move, so it is simulated freely there.
+   * `seams`: pairs of render vertices on different pieces that are sewn together (coverage.garmentTopology); each pair
+   * is held at its rest distance, so separately modelled panels (front, back, sleeves, collar) never part.
    */
-  constructor(restTargets: Float32Array, index: ArrayLike<number>, bodyRest: Float32Array, bodyMask: Uint8Array, settings: Partial<ClothSettings> = CLOTH_DEFAULTS, crotchY = -Infinity) {
+  constructor(restTargets: Float32Array, index: ArrayLike<number>, bodyRest: Float32Array, bodyMask: Uint8Array, settings: Partial<ClothSettings> = CLOTH_DEFAULTS, crotchY = -Infinity, seams?: ArrayLike<number>) {
     this.settings = { ...CLOTH_DEFAULTS, ...settings };
     const st = this.settings;
     const n = restTargets.length / 3;
@@ -189,6 +191,15 @@ export class GarmentCloth {
         if (other === undefined) { opp.set(k, o); e.push(i, j); }
         else if (other >= 0 && other !== o) { bend.push(other, o); opp.set(k, -1); }
       }
+    }
+    // seams: extra distance constraints between pieces (deduplicated, never within one particle)
+    if (seams) for (let k = 0; k + 1 < seams.length; k += 2) {
+      const i = this.map[seams[k]], j = this.map[seams[k + 1]];
+      if (i === j) continue;
+      const key = i < j ? i * m + j : j * m + i;
+      if (opp.has(key)) continue;
+      opp.set(key, -2);
+      e.push(i, j);
     }
     this.tris = Uint32Array.from(tri);
     this.edges = Uint32Array.from(e);
@@ -422,7 +433,7 @@ export function limbRadii(names: string[], head: Float32Array, rest: Float32Arra
   }
   return out;
 }
-export const LIMBS: [string, string][] = [["LeftUpLeg", "LeftLeg"], ["LeftLeg", "LeftFoot"], ["RightUpLeg", "RightLeg"], ["RightLeg", "RightFoot"], ["LeftArm", "LeftForeArm"], ["LeftForeArm", "LeftHand"], ["RightArm", "RightForeArm"], ["RightForeArm", "RightHand"]];
+export const LIMBS: [string, string][] = [["LeftUpLeg", "LeftLeg"], ["LeftLeg", "LeftFoot"], ["RightUpLeg", "RightLeg"], ["RightLeg", "RightFoot"], ["LeftArm", "LeftForeArm"], ["LeftForeArm", "LeftHand"], ["RightArm", "RightForeArm"], ["RightForeArm", "RightHand"], ["LeftHand", "LeftHandMiddle2"], ["RightHand", "RightHandMiddle2"]];
 export function limbCapsules(names: string[], heads: Float32Array, radii: Map<string, number>): Capsule[] {
   const idx = new Map(names.map((n, i) => [n, i]));
   const out: Capsule[] = [];
@@ -439,4 +450,60 @@ export function bodyTriangles(bodyIndex: Uint32Array, orig: Uint32Array): Uint32
   const t = new Uint32Array(bodyIndex.length);
   for (let i = 0; i < bodyIndex.length; i++) t[i] = orig[bodyIndex[i]];
   return t;
+}
+
+/**
+ * Light garment physics for your own designs (procedural T-shirts and shirts, dense meshes cut as flat panels and
+ * placed around the body rather than draped): every point follows its fitted position on a damped spring, so loose
+ * fabric — hems, sleeve ends, a wide body — lags and sways with the body's movement and settles, while fabric lying on
+ * the body follows it exactly. Points do not pull on each other, so nothing can tear or crumple; neighbouring points
+ * share almost the same looseness and target, so the motion stays smooth. About 1 ms for 20,000 points.
+ */
+export class SpringCloth {
+  readonly particles: number;
+  /** per render vertex: 0 (follows the body) … 1 (loosest) */
+  readonly loose: Float32Array;
+  private x: Float32Array; private v: Float32Array; private started = false;
+  constructor(restTargets: Float32Array, index: ArrayLike<number>, bodyRest: Float32Array, bodyMask: Uint8Array, private opts = { stiffness: 140, damping: 9, maxLag: 2.2 }) {
+    const n = restTargets.length / 3;
+    this.x = restTargets.slice(); this.v = new Float32Array(n * 3);
+    // looseness from the distance to the unposed body (grid of skin vertices), then smoothed over the mesh
+    const cell = 4, grid = new Map<number, number[]>();
+    const h = (ix: number, iy: number, iz: number) => ((ix + 512) * 1024 + (iy + 512)) * 1024 + (iz + 512);
+    for (let v = 0; v < bodyMask.length; v++) if (bodyMask[v]) { const k = h(Math.floor(bodyRest[v * 3] / cell), Math.floor(bodyRest[v * 3 + 1] / cell), Math.floor(bodyRest[v * 3 + 2] / cell)); let l = grid.get(k); if (!l) { l = []; grid.set(k, l); } l.push(v); }
+    let loose = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const px = restTargets[i * 3], py = restTargets[i * 3 + 1], pz = restTargets[i * 3 + 2];
+      const ix = Math.floor(px / cell), iy = Math.floor(py / cell), iz = Math.floor(pz / cell);
+      let best = Infinity;
+      for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (let c = -2; c <= 2; c++) for (const v of grid.get(h(ix + a, iy + b, iz + c)) ?? []) { const d = Math.hypot(bodyRest[v * 3] - px, bodyRest[v * 3 + 1] - py, bodyRest[v * 3 + 2] - pz); if (d < best) best = d; }
+      loose[i] = Math.max(0, Math.min(1, ((best === Infinity ? 8 : best) - 1.2) / 4));
+    }
+    const adj: number[][] = Array.from({ length: n }, () => []);
+    for (let t = 0; t + 2 < index.length; t += 3) { const a = index[t], b = index[t + 1], c = index[t + 2]; adj[a].push(b, c); adj[b].push(a, c); adj[c].push(a, b); }
+    for (let it = 0; it < 6; it++) { const next = loose.slice(); for (let i = 0; i < n; i++) if (adj[i].length) { let s = 0; for (const j of adj[i]) s += loose[j]; next[i] = 0.5 * loose[i] + 0.5 * (s / adj[i].length); } loose = next; }
+    this.loose = loose;
+    let p = 0; for (let i = 0; i < n; i++) if (loose[i] > 0.02) p++;
+    this.particles = p;
+  }
+  /** Moves every point towards `targets` (the fitted garment this frame) and writes the result to `out`. */
+  step(targets: Float32Array, dt: number, out: Float32Array, body?: BodyCollider, thickness = 0.3) {
+    const { x, v, loose } = this, { stiffness: k, damping: c, maxLag } = this.opts;
+    if (!this.started || dt <= 0 || dt > 0.25) { x.set(targets); v.fill(0); this.started = true; }
+    else {
+      const sub = 2, h = Math.min(dt, 1 / 30) / sub;
+      for (let s = 0; s < sub; s++) for (let i = 0; i < x.length; i++) {
+        const a = k * (targets[i] - x[i]) - c * v[i];
+        v[i] += a * h; x[i] += v[i] * h;
+      }
+    }
+    for (let i = 0, n = loose.length; i < n; i++) {
+      const w = loose[i], o = i * 3;
+      let dx = (x[o] - targets[o]) * w, dy = (x[o + 1] - targets[o + 1]) * w, dz = (x[o + 2] - targets[o + 2]) * w;
+      const d = Math.hypot(dx, dy, dz), m = maxLag * w;
+      if (d > m && d > 0) { const s = m / d; dx *= s; dy *= s; dz *= s; }
+      out[o] = targets[o] + dx; out[o + 1] = targets[o + 1] + dy; out[o + 2] = targets[o + 2] + dz;
+    }
+    if (body) body.pushOut(out, thickness);
+  }
 }

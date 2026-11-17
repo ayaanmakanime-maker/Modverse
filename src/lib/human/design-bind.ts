@@ -12,6 +12,7 @@
 import type { GarmentFit } from "./fit-garment";
 import { BodyCollider, bodyTriangles } from "./garment-cloth";
 import { joints, REGION, shoulderPoints, type HumanAsset, type V3 } from "./model";
+import { colliderMask } from "./coverage";
 
 export type DesignSegment = "torso" | "collar" | "sleeveL" | "sleeveR";
 export interface DesignPart { name: string; positions: Float32Array; segment: DesignSegment; /** triangle indices (for smoothing) */ index?: Uint32Array }
@@ -30,6 +31,8 @@ export interface DesignBinding {
   meanGap: number;
   /** body-panel vertices near the armholes that share part of their anchors with the sleeves */
   seamShared: number;
+  /** per vertex: the share of its anchor weight taken from the sleeve pool (1 on a sleeve, 0.5 right at the armhole seam on both sides, 0 on the body panels away from it) */
+  sleeveShare: Float32Array;
 }
 
 const R = REGION;
@@ -111,14 +114,36 @@ export function bindDesign(a: HumanAsset, ref: Float32Array, parts: DesignPart[]
     if (z < zlo) zlo = z;
     if (z > zhi) zhi = z;
   }
-  const tz = Number.isFinite(zlo) ? (zlo + zhi) / 2 : 0;
+  const tz0 = Number.isFinite(zlo) ? (zlo + zhi) / 2 : 0;
+  // …and the neckline centred on the neck: the neck sits behind the middle of the chest, so the top of the garment
+  // moves back (or forward) to it, fading out over 18 cm below the neckline — every part at a height by the same
+  // amount, so the seams stay together
+  let neckShift = 0, neckY = 0, neckLow = 0;
+  {
+    const ring = parts.filter((pt) => pt.segment === "collar");
+    let gz0 = Infinity, gz1 = -Infinity, gy = 0, gn = 0, gx = 0, gLow = Infinity;
+    for (const pt of ring) for (let i = 0; i < pt.positions.length; i += 3) { gz0 = Math.min(gz0, pt.positions[i + 2]); gz1 = Math.max(gz1, pt.positions[i + 2]); gy += pt.positions[i + 1]; gx = Math.max(gx, Math.abs(pt.positions[i])); gLow = Math.min(gLow, pt.positions[i + 1]); gn++; }
+    if (gn) {
+      neckY = gy / gn + ty;
+      neckLow = gLow + ty;
+      let bz0 = Infinity, bz1 = -Infinity;
+      for (let v = 0; v < a.meta.vertices; v++) {
+        if (!a.isBody[v] || (a.region[v] !== R.neck && a.region[v] !== R.torso)) continue;
+        if (Math.abs(ref[v * 3 + 1] - neckY) > 1.5 || Math.abs(ref[v * 3]) > Math.max(4, gx * 0.8)) continue;
+        bz0 = Math.min(bz0, ref[v * 3 + 2]); bz1 = Math.max(bz1, ref[v * 3 + 2]);
+      }
+      if (Number.isFinite(bz0)) neckShift = (bz0 + bz1) / 2 - ((gz0 + gz1) / 2 + tz0);
+    }
+  }
+  // the collar moves as one piece; the rest of the garment by the same amount at the neckline, fading out below it
+  const tzAt = (y: number, collar = false) => tz0 + neckShift * (collar ? 1 : smooth(neckLow - 16, neckLow, y));
 
   // sleeves: from the garment's straight sleeve axis onto the arm (shoulder → elbow → wrist)
   const phi = (shape.sleeveAngleDeg * Math.PI) / 180;
   const rBicep = shape.measurements.bicep / (2 * Math.PI);
   const sleeve = (side: 1 | -1) => {
     const g = side === 1 ? shape.shoulderPoints.left : shape.shoulderPoints.right;
-    const G: V3 = [g[0], g[1] + ty, g[2] + tz];
+    const G: V3 = [g[0], g[1] + ty, g[2] + tzAt(g[1] + ty)];
     const dir: V3 = norm([side * Math.cos(phi), -Math.sin(phi), 0]);
     const up: V3 = [side * Math.sin(phi), Math.cos(phi), 0];
     // the sleeve's axis as built, below its top line by the sleeve's radius
@@ -171,7 +196,7 @@ export function bindDesign(a: HumanAsset, ref: Float32Array, parts: DesignPart[]
     const P = part.positions, n = P.length / 3;
     ranges.push({ name: part.name, start: at, count: n });
     for (let i = 0; i < n; i++) {
-      let q: V3 = [P[i * 3], P[i * 3 + 1] + ty, P[i * 3 + 2] + tz];
+      let q: V3 = [P[i * 3], P[i * 3 + 1] + ty, P[i * 3 + 2] + tzAt(P[i * 3 + 1] + ty, part.segment === "collar")];
       const set: (typeof seg)[number] = part.segment;
       if (part.segment === "sleeveL" || part.segment === "sleeveR") {
         const r = sleeves[part.segment](q, fromPanels(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]));
@@ -183,13 +208,59 @@ export function bindDesign(a: HumanAsset, ref: Float32Array, parts: DesignPart[]
     at += n;
   }
 
-  const collider = new BodyCollider(bodyTriangles(a.bodyIndex, a.orig), a.isBody);
+  // (the collider is the outer skin only: the base mesh's inner throat would throw a collar point through the neck)
+  const collider = new BodyCollider(bodyTriangles(a.bodyIndex, a.orig), colliderMask(a));
   collider.update(ref);
   // anything the straight-built pattern left inside the body (shoulder slope, deltoid, armpit) comes out to just above
   // the skin; the pushed areas are then relaxed over the mesh (and pushed again), so they lie smoothly instead of
   // crumpling point by point
   const before = placed.slice();
-  collider.pushOut(placed, 0.3);
+  // a wide search: a pattern can sit several cm inside the body where it is cut straight (e.g. the back neckline)
+  collider.pushOut(placed, 0.3, 12, 3);
+  // Collars and ribs are thin bands that the pattern can leave partly inside the neck: pushed point by point they
+  // would crumple (each point along a different skin normal, by a different amount). Instead the push is spread
+  // smoothly over the collar's own mesh — it moves out as one piece and keeps its shape — then pushed once more,
+  // lightly, for anything still touching the skin.
+  {
+    const nb: number[][] = Array.from({ length: total }, () => []);
+    let any = false;
+    for (const r of ranges) {
+      const pt = parts.find((x) => x.name === r.name)!;
+      if (pt.segment !== "collar" || !pt.index) continue;
+      any = true;
+      const idx = pt.index;
+      for (let t = 0; t < idx.length; t += 3) { const A = idx[t] + r.start, B = idx[t + 1] + r.start, C = idx[t + 2] + r.start; nb[A].push(B, C); nb[B].push(A, C); nb[C].push(A, B); }
+    }
+    if (any) {
+      // vertices of the band that coincide (its closing seam) move together too
+      const key = (i: number) => `${Math.round(before[i * 3] * 20)},${Math.round(before[i * 3 + 1] * 20)},${Math.round(before[i * 3 + 2] * 20)}`;
+      const same = new Map<string, number[]>();
+      for (let i = 0; i < total; i++) if (seg[i] === "collar") { const k = key(i); const l = same.get(k); if (l) l.push(i); else same.set(k, [i]); }
+      for (const l of same.values()) if (l.length > 1) for (const i of l) for (const j of l) if (i !== j) nb[i].push(j);
+      let d = new Float32Array(total * 3);
+      for (let i = 0; i < total; i++) if (seg[i] === "collar") for (let c = 0; c < 3; c++) d[i * 3 + c] = placed[i * 3 + c] - before[i * 3 + c];
+      const need = d.slice();
+      for (let it = 0; it < 40; it++) {
+        const next = d.slice();
+        for (let i = 0; i < total; i++) {
+          if (seg[i] !== "collar" || !nb[i].length) continue;
+          for (let c = 0; c < 3; c++) {
+            let sum = 0;
+            for (const j of nb[i]) sum += d[j * 3 + c];
+            next[i * 3 + c] = 0.5 * d[i * 3 + c] + 0.5 * (sum / nb[i].length);
+          }
+          // a point never moves less than the skin asks of it, along that direction
+          const nx = need[i * 3], ny = need[i * 3 + 1], nz = need[i * 3 + 2], nn = nx * nx + ny * ny + nz * nz;
+          if (nn > 1e-6) {
+            const along = (next[i * 3] * nx + next[i * 3 + 1] * ny + next[i * 3 + 2] * nz) / nn;
+            if (along < 1) { next[i * 3] += nx * (1 - along); next[i * 3 + 1] += ny * (1 - along); next[i * 3 + 2] += nz * (1 - along); }
+          }
+        }
+        d = next;
+      }
+      for (let i = 0; i < total; i++) if (seg[i] === "collar") for (let c = 0; c < 3; c++) placed[i * 3 + c] = before[i * 3 + c] + d[i * 3 + c];
+    }
+  }
   const adj: number[][] = Array.from({ length: total }, () => []);
   for (const r of ranges) {
     const idx = parts.find((x) => x.name === r.name)!.index;
@@ -237,7 +308,7 @@ export function bindDesign(a: HumanAsset, ref: Float32Array, parts: DesignPart[]
     for (let i = 0; i < total; i++) if (pick(i)) { const k = `${Math.floor(placed[i * 3] / 3)},${Math.floor(placed[i * 3 + 1] / 3)},${Math.floor(placed[i * 3 + 2] / 3)}`; const l = m.get(k); if (l) l.push(i); else m.set(k, [i]); }
     return m;
   };
-  const sleevesAt = bucket((i) => seg[i] === "sleeveL" || seg[i] === "sleeveR"), panelsAt = bucket((i) => seg[i] === "torso");
+  const sleevesAt = bucket((i) => seg[i] === "sleeveL" || seg[i] === "sleeveR"), panelsAt = bucket((i) => seg[i] === "torso"), collarAt = bucket((i) => seg[i] === "collar");
   const distTo = (m: Map<string, number[]>, i: number, r: number) => {
     const x = placed[i * 3], y = placed[i * 3 + 1], z = placed[i * 3 + 2];
     const cx = Math.floor(x / 3), cy = Math.floor(y / 3), cz = Math.floor(z / 3);
@@ -252,12 +323,25 @@ export function bindDesign(a: HumanAsset, ref: Float32Array, parts: DesignPart[]
   let seamShared = 0;
   for (let i = 0; i < total; i++) {
     const sl = seg[i] === "sleeveL" || seg[i] === "sleeveR";
+    if (seg[i] === "collar") {
+      // the collar's seam to the neckline: half and half there, its own (neck) pool 4 cm up
+      const d = distTo(panelsAt, i, 5);
+      if (d < 4) { other[i] = "torso"; share[i] = 0.5 * (1 - smooth(0, 4, d)); }
+      continue;
+    }
     if (!sl && seg[i] !== "torso") continue;
     const d = distTo(sl ? panelsAt : sleevesAt, i, 8);
-    if (d >= 7) continue;
-    other[i] = sl ? "torso" : placed[i * 3] >= 0 ? "sleeveL" : "sleeveR";
-    share[i] = 0.5 * (1 - smooth(0, 7, d));
-    if (!sl) seamShared++;
+    if (d < 7) {
+      other[i] = sl ? "torso" : placed[i * 3] >= 0 ? "sleeveL" : "sleeveR";
+      share[i] = 0.5 * (1 - smooth(0, 7, d));
+      if (!sl) seamShared++;
+      continue;
+    }
+    // the neckline's seam to the collar
+    if (!sl && collarAt.size) {
+      const dc = distTo(collarAt, i, 5);
+      if (dc < 4) { other[i] = "collar"; share[i] = 0.5 * (1 - smooth(0, 4, dc)); }
+    }
   }
 
   // bind: the K nearest body vertices of the segment's pool with smooth (Gaussian) weights, so neighbouring garment
@@ -300,7 +384,12 @@ export function bindDesign(a: HumanAsset, ref: Float32Array, parts: DesignPart[]
     offsets[o] = q(x - bx); offsets[o + 1] = q(y - by); offsets[o + 2] = q(z - bz);
     gap += own.d0;
   }
-  return { fit: { refs, weights, weightScale: 1, offsets, scales: {}, hideBody: [], vertices: total, k: K }, placed, ranges, meanGap: total ? gap / total : 0, seamShared };
+  const sleeveShare = new Float32Array(total);
+  for (let i = 0; i < total; i++) {
+    const sl = seg[i] === "sleeveL" || seg[i] === "sleeveR";
+    sleeveShare[i] = sl ? 1 - (other[i] ? share[i] : 0) : other[i] === "sleeveL" || other[i] === "sleeveR" ? share[i] : 0;
+  }
+  return { fit: { refs, weights, weightScale: 1, offsets, scales: {}, hideBody: [], vertices: total, k: K }, placed, ranges, meanGap: total ? gap / total : 0, seamShared, sleeveShare };
 }
 
 /** The parts of an editor garment (lib/three/garment-geometry) as binding input, in a fixed order. */
@@ -348,4 +437,120 @@ export function bindToBody(a: HumanAsset, ref: Float32Array, positions: Float32A
     offsets[i * 3] = q(x - bx); offsets[i * 3 + 1] = q(y - by); offsets[i * 3 + 2] = q(z - bz);
   }
   return { refs, weights, weightScale: 1, offsets, scales: {}, hideBody: [], vertices: n, k: K };
+}
+
+/**
+ * The same binding, corrected for the body standing as the mannequin stands (arms down): nothing is re-anchored, so no
+ * seam can open. Two corrections to the offsets:
+ *  · sleeves turn with the arm: each vertex's offset is rotated with the upper arm and forearm by the share of its
+ *    anchor weight on them (smooth across the armhole seam, where anchors are shared with the body panels);
+ *  · the body panels' sides are fitted into the gap between torso and arm, as the fabric of a real garment folds in
+ *    under the arm, and the correction is spread smoothly over the panel.
+ * `restJoints` / `stance`: joint heads of the unposed and the standing body; `body`: the standing body's vertices.
+ */
+export function stanceFit(a: HumanAsset, bind: DesignBinding, index: ArrayLike<number>, body: Float32Array, restJoints: { names: string[]; head: Float32Array }, stanceHeads: Float32Array, rest: Float32Array): DesignBinding {
+  const f = bind.fit, k = f.k ?? 3, n = f.vertices;
+  const jn = new Map(restJoints.names.map((nm, i) => [nm, i]));
+  const dir = (H: Float32Array, a1: string, b1: string): V3 => { const i = jn.get(a1)! * 3, j = jn.get(b1)! * 3; return norm([H[j] - H[i], H[j + 1] - H[i + 1], H[j + 2] - H[i + 2]]); };
+  // per side: the upper arm's and the forearm's turn from the unposed body to the stance
+  const turn = (side: "Left" | "Right") => ({
+    upper: { from: dir(restJoints.head, `${side}Arm`, `${side}ForeArm`), to: dir(stanceHeads, `${side}Arm`, `${side}ForeArm`) },
+    fore: { from: dir(restJoints.head, `${side}ForeArm`, `${side}Hand`), to: dir(stanceHeads, `${side}ForeArm`, `${side}Hand`) },
+  });
+  const sides = { L: turn("Left"), R: turn("Right") };
+  const FORE = new Set<number>([R.forearmL, R.forearmR, R.handL, R.handR]);
+  const placed = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    let sx = 0, sy = 0, sz = 0, wf = 0, wa = 0, side = 0;
+    for (let j = 0; j < k; j++) {
+      const v = f.refs[i * k + j], w = f.weights[i * k + j] * f.weightScale;
+      sx += body[v * 3] * w; sy += body[v * 3 + 1] * w; sz += body[v * 3 + 2] * w;
+      const r = a.region[v];
+      if (FORE.has(r)) wf += w;
+      if (r === R.armL || r === R.armR || r === R.shoulderL || r === R.shoulderR || FORE.has(r)) wa += w;
+      side += rest[v * 3] * w;
+    }
+    const off: V3 = [f.offsets[i * 3] * 1e-3, f.offsets[i * 3 + 1] * 1e-3, f.offsets[i * 3 + 2] * 1e-3];
+    // the offset turns with the arm by the vertex's share of sleeve anchors: the same on both sides of the armhole
+    // seam, so it stays closed; the forearm's turn takes over towards the cuff
+    const s1 = bind.sleeveShare[i];
+    let o = off;
+    if (s1 > 0) {
+      const t = side >= 0 ? sides.L : sides.R, ff = wa > 0 ? wf / wa : 0;
+      const up = rotate(t.upper.from, t.upper.to, off), fo = rotate(t.fore.from, t.fore.to, off);
+      const turned = add(mul(up, 1 - ff), mul(fo, ff));
+      o = add(mul(off, 1 - s1), mul(turned, s1));
+    }
+    placed[i * 3] = sx + o[0]; placed[i * 3 + 1] = sy + o[1]; placed[i * 3 + 2] = sz + o[2];
+  }
+  // body panels: which vertices belong to them
+  const torso = new Uint8Array(n);
+  for (const r of bind.ranges) if (!/^(sleeve|cuff)/.test(r.name)) torso.fill(1, r.start, r.start + r.count);
+  // sides between torso and arm: per (height, depth) cell, the arm's inner side and the torso's outer side
+  const cy = 2, cz = 2.5, key = (y: number, z: number, side: number) => (Math.floor(y / cy) * 4096 + Math.floor(z / cz)) * 2 + (side > 0 ? 1 : 0);
+  const armIn = new Map<number, number>(), torsoOut = new Map<number, number>();
+  for (let v = 0; v < a.meta.vertices; v++) {
+    if (!a.isBody[v]) continue;
+    const r = a.region[v], x = body[v * 3], y = body[v * 3 + 1], z = body[v * 3 + 2];
+    const side = r === R.armL || r === R.forearmL || r === R.handL ? 1 : r === R.armR || r === R.forearmR || r === R.handR ? -1 : 0;
+    if (side) { const kk = key(y, z, side), d = side * x; if (d < (armIn.get(kk) ?? Infinity)) armIn.set(kk, d); }
+    else if (r === R.torso || r === R.uplegL || r === R.uplegR) { const sd = x >= 0 ? 1 : -1, kk = key(y, z, sd), d = sd * x; if (d > (torsoOut.get(kk) ?? -Infinity)) torsoOut.set(kk, d); }
+  }
+  const look = (m: Map<number, number>, y: number, z: number, side: number, min: boolean) => {
+    let best = min ? Infinity : -Infinity;
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const v = m.get(key(y + i * cy, z + j * cz, side)); if (v !== undefined) best = min ? Math.min(best, v) : Math.max(best, v); }
+    return best;
+  };
+  // only below the armpits (the armholes and shoulders stay as they are), easing in over 8 cm
+  const armpit = Math.min(stanceHeads[jn.get("LeftArm")! * 3 + 1], stanceHeads[jn.get("RightArm")! * 3 + 1]) - 9;
+  const dx = new Float32Array(n), fixed = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    if (!torso[i]) continue;
+    const x = placed[i * 3], y = placed[i * 3 + 1], z = placed[i * 3 + 2], side = x >= 0 ? 1 : -1;
+    const ease = smooth(armpit, armpit - 8, y);
+    if (ease <= 0) continue;
+    const inner = look(armIn, y, z, side, true);
+    if (!Number.isFinite(inner) || side * x <= inner - 1) continue;
+    const t = look(torsoOut, y, z, side, false);
+    const limit = Math.max(inner - 1, Number.isFinite(t) ? t + 0.6 : -Infinity);
+    if (side * x > limit) { dx[i] = (side * limit - x) * ease; fixed[i] = 1; }
+  }
+  // spread the correction over the panel (front and back of the arm follow gently, no crease)
+  const adj: number[][] = Array.from({ length: n }, () => []);
+  for (let t = 0; t + 2 < index.length; t += 3) {
+    const A = index[t], B = index[t + 1], C = index[t + 2];
+    if (!torso[A] || !torso[B] || !torso[C]) continue;
+    adj[A].push(B, C); adj[B].push(A, C); adj[C].push(A, B);
+  }
+  // smoothing: every panel vertex takes part (no stepped edge from the cell grid), the vertices that had to come in
+  // keep at least three quarters of their correction, and the correction never turns outwards
+  const dx0 = dx.slice();
+  for (let it = 0; it < 24; it++) {
+    const next = dx.slice();
+    for (let i = 0; i < n; i++) {
+      if (!adj[i].length) continue;
+      let sum = 0;
+      for (const j of adj[i]) sum += dx[j];
+      let d = 0.5 * dx[i] + 0.5 * (sum / adj[i].length);
+      const inward = -Math.sign(placed[i * 3] || 1);
+      if (Math.sign(d) !== inward) d = 0;
+      if (fixed[i] && Math.abs(d) < Math.abs(dx0[i]) * 0.75) d = dx0[i] * 0.75;
+      next[i] = d;
+    }
+    dx.set(next);
+  }
+  for (let i = 0; i < n; i++) placed[i * 3] += dx[i];
+  // never inside the standing body
+  const collider = new BodyCollider(bodyTriangles(a.bodyIndex, a.orig), colliderMask(a));
+  collider.update(body);
+  collider.pushOut(placed, 0.3, 12, 3);
+  // new offsets on the same anchors
+  const offsets = new Int16Array(n * 3);
+  const q = (t: number) => Math.max(-32767, Math.min(32767, Math.round(t * 1000)));
+  for (let i = 0; i < n; i++) {
+    let bx = 0, by = 0, bz = 0;
+    for (let j = 0; j < k; j++) { const v = f.refs[i * k + j], w = f.weights[i * k + j] * f.weightScale; bx += body[v * 3] * w; by += body[v * 3 + 1] * w; bz += body[v * 3 + 2] * w; }
+    offsets[i * 3] = q(placed[i * 3] - bx); offsets[i * 3 + 1] = q(placed[i * 3 + 1] - by); offsets[i * 3 + 2] = q(placed[i * 3 + 2] - bz);
+  }
+  return { ...bind, fit: { ...f, offsets }, placed };
 }

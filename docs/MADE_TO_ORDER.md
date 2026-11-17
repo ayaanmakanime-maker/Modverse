@@ -17,6 +17,23 @@ The downloaded 3D collection (`public/garment-library`, 120 garments) is sold ma
 * **Any colour, dyed to order** (Atelier and Atelier Pro): a custom hex instead of a stocked colour, +₹250 and 3 more days.
 * The 3D view's backdrop follows the fabric colour so the garment never blends into it.
 
+## Atelier and Atelier Pro tools (V3.2)
+The shop-style studio now carries the T-shirt and shirt editor's tools wherever a workshop can make the result (`src/components/library3d/AtelierTools.tsx`):
+
+| Tool | Mode | What it does |
+|---|---|---|
+| **All-over print** | Atelier, Pro | A repeating pattern — a Creative Library pattern, the customer's upload or a Muse image — digitally printed across the fabric before cutting. Repeat width 4–60 cm and rotation; the chosen colour is the ground behind transparent parts. Only fabrics that take digital printing (combed / heavyweight jersey, poplin, linen, viscose crepe, georgette, French terry, stretch twill); on the others the tool offers to switch fabric. +₹690 and 4 more days; shown on the 3D garment at its real size (`src/lib/three/pattern-map.ts` measures cm per UV unit on the mesh), in the 2D print areas and on the mannequin. Manufacturers need DTG or sublimation capability. |
+| **Layers** | Atelier, Pro | Every placement top first, plus the all-over print: show / hide, lock, reorder, delete. A hidden layer stays with the design but is never printed, charged or sent to the cart; a locked one cannot be dragged or resized. |
+| **Draw** | Atelier, Pro | A freehand pad (brush, eraser, colour, size, undo, clear) whose drawing is saved as the customer's image and placed like an upload. |
+| **Adjust image** | Atelier, Pro | Brightness, contrast, saturation, hue, black & white, invert, posterise (2–8 levels, for screen printing) and white-background removal, baked into a new image of the customer's (the original is kept), so what is printed is what is shown. |
+| **Your images** | all | Earlier uploads and images from The Muse, to place again. |
+| **Text** | Atelier, Pro | Adds a hard drop shadow (printable as a second colour) to bold, italic, outline, spacing and arc. |
+| **Precise placement** | Pro | Exact width, X / Y offset and rotation; align left / centre / right / top / middle / bottom in the print area; fill the area. |
+| **Versions** | Atelier, Pro | Named snapshots stored with the design (`garment_designs.versions`, migration 0015, up to 20), restore (undoable), duplicate as a new design. |
+| **Tech sheet** | Pro | The production sheet the workshop receives (style, HSN, fabric, colour, size, alterations, trims, monogram, all-over print, placements, lead time, care, checks), downloadable as JSON or printed. |
+
+Server side the same rules hold: `validateMto` rejects an all-over print on a fabric that cannot take it or without exactly one pattern; uploads and library patterns are checked for ownership / approval on save and in the cart; the cart drops hidden layers.
+
 ## What can be chosen (`src/lib/garment/made-to-order.ts`)
 | Option | Rule |
 |---|---|

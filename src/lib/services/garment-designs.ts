@@ -9,12 +9,18 @@ import { visibleGarments } from "../garment-library";
 import { mtoOptionsSchema, mtoProfileFor, validateMto } from "../garment/made-to-order";
 
 const MAX = 200;
+/** Snapshots kept per design (oldest dropped first). */
+export const MAX_VERSIONS = 20;
 export const garmentDesignSchema = z.object({
   name: z.string().trim().min(1).max(80),
   garmentId: z.string().regex(/^[a-z0-9-]+$/).max(80),
   mode: z.enum(["studio", "atelier", "pro"]).default("studio"),
   options: mtoOptionsSchema,
+  /** also keep this state as a named version */
+  snapshot: z.string().trim().max(60).optional(),
 });
+export interface GarmentDesignVersion { at: string; note: string; mode: string; options: z.infer<typeof mtoOptionsSchema> }
+const version = (input: z.infer<typeof garmentDesignSchema>): GarmentDesignVersion => ({ at: new Date().toISOString(), note: input.snapshot || "Saved version", mode: input.mode, options: input.options });
 
 const ref = (g: Awaited<ReturnType<typeof visibleGarments>>[number]) => ({ id: g.id, name: g.name, audience: g.audience, category: g.category, collection: g.collection, base: `/garment-library/${g.path}`, glb: `/garment-library/${g.path}/${g.glb}`, thumbnail: g.thumbnail ? `/garment-library/${g.path}/${g.thumbnail}` : null, licence: g.licence, attribution: g.attribution });
 
@@ -41,12 +47,13 @@ async function check(user: SessionUser, input: z.infer<typeof garmentDesignSchem
   const g = (await visibleGarments()).find((x) => x.id === input.garmentId);
   if (!g || !mtoProfileFor(g.category)) throw notFound("Garment");
   const db = await getDb();
-  const uploads = input.options.artwork.map((a) => a.uploadId).filter((x): x is string => !!x);
+  const sources = [...input.options.artwork, ...(input.options.allOver ? [input.options.allOver] : [])];
+  const uploads = sources.map((a) => a.uploadId).filter((x): x is string => !!x);
   if (uploads.length) {
     const own = await db.select({ id: s.uploadedAssets.id }).from(s.uploadedAssets).where(and(inArray(s.uploadedAssets.id, uploads), eq(s.uploadedAssets.userId, user.id)));
     if (own.length !== new Set(uploads).size) throw notFound("Artwork upload");
   }
-  const assets = input.options.artwork.map((a) => a.assetId).filter((x): x is string => !!x);
+  const assets = sources.map((a) => a.assetId).filter((x): x is string => !!x);
   if (assets.length) {
     const ok = await db.select({ id: s.creativeAssets.id }).from(s.creativeAssets).where(and(inArray(s.creativeAssets.id, assets), eq(s.creativeAssets.active, true), eq(s.creativeAssets.approval, "approved")));
     if (ok.length !== new Set(assets).size) throw notFound("Library graphic");
@@ -63,15 +70,18 @@ export async function createGarmentDesign(user: SessionUser, raw: z.input<typeof
   const db = await check(user, input);
   const [{ n }] = await db.select({ n: count() }).from(s.garmentDesigns).where(eq(s.garmentDesigns.userId, user.id));
   if (n >= MAX) throw badRequest(`You can keep up to ${MAX} customised styles — delete one first`);
-  const [row] = await db.insert(s.garmentDesigns).values({ ...input, userId: user.id }).returning();
+  const { snapshot, ...values } = input;
+  const [row] = await db.insert(s.garmentDesigns).values({ ...values, userId: user.id, versions: snapshot !== undefined ? [version(input)] : [] }).returning();
   return row;
 }
 
 export async function updateGarmentDesign(user: SessionUser, id: string, raw: z.input<typeof garmentDesignSchema>) {
-  await getGarmentDesign(user, id);
+  const before = await getGarmentDesign(user, id);
   const input = garmentDesignSchema.parse(raw);
   const db = await check(user, input);
-  const [row] = await db.update(s.garmentDesigns).set({ ...input, updatedAt: new Date() }).where(and(eq(s.garmentDesigns.id, id), eq(s.garmentDesigns.userId, user.id))).returning();
+  const { snapshot, ...values } = input;
+  const versions = snapshot !== undefined ? [...((before.versions as GarmentDesignVersion[]) ?? []), version(input)].slice(-MAX_VERSIONS) : (before.versions as GarmentDesignVersion[]);
+  const [row] = await db.update(s.garmentDesigns).set({ ...values, versions, updatedAt: new Date() }).where(and(eq(s.garmentDesigns.id, id), eq(s.garmentDesigns.userId, user.id))).returning();
   return row;
 }
 
